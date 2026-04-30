@@ -1,71 +1,85 @@
 # SocialSciencr — AI Provider Strategy
 
-## Approach: Bring Your Own API Key (BYOAK)
+## Approach: App-Level API Keys (Phase 2) → BYO User Keys (Future)
 
-SocialSciencr uses a BYO API key model for AI provider access.
+### Phase 2: App-Level Keys
 
-### Why BYO API Key?
+API keys are configured via environment variables:
+- `OPENAI_API_KEY` — Required for AI features and embeddings
+- `ANTHROPIC_API_KEY` — Optional, for Anthropic as provider
+- `AI_PROVIDER` — Selects active provider ("openai" or "anthropic")
+- `AI_MODEL` — Overrides default model
 
-1. **Privacy**: Student data stays in their own provider account
-2. **Cost control**: Students pay only for what they use through their own API billing
-3. **Flexibility**: Students choose their preferred provider and model
-4. **Transparency**: No hidden markup on AI usage costs
-5. **Simplicity**: No need to build and maintain a billing system in Phase 0-1
+All API calls are server-side only. Keys are never exposed to the client.
 
-### Why NOT Consumer Subscription Connection
+### Future: BYO API Key (Per-User)
 
-Consumer subscriptions (ChatGPT Plus, Claude Pro, Gemini Advanced) are:
-- Web-based products, not API services
-- Subject to Terms of Service that may prohibit automated access
-- Not designed for programmatic integration
-- Unable to provide the structured, citation-injected outputs SocialSciencr requires
-
-SocialSciencr connects to provider APIs, not consumer web interfaces.
+The `AIProviderConnection` model exists in the database schema for per-user encrypted API key storage. Implementation planned for Phase 3.
 
 ## Provider Abstraction Layer
 
 All AI interactions go through a provider abstraction layer:
 
 ```
-User Query → Scope Resolution → Context Assembly → Prompt Construction → Provider Call → Response Processing → Citation Injection → UI Display
+User Query → Scope Resolution → Hybrid Retrieval → Context Assembly → Prompt Construction → Provider Call → Response Processing → Citation Injection → UI Display
 ```
 
 ### Provider Interface
 
-Each provider implements a common interface:
-
 ```typescript
-interface AIProvider {
-  id: string;
-  name: string;
-  models: AIModel[];
-  chat(messages: ChatMessage[], options: ChatOptions): Promise<ChatResponse>;
-  isConfigured(): boolean;
-}
+// Each provider implements this via the providers.ts registry
+chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
 ```
 
-### Supported Providers (Future)
+### Supported Providers
 
 | Provider | Models | Status |
 |----------|--------|--------|
-| OpenAI | gpt-4o, gpt-4o-mini | Planned |
-| Anthropic | claude-sonnet-4-20250514, claude-3-5-haiku-latest | Planned |
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano | **Active** |
+| Anthropic | claude-sonnet-4-20250514, claude-3-5-haiku-latest | **Active** |
 | Google Gemini | gemini-2.5-pro, gemini-2.5-flash | Planned |
 | Local/Open-source | Ollama models | Future |
 
+### Default Configuration
+
+- **Provider**: OpenAI (configurable via AI_PROVIDER)
+- **Chat model**: gpt-4o-mini (cost-effective, good quality for academic Q&A)
+- **Embedding model**: text-embedding-3-small (1536 dimensions)
+- **Temperature**: 0.3 (0.7 for brainstorm mode)
+- **Max tokens**: 2048
+
+### Cost Estimates
+
+**OpenAI gpt-4o-mini**:
+- Input: $0.15 per 1M tokens
+- Output: $0.60 per 1M tokens
+- Typical conversation: ~2,000 tokens input, ~1,000 tokens output ≈ $0.0009 per message
+
+**OpenAI text-embedding-3-small**:
+- $0.02 per 1M tokens
+- 100 chunks × ~800 tokens each ≈ $0.0016 for a full source
+
+**Anthropic claude-sonnet-4-20250514**:
+- Input: $3.00 per 1M tokens
+- Output: $15.00 per 1M tokens
+- Significantly more expensive than gpt-4o-mini
+
 ## Security Rules
 
-1. **Server-side only**: All API calls are made from server-side code (Next.js API routes or server actions)
-2. **Encrypted storage**: API keys are encrypted at rest using AES-256 encryption
+1. **Server-side only**: All API calls are made from server-side code (Next.js API routes)
+2. **Environment variables**: API keys stored in .env, never committed to git
 3. **No client exposure**: API keys are NEVER included in client-side JavaScript bundles
-4. **No localStorage**: API keys are never stored in browser localStorage or sessionStorage
-5. **Usage tracking**: All API usage is logged for transparency and rate limiting
-6. **Error handling**: Provider errors are handled gracefully without exposing internal details
+4. **No localStorage**: API keys are never stored in browser storage
+5. **Usage tracking**: Retrieval logs record every query and mode
+6. **Error handling**: Provider errors handled gracefully without exposing internal details
+7. **Fallback**: Template responses when no provider is configured
 
-## Implementation Notes
+## Implementation Files
 
-- Keys are stored in an encrypted database table with per-user isolation
-- Key validation happens on save (test call to verify the key works)
-- Model preference is configurable per-provider
-- Fallback to mock responses when no provider is connected
-- Rate limiting prevents excessive API costs
+- `src/lib/ai/providers.ts` — Provider registry and main chat/embedding exports
+- `src/lib/ai/openai-provider.ts` — OpenAI SDK integration (chat + embeddings)
+- `src/lib/ai/anthropic-provider.ts` — Anthropic SDK integration (chat)
+- `src/lib/ai/prompts.ts` — System prompts with academic integrity constraints
+- `src/lib/ai/response-processor.ts` — Citation parsing, validation, labelling
+- `src/lib/ai/tool-prompts.ts` — Prompts for citation check and draft review
+- `src/lib/ai/grounded-provider.ts` — Template fallback (preserved from Phase 1)

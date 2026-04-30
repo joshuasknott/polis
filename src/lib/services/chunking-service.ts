@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { embedAndStoreChunks } from "./embedding-service";
 
 const TARGET_CHUNK_WORDS = 1000;
 const OVERLAP_WORDS = 150;
@@ -59,6 +60,12 @@ export async function chunkAndStore(sourceId: string, text: string): Promise<num
       pageNumber: chunk.pageNumber,
     })),
   });
+
+  try {
+    await embedAndStoreChunks(sourceId);
+  } catch {
+    // Embedding failure is non-fatal; chunks are still searchable by keyword
+  }
 
   return chunks.length;
 }

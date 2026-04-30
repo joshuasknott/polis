@@ -11,6 +11,9 @@ import {
   ExternalLink,
   Copy,
   Tag,
+  RefreshCw,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -61,6 +64,35 @@ export function SourceViewerContent({
   chunks,
 }: SourceViewerContentProps) {
   const [showChunks, setShowChunks] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [currentSummary, setCurrentSummary] = useState(source.summary);
+  const [currentArgument, setCurrentArgument] = useState(source.mainArgument);
+  const [currentConcepts, setCurrentConcepts] = useState(source.keyConcepts);
+  const [aiGenerated, setAiGenerated] = useState(false);
+
+  async function handleRegenerateSummary() {
+    setRegenerating(true);
+    try {
+      const res = await fetch(`/api/sources/${source.id}/analyse`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.analysis) {
+        setCurrentSummary(data.analysis.summary || currentSummary);
+        setCurrentArgument(data.analysis.keyArguments || currentArgument);
+        setCurrentConcepts(
+          data.analysis.concepts
+            ? data.analysis.concepts.split(",").map((c: string) => c.trim())
+            : currentConcepts
+        );
+        setAiGenerated(true);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setRegenerating(false);
+    }
+  }
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -119,12 +151,32 @@ export function SourceViewerContent({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <FileText className="h-4 w-4 text-accent" />
-            Summary
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <FileText className="h-4 w-4 text-accent" />
+              Summary
+            </h2>
+            <button
+              onClick={handleRegenerateSummary}
+              disabled={regenerating}
+              className="inline-flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50"
+            >
+              {regenerating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              {currentSummary ? "Regenerate" : "Generate"}
+            </button>
+          </div>
+          {(aiGenerated || currentSummary) && (
+            <span className="mt-1 inline-flex items-center gap-1 text-xs text-purple-600">
+              <Sparkles className="h-3 w-3" />
+              AI-generated
+            </span>
+          )}
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            {source.summary || "No summary available yet. This will be generated when AI processing is complete."}
+            {currentSummary || "No summary available yet. Click Generate to create an AI summary."}
           </p>
         </div>
 
@@ -134,7 +186,7 @@ export function SourceViewerContent({
             Main Argument
           </h2>
           <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            {source.mainArgument || "No argument extracted yet."}
+            {currentArgument || "No argument extracted yet."}
           </p>
         </div>
       </div>
@@ -145,7 +197,7 @@ export function SourceViewerContent({
           Key Concepts
         </h2>
         <div className="mt-3 flex flex-wrap gap-2">
-          {source.keyConcepts.map((concept: string) => (
+          {currentConcepts.map((concept: string) => (
             <span
               key={concept}
               className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-sm"
@@ -153,7 +205,7 @@ export function SourceViewerContent({
               {concept}
             </span>
           ))}
-          {source.keyConcepts.length === 0 && (
+          {currentConcepts.length === 0 && (
             <p className="text-sm text-muted-foreground">No concepts extracted yet.</p>
           )}
         </div>

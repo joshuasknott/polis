@@ -40,46 +40,53 @@
 - [x] Route protection via middleware
 - [x] Demo data seed script
 
-### What Remains in Phase 1 Scope
-- [ ] Real AI provider integration (OpenAI/Anthropic/Gemini)
-- [ ] Vector embeddings for semantic search
-- [ ] Background file processing job queue
-- [ ] OAuth providers (GitHub/Google)
-- [ ] Cloud file storage (S3/Supabase)
-
 ---
 
-## Next: Phase 2 — Intelligence Layer
+## Done: Phase 2 — Intelligence Layer
 
-**Goal**: Robust source-grounded AI with citation integrity
+**Status**: Complete
+**Goal**: Real LLM-powered source-grounded AI with citation integrity
 
 ### Key Features
-- Real LLM-powered assistant responses with source grounding
-- Vector embeddings and semantic search (pgvector)
-- Page-level citation tracking
-- Citation safety checking against claims
-- Draft review AI with rubric analysis
-- Theory comparison and literature matrices
-- Evidence bank with source-grounded entries
-- Argument mapping visualisation
-- Hybrid retrieval (semantic + keyword)
-- Background job queue for file processing
-- Real-time processing status updates
+- [x] Real AI provider integration (OpenAI primary, Anthropic secondary)
+- [x] Vector embeddings with pgvector (text-embedding-3-small, 1536 dimensions)
+- [x] Hybrid retrieval (semantic 0.7 + keyword 0.3 weighting)
+- [x] LLM-powered source-grounded assistant responses with citation parsing
+- [x] Template fallback when no AI provider configured
+- [x] Auto-generated source summaries and concept extraction
+- [x] Citation safety checking tool endpoint
+- [x] Draft review with rubric analysis endpoint
+- [x] Conversation memory (multi-turn, last 10 messages)
+- [x] Enhanced UI: AI mode badge, evidence bank button, tool cards wired
+- [x] pgvector schema integration with embedding column
+- [x] Batch embedding script for existing chunks
+
+### What Remains in Phase 2 Scope
+- [ ] Google Gemini provider implementation
+- [ ] Per-user BYO API key management (encrypted storage)
+- [ ] pgvector index (IVFFlat/HNSW) for large-scale search
+- [ ] Cross-encoder reranking
+- [ ] Background job queue for file processing
 
 ---
 
-## Later: Phase 3 — Platform
+## Next: Phase 3 — Platform
 
 **Goal**: Multi-user platform
 
 ### Key Features
 - OAuth providers (GitHub, Google)
+- Per-user BYO API key management with encrypted storage
+- Background job queue for file processing
+- pgvector index for large-scale semantic search
+- Google Gemini provider
 - Module sharing between students
 - Collaboration features
 - Advanced academic tools (plagiarism awareness, bibliography generation)
 - Mobile-responsive refinements
 - Usage analytics and insights
 - Cloud file storage (S3, Supabase Storage)
+- Rate limiting on AI API calls
 - Pricing tier for heavy users
 - Integration with university systems (LMS)
 
@@ -89,21 +96,24 @@
 
 | Risk | Mitigation |
 |------|------------|
-| AI hallucination in academic context | Strict source-grounding, citation badges, warnings |
-| Academic integrity concerns | Prominent integrity policy, clear labelling, no essay generation |
+| AI hallucination in academic context | Strict source-grounding, citation badges, warnings, [Source N] format enforced |
+| Academic integrity concerns | Prominent integrity policy, clear labelling, no essay generation, draft review only analyses |
 | User adoption | Focus on genuine workflow value, not AI gimmicks |
-| API cost sensitivity | BYO API key model, transparent usage tracking |
+| API cost sensitivity | BYO API key model, transparent usage tracking, gpt-4o-mini as default |
 | Provider API changes | Abstraction layer, multi-provider support |
-| Data privacy | Server-side processing, no third-party data sharing |
+| Data privacy | Server-side processing, no third-party data sharing beyond provider API |
 | Prisma 7 breaking changes | Documented configuration, adapter-based connection |
+| pgvector availability | Manual setup documented, graceful fallback to keyword search |
 
 ## Open Questions
 
 - ~~Authentication provider choice (NextAuth vs Clerk vs custom)~~ → Chose Auth.js v5
 - ~~Database hosting~~ → PostgreSQL via Prisma 7 with adapter-pg
-- Vector store choice (pgvector vs Pinecone vs Weaviate)
+- ~~Vector store choice~~ → pgvector (in-database, simple deployment)
 - Pricing model (if any) for future phases
 - Mobile app vs responsive web
 - University partnership opportunities
 - Content moderation requirements
 - Cloud storage provider (S3 vs Supabase Storage vs UploadThing)
+- When to add pgvector index (IVFFlat vs HNSW, threshold)
+- Per-user API key encryption strategy

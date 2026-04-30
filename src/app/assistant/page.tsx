@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { AssistantContent } from "@/components/assistant/assistant-content";
 import { getUserModules, getUserSources, getUserConversations } from "@/lib/services/data-service";
+import { getProviderStatus } from "@/lib/ai/providers";
 
 export default async function AssistantPage() {
   const session = await auth();
@@ -13,6 +14,8 @@ export default async function AssistantPage() {
     getUserSources(session.user.id),
     getUserConversations(session.user.id),
   ]);
+
+  const providerStatus = getProviderStatus();
 
   return (
     <AppShell user={session.user}>
@@ -26,6 +29,8 @@ export default async function AssistantPage() {
           messageCount: c._count.messages,
           createdAt: c.createdAt.toISOString(),
         }))}
+        aiConfigured={providerStatus.configured}
+        providerName={providerStatus.provider}
       />
     </AppShell>
   );

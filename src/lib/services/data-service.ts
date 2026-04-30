@@ -248,6 +248,16 @@ export async function addConversationMessage(
   });
 }
 
+export async function updateSourceAnalysis(
+  sourceId: string,
+  data: { summary?: string; keyArguments?: string; concepts?: string }
+) {
+  return prisma.source.update({
+    where: { id: sourceId },
+    data,
+  });
+}
+
 export async function getUpcomingDeadlines(userId: string) {
   const essays = await prisma.essay.findMany({
     where: { userId, status: { not: "submitted" } },

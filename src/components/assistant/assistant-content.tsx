@@ -8,6 +8,8 @@ import {
   Lightbulb,
   Shield,
   Loader2,
+  Zap,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,8 @@ interface AssistantContentProps {
     messageCount: number;
     createdAt: string;
   }>;
+  aiConfigured: boolean;
+  providerName: string;
 }
 
 interface ChatMessage {
@@ -42,12 +46,15 @@ export function AssistantContent({
   modules,
   sources,
   conversations,
+  aiConfigured,
+  providerName,
 }: AssistantContentProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState(modules[0]?.id || "");
   const [selectedMode, setSelectedMode] = useState("source_grounded");
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,10 +83,15 @@ export function AssistantContent({
           query,
           moduleId: selectedModule || undefined,
           mode: selectedMode,
+          conversationId,
         }),
       });
 
       const data = await res.json();
+
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+      }
 
       const assistantMsg: ChatMessage = {
         role: "assistant",
@@ -106,6 +118,31 @@ export function AssistantContent({
     }
   }
 
+  async function handleAddToEvidence(chunk: ChatMessage["citedChunks"][0]) {
+    try {
+      await fetch("/api/essays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addEvidence",
+          essayId: "essay_01",
+          sourceId: chunk.sourceId,
+          sourceChunkId: chunk.chunkId,
+          claim: chunk.quote.slice(0, 200),
+          evidenceText: chunk.quote,
+          citation: chunk.pageRange,
+        }),
+      });
+    } catch {
+      // Silently fail — evidence add is non-critical
+    }
+  }
+
+  function startNewConversation() {
+    setMessages([]);
+    setConversationId(null);
+  }
+
   return (
     <div className="max-w-4xl space-y-6">
       <div>
@@ -115,7 +152,7 @@ export function AssistantContent({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Module</label>
           <select
@@ -141,18 +178,44 @@ export function AssistantContent({
             <option value="source_grounded">Source-grounded answer</option>
             <option value="reading_summary">Reading summary</option>
             <option value="essay_planning">Essay planning</option>
+            <option value="brainstorm">Brainstorm</option>
+            <option value="draft_feedback">Draft feedback</option>
+            <option value="citation_safety">Citation safety</option>
           </select>
+        </div>
+        <div className="space-y-1.5 self-end">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium",
+              aiConfigured
+                ? "bg-green-100 text-green-800"
+                : "bg-amber-100 text-amber-800"
+            )}
+          >
+            <Zap className="h-3 w-3" />
+            {aiConfigured ? `AI Connected (${providerName})` : "Template Mode"}
+          </span>
         </div>
       </div>
 
       <div className="rounded-xl border border-border bg-card">
-        <div className="border-b border-border p-4">
-          <h2 className="text-sm font-semibold">
-            {messages.length > 0 ? "Current Conversation" : "Ask a Question"}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {sources.length} sources available &middot; Mode: {selectedMode.replace(/_/g, " ")}
-          </p>
+        <div className="border-b border-border p-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold">
+              {messages.length > 0 ? "Current Conversation" : "Ask a Question"}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {sources.length} sources available &middot; Mode: {selectedMode.replace(/_/g, " ")}
+            </p>
+          </div>
+          {messages.length > 0 && (
+            <button
+              onClick={startNewConversation}
+              className="text-xs text-accent hover:underline"
+            >
+              New Conversation
+            </button>
+          )}
         </div>
 
         <div className="max-h-[500px] overflow-y-auto p-4 space-y-4 scrollbar-thin">
@@ -218,6 +281,13 @@ export function AssistantContent({
                       <p className="mt-1 text-xs text-blue-900 italic">
                         &ldquo;{chunk.quote}&rdquo;
                       </p>
+                      <button
+                        onClick={() => handleAddToEvidence(chunk)}
+                        className="mt-2 inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-100 px-2 py-1 text-xs text-blue-700 hover:bg-blue-200 transition-colors"
+                      >
+                        <FileText className="h-3 w-3" />
+                        Add to Evidence Bank
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -260,7 +330,9 @@ export function AssistantContent({
           {loading && (
             <div className="rounded-lg bg-muted/50 p-4 flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Searching sources and generating response...</span>
+              <span className="text-sm text-muted-foreground">
+                {aiConfigured ? "Searching sources and generating response..." : "Searching sources..."}
+              </span>
             </div>
           )}
         </div>
@@ -284,7 +356,9 @@ export function AssistantContent({
             </button>
           </form>
           <p className="mt-2 text-xs text-muted-foreground">
-            Answers are generated from your uploaded sources using keyword retrieval. Real AI provider integration coming soon.
+            {aiConfigured
+              ? "Answers are AI-generated from your uploaded sources with hybrid retrieval. Every claim should cite a source."
+              : "Answers use template-based keyword retrieval. Connect an AI provider for richer responses."}
           </p>
         </div>
       </div>
@@ -306,7 +380,9 @@ export function AssistantContent({
             Source Grounding
           </h3>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Answers reference specific sources and chunks from your uploaded materials.
+            {aiConfigured
+              ? "Hybrid retrieval (semantic + keyword) finds the most relevant chunks. AI generates grounded responses with citations."
+              : "Answers reference specific sources and chunks from your uploaded materials."}
             {sources.length === 0 && " Upload sources first to get grounded responses."}
           </p>
         </div>

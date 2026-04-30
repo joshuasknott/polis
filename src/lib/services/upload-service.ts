@@ -4,6 +4,8 @@ import path from "path";
 import { prisma } from "@/lib/db";
 import { extractTextFromFile } from "./extraction-service";
 import { chunkAndStore } from "./chunking-service";
+import { isAIConfigured } from "@/lib/ai/providers";
+import { chat } from "@/lib/ai/providers";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
 const MAX_FILE_SIZE = (parseInt(process.env.MAX_FILE_SIZE_MB || "50")) * 1024 * 1024;
@@ -76,6 +78,10 @@ export async function processUpload(
       },
     });
 
+    if (isAIConfigured() && extraction.text.length > 100) {
+      analyseSourceInBackground(sourceId, file.name.replace(ext, ""), extraction.text).catch(() => {});
+    }
+
     return { sourceId, chunkCount, wordCount: extraction.wordCount };
   } catch (error) {
     await prisma.source.update({
@@ -101,5 +107,65 @@ function inferSourceType(ext: string): string {
       return "seminar_notes";
     default:
       return "report";
+  }
+}
+
+const ANALYSIS_PROMPT = `You are an academic source analysis assistant. Analyse the provided source text and generate:
+
+1. A structured summary (2-3 paragraphs) covering the main argument, methodology, and key findings
+2. The key argument in 1-2 sentences
+3. Key concepts as a comma-separated list
+
+ACADEMIC INTEGRITY:
+- Summarise accurately from the text provided
+- Do not add information not present in the text
+- Do not fabricate claims or findings
+
+Respond in this exact JSON format:
+{
+  "summary": "Your 2-3 paragraph summary here",
+  "keyArguments": "The central argument in 1-2 sentences",
+  "concepts": "concept1, concept2, concept3, concept4, concept5"
+}`;
+
+async function analyseSourceInBackground(
+  sourceId: string,
+  title: string,
+  text: string
+) {
+  try {
+    const textToAnalyse = text.slice(0, 12000);
+
+    const response = await chat(
+      [
+        { role: "system", content: ANALYSIS_PROMPT },
+        {
+          role: "user",
+          content: `Analyse this source titled "${title}":\n\n${textToAnalyse}`,
+        },
+      ],
+      { temperature: 0.2, maxTokens: 1024 }
+    );
+
+    let analysis;
+    try {
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0]);
+      }
+    } catch {
+      analysis = { summary: response.content.slice(0, 500), keyArguments: "", concepts: "" };
+    }
+
+    await prisma.source.update({
+      where: { id: sourceId },
+      data: {
+        summary: analysis.summary || "",
+        keyArguments: analysis.keyArguments || "",
+        concepts: analysis.concepts || "",
+      },
+    });
+  } catch {
+    // Non-fatal: source is still usable without AI analysis
   }
 }

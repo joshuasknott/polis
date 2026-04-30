@@ -8,6 +8,8 @@ import {
   BookOpen,
   Target,
   ChevronRight,
+  ShieldCheck,
+  MessageSquareText,
 } from "lucide-react";
 import { cn, getEssayStatusLabel, getEssayStatusColor } from "@/lib/utils";
 
@@ -44,7 +46,7 @@ interface EssayWorkspaceContentProps {
   };
 }
 
-type Tab = "overview" | "structure" | "evidence";
+type Tab = "overview" | "structure" | "evidence" | "tools";
 
 export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
@@ -53,6 +55,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
     { id: "overview", label: "Overview" },
     { id: "structure", label: "Structure" },
     { id: "evidence", label: "Evidence Bank" },
+    { id: "tools", label: "AI Tools" },
   ];
 
   return (
@@ -214,6 +217,46 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
               <p className="text-xs text-muted-foreground mt-1">Add evidence from your sources to build your argument.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === "tools" && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            AI-powered tools to help strengthen your essay. These tools analyse and suggest — they do not write for you.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck className="h-5 w-5 text-green-600" />
+                <h3 className="text-sm font-semibold">Citation Safety Check</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Check your draft for claims that lack proper citation support. Identifies supported, weakly supported, and unsupported claims.
+              </p>
+              <Link
+                href="/tools"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+              >
+                Run Citation Check
+              </Link>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquareText className="h-5 w-5 text-purple-600" />
+                <h3 className="text-sm font-semibold">Draft Review</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Get structured feedback on your draft including strengths, weaknesses, missing evidence, and revision priorities.
+              </p>
+              <Link
+                href="/tools"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+              >
+                Review Draft
+              </Link>
+            </div>
+          </div>
         </div>
       )}
     </div>
