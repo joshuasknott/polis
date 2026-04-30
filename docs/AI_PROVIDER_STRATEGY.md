@@ -1,34 +1,46 @@
 # SocialSciencr — AI Provider Strategy
 
-## Approach: App-Level API Keys (Phase 2) → BYO User Keys (Future)
+## Approach: BYO API Key (Per-User) + App-Level Fallback
 
-### Phase 2: App-Level Keys
+### User-Level Keys (Phase 3)
 
-API keys are configured via environment variables:
-- `OPENAI_API_KEY` — Required for AI features and embeddings
-- `ANTHROPIC_API_KEY` — Optional, for Anthropic as provider
-- `AI_PROVIDER` — Selects active provider ("openai" or "anthropic")
+Users can connect their own API keys through the Settings page. Keys are:
+- Encrypted at rest with AES-256-GCM (using ENCRYPTION_KEY env var)
+- Validated before storage (test API call)
+- Decrypted only at call time, never cached
+- Scoped per-provider with optional model preference
+
+### App-Level Keys (Fallback)
+
+When no user key is configured, the system falls back to app-level environment variables:
+- `OPENAI_API_KEY` — For OpenAI chat and embeddings
+- `ANTHROPIC_API_KEY` — For Anthropic chat
+- `GOOGLE_AI_API_KEY` — For Google Gemini chat
+- `AI_PROVIDER` — Selects active provider ("openai", "anthropic", or "google")
 - `AI_MODEL` — Overrides default model
 
-All API calls are server-side only. Keys are never exposed to the client.
+### Resolution Order
 
-### Future: BYO API Key (Per-User)
-
-The `AIProviderConnection` model exists in the database schema for per-user encrypted API key storage. Implementation planned for Phase 3.
+```
+1. User key for explicitly requested provider
+2. User key for default provider
+3. App-level env var for default provider
+4. Template fallback (no API call)
+```
 
 ## Provider Abstraction Layer
 
 All AI interactions go through a provider abstraction layer:
 
 ```
-User Query → Scope Resolution → Hybrid Retrieval → Context Assembly → Prompt Construction → Provider Call → Response Processing → Citation Injection → UI Display
+User Query → Rate Limit Check → Scope Resolution → Hybrid Retrieval → Context Assembly → Prompt Construction → Provider Call (with user key resolution) → Response Processing → Usage Logging → Citation Injection → UI Display
 ```
 
 ### Provider Interface
 
 ```typescript
-// Each provider implements this via the providers.ts registry
 chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
+// options now includes userId for user-level key resolution
 ```
 
 ### Supported Providers
@@ -37,7 +49,7 @@ chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
 |----------|--------|--------|
 | OpenAI | gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano | **Active** |
 | Anthropic | claude-sonnet-4-20250514, claude-3-5-haiku-latest | **Active** |
-| Google Gemini | gemini-2.5-pro, gemini-2.5-flash | Planned |
+| Google Gemini | gemini-2.5-pro, gemini-2.5-flash | **Active** |
 | Local/Open-source | Ollama models | Future |
 
 ### Default Configuration
@@ -48,38 +60,41 @@ chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
 - **Temperature**: 0.3 (0.7 for brainstorm mode)
 - **Max tokens**: 2048
 
-### Cost Estimates
+### Cost Estimates (per 1M tokens)
 
-**OpenAI gpt-4o-mini**:
-- Input: $0.15 per 1M tokens
-- Output: $0.60 per 1M tokens
-- Typical conversation: ~2,000 tokens input, ~1,000 tokens output ≈ $0.0009 per message
-
-**OpenAI text-embedding-3-small**:
-- $0.02 per 1M tokens
-- 100 chunks × ~800 tokens each ≈ $0.0016 for a full source
-
-**Anthropic claude-sonnet-4-20250514**:
-- Input: $3.00 per 1M tokens
-- Output: $15.00 per 1M tokens
-- Significantly more expensive than gpt-4o-mini
+| Model | Input | Output |
+|-------|-------|--------|
+| gpt-4o-mini | $0.15 | $0.60 |
+| gpt-4.1 | $2.00 | $8.00 |
+| claude-sonnet-4-20250514 | $3.00 | $15.00 |
+| claude-3-5-haiku-latest | $0.80 | $4.00 |
+| gemini-2.5-pro | $1.25 | $10.00 |
+| gemini-2.5-flash | $0.15 | $0.60 |
+| text-embedding-3-small | $0.02 | — |
 
 ## Security Rules
 
 1. **Server-side only**: All API calls are made from server-side code (Next.js API routes)
-2. **Environment variables**: API keys stored in .env, never committed to git
-3. **No client exposure**: API keys are NEVER included in client-side JavaScript bundles
-4. **No localStorage**: API keys are never stored in browser storage
-5. **Usage tracking**: Retrieval logs record every query and mode
-6. **Error handling**: Provider errors handled gracefully without exposing internal details
-7. **Fallback**: Template responses when no provider is configured
+2. **Encrypted at rest**: User API keys encrypted with AES-256-GCM before database storage
+3. **Validated before storage**: Test API call confirms key validity before saving
+4. **No client exposure**: API keys are NEVER included in client-side JavaScript bundles
+5. **No localStorage**: API keys are never stored in browser storage
+6. **Usage tracking**: All AI calls logged with token counts and cost estimates
+7. **Rate limiting**: Per-user request and token limits enforced
+8. **Error handling**: Provider errors handled gracefully without exposing internal details
+9. **Fallback**: Template responses when no provider is configured
 
 ## Implementation Files
 
-- `src/lib/ai/providers.ts` — Provider registry and main chat/embedding exports
+- `src/lib/ai/providers.ts` — Provider registry with user-level key resolution and usage logging
 - `src/lib/ai/openai-provider.ts` — OpenAI SDK integration (chat + embeddings)
 - `src/lib/ai/anthropic-provider.ts` — Anthropic SDK integration (chat)
+- `src/lib/ai/gemini-provider.ts` — Google Gemini SDK integration (chat)
 - `src/lib/ai/prompts.ts` — System prompts with academic integrity constraints
 - `src/lib/ai/response-processor.ts` — Citation parsing, validation, labelling
 - `src/lib/ai/tool-prompts.ts` — Prompts for citation check and draft review
 - `src/lib/ai/grounded-provider.ts` — Template fallback (preserved from Phase 1)
+- `src/lib/crypto.ts` — AES-256-GCM encryption for user API keys
+- `src/lib/services/apikey-service.ts` — Encrypted API key CRUD operations
+- `src/lib/services/usage-service.ts` — Usage tracking and cost estimation
+- `src/lib/services/rate-limit-service.ts` — In-memory rate limiting

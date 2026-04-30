@@ -1,6 +1,9 @@
 import "server-only";
 import { openaiChat, isOpenAIConfigured, openaiEmbed, openaiEmbedBatch } from "./openai-provider";
 import { anthropicChat, isAnthropicConfigured } from "./anthropic-provider";
+import { geminiChat, isGeminiConfigured } from "./gemini-provider";
+import { getDecryptedApiKey, getModelPreference } from "@/lib/services/apikey-service";
+import { logUsage } from "@/lib/services/usage-service";
 
 export interface AIProviderConfig {
   id: string;
@@ -39,6 +42,8 @@ export interface ChatOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  userId?: string;
+  providerId?: string;
 }
 
 export interface ChatResponse {
@@ -59,6 +64,7 @@ export function isAIConfigured(): boolean {
   const provider = getActiveProviderId();
   if (provider === "openai") return isOpenAIConfigured();
   if (provider === "anthropic") return isAnthropicConfigured();
+  if (provider === "google") return isGeminiConfigured();
   return false;
 }
 
@@ -81,19 +87,140 @@ export async function chat(
   messages: ChatMessage[],
   options?: ChatOptions
 ): Promise<ChatResponse> {
+  const userId = options?.userId;
+  const requestedProvider = options?.providerId;
+
+  if (requestedProvider && userId) {
+    const userKey = await getDecryptedApiKey(userId, requestedProvider);
+    if (userKey) {
+      const modelPref = await getModelPreference(userId, requestedProvider);
+      const model = options.model || modelPref || providers.find((p) => p.id === requestedProvider)?.defaultModel;
+      return chatWithKey(requestedProvider, userKey, messages, { ...options, model });
+    }
+  }
+
   const provider = getActiveProviderId();
 
+  if (userId) {
+    const userKey = await getDecryptedApiKey(userId, provider);
+    if (userKey) {
+      const modelPref = await getModelPreference(userId, provider);
+      const model = options.model || modelPref || undefined;
+      const result = await chatWithKey(provider, userKey, messages, { ...options, model });
+      if (userId) {
+        logUsage({ userId, provider, model: result.model, type: "chat", tokensIn: result.usage.promptTokens, tokensOut: result.usage.completionTokens }).catch(() => {});
+      }
+      return result;
+    }
+  }
+
+  let result: ChatResponse;
   if (provider === "openai") {
-    return openaiChat(messages, options);
+    result = await openaiChat(messages, options);
+  } else if (provider === "anthropic") {
+    result = await anthropicChat(messages, options);
+  } else if (provider === "google") {
+    result = await geminiChat(messages, options);
+  } else {
+    throw new Error(
+      `AI provider "${provider}" is not implemented. Set AI_PROVIDER to "openai", "anthropic", or "google".`
+    );
+  }
+
+  if (userId) {
+    logUsage({ userId, provider, model: result.model, type: "chat", tokensIn: result.usage.promptTokens, tokensOut: result.usage.completionTokens }).catch(() => {});
+  }
+
+  return result;
+}
+
+async function chatWithKey(
+  provider: string,
+  apiKey: string,
+  messages: ChatMessage[],
+  options?: ChatOptions
+): Promise<ChatResponse> {
+  if (provider === "openai") {
+    const OpenAI = (await import("openai")).default;
+    const client = new OpenAI({ apiKey });
+    const model = options?.model || "gpt-4o-mini";
+    const response = await client.chat.completions.create({
+      model,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      temperature: options?.temperature ?? 0.3,
+      max_tokens: options?.maxTokens ?? 2048,
+    });
+    const choice = response.choices[0];
+    if (!choice?.message?.content) throw new Error("OpenAI returned empty response");
+    return {
+      content: choice.message.content,
+      model: response.model,
+      usage: {
+        promptTokens: response.usage?.prompt_tokens ?? 0,
+        completionTokens: response.usage?.completion_tokens ?? 0,
+        totalTokens: response.usage?.total_tokens ?? 0,
+      },
+    };
   }
 
   if (provider === "anthropic") {
-    return anthropicChat(messages, options);
+    const Anthropic = (await import("@anthropic-ai/sdk")).default;
+    const client = new Anthropic({ apiKey });
+    const model = options?.model || "claude-sonnet-4-20250514";
+    const systemMessage = messages.find((m) => m.role === "system");
+    const nonSystem = messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    const response = await client.messages.create({
+      model,
+      max_tokens: options?.maxTokens ?? 2048,
+      system: systemMessage?.content || undefined,
+      messages: nonSystem,
+    });
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") throw new Error("Anthropic returned empty response");
+    return {
+      content: textBlock.text,
+      model: response.model,
+      usage: {
+        promptTokens: response.usage.input_tokens,
+        completionTokens: response.usage.output_tokens,
+        totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+      },
+    };
   }
 
-  throw new Error(
-    `AI provider "${provider}" is not implemented. Set AI_PROVIDER to "openai" or "anthropic".`
-  );
+  if (provider === "google") {
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = options?.model || "gemini-2.5-pro";
+    const genModel = genAI.getGenerativeModel({ model });
+    const systemMessage = messages.find((m) => m.role === "system");
+    const nonSystem = messages.filter((m) => m.role !== "system");
+    const result = await genModel.generateContent({
+      contents: nonSystem.map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      })),
+      systemInstruction: systemMessage ? { role: "system" as const, parts: [{ text: systemMessage.content }] } : undefined,
+      generationConfig: {
+        temperature: options?.temperature ?? 0.3,
+        maxOutputTokens: options?.maxTokens ?? 2048,
+      },
+    });
+    const response = result.response;
+    return {
+      content: response.text(),
+      model,
+      usage: {
+        promptTokens: response.usageMetadata?.promptTokenCount ?? 0,
+        completionTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+        totalTokens: response.usageMetadata?.totalTokenCount ?? 0,
+      },
+    };
+  }
+
+  throw new Error(`Provider "${provider}" does not support user-level keys`);
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {

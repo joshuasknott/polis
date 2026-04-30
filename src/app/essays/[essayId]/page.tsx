@@ -20,18 +20,19 @@ export default async function EssayPage({
   return (
     <AppShell user={session.user}>
       <EssayWorkspaceContent
-        essay={{
-          id: essay.id,
-          moduleId: essay.moduleId,
-          title: essay.title,
-          question: essay.question || "",
-          wordCount: essay.targetWordCount,
-          thesis: essay.thesis || "",
-          status: essay.status,
-          createdAt: essay.createdAt.toISOString(),
-          moduleTitle: essay.module?.title || "",
-          moduleCode: essay.module?.code || "",
-          sections: essay.sections.map((s) => ({
+          essay={{
+            id: essay.id,
+            moduleId: essay.moduleId,
+            title: essay.title,
+            question: essay.question || "",
+            wordCount: essay.targetWordCount,
+            thesis: essay.thesis || "",
+            status: essay.status,
+            createdAt: essay.createdAt.toISOString(),
+            moduleTitle: essay.module?.title || "",
+            moduleCode: essay.module?.code || "",
+            draftContent: essay.draftContent || "",
+            sections: essay.sections.map((s) => ({
             id: s.id,
             heading: s.title,
             purpose: s.purpose || "",

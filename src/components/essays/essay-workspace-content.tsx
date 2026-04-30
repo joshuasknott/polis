@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -10,8 +10,10 @@ import {
   ChevronRight,
   ShieldCheck,
   MessageSquareText,
+  Loader2,
+  Pencil,
 } from "lucide-react";
-import { cn, getEssayStatusLabel, getEssayStatusColor } from "@/lib/utils";
+import { cn, getEssayStatusLabel, getEssayStatusColor, wordCount } from "@/lib/utils";
 
 interface EssayWorkspaceContentProps {
   essay: {
@@ -25,6 +27,7 @@ interface EssayWorkspaceContentProps {
     createdAt: string;
     moduleTitle: string;
     moduleCode: string;
+    draftContent: string;
     sections: Array<{
       id: string;
       heading: string;
@@ -46,16 +49,17 @@ interface EssayWorkspaceContentProps {
   };
 }
 
-type Tab = "overview" | "structure" | "evidence" | "tools";
+type Tab = "overview" | "structure" | "evidence" | "draft" | "tools";
 
 export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "structure", label: "Structure" },
-    { id: "evidence", label: "Evidence Bank" },
-    { id: "tools", label: "AI Tools" },
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: "overview", label: "Overview", icon: <Target className="h-4 w-4" /> },
+    { id: "structure", label: "Structure", icon: <FileText className="h-4 w-4" /> },
+    { id: "evidence", label: "Evidence", icon: <BookOpen className="h-4 w-4" /> },
+    { id: "draft", label: "Draft", icon: <Pencil className="h-4 w-4" /> },
+    { id: "tools", label: "AI Tools", icon: <ShieldCheck className="h-4 w-4" /> },
   ];
 
   return (
@@ -98,18 +102,19 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+              "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
               activeTab === tab.id
                 ? "border-accent text-accent"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
+            {tab.icon}
             {tab.label}
           </button>
         ))}
@@ -220,6 +225,10 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
         </div>
       )}
 
+      {activeTab === "draft" && (
+        <DraftEditor essay={essay} />
+      )}
+
       {activeTab === "tools" && (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
@@ -257,6 +266,147 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
               </Link>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) {
+  const [content, setContent] = useState(essay.draftContent || "");
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [reviewResult, setReviewResult] = useState<string | null>(null);
+  const [citationResult, setCitationResult] = useState<string | null>(null);
+  const [toolLoading, setToolLoading] = useState<string | null>(null);
+
+  const words = wordCount(content);
+
+  const saveDraft = useCallback(async () => {
+    setSaving(true);
+    try {
+      await fetch("/api/essays", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateDraft", essayId: essay.id, draftContent: content }),
+      });
+      setLastSaved(new Date().toLocaleTimeString());
+    } catch {} finally {
+      setSaving(false);
+    }
+  }, [content, essay.id]);
+
+  async function runCitationCheck() {
+    if (!content.trim()) return;
+    setToolLoading("citation");
+    setCitationResult(null);
+    try {
+      const res = await fetch("/api/tools/citation-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: content, essayId: essay.id }),
+      });
+      const data = await res.json();
+      setCitationResult(data.result || data.feedback || JSON.stringify(data, null, 2));
+    } catch {
+      setCitationResult("Error running citation check. Make sure AI is configured.");
+    } finally {
+      setToolLoading(null);
+    }
+  }
+
+  async function runDraftReview() {
+    if (!content.trim()) return;
+    setToolLoading("review");
+    setReviewResult(null);
+    try {
+      const res = await fetch("/api/tools/draft-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: content, essayId: essay.id }),
+      });
+      const data = await res.json();
+      setReviewResult(data.result || data.feedback || JSON.stringify(data, null, 2));
+    } catch {
+      setReviewResult("Error running draft review. Make sure AI is configured.");
+    } finally {
+      setToolLoading(null);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {(essay.question || essay.thesis) && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+          {essay.question && (
+            <p><span className="font-medium text-blue-800">Question:</span> <span className="text-blue-700 italic">&ldquo;{essay.question}&rdquo;</span></p>
+          )}
+          {essay.thesis && (
+            <p className="mt-1"><span className="font-medium text-blue-800">Thesis:</span> <span className="text-blue-700">{essay.thesis}</span></p>
+          )}
+        </div>
+      )}
+
+      <div className="rounded-xl border border-border bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span>{words} words</span>
+            <span>Target: {essay.wordCount}</span>
+            {saving && <span className="text-blue-600">Saving...</span>}
+            {lastSaved && !saving && <span>Saved at {lastSaved}</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={saveDraft}
+              disabled={saving}
+              className="rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full min-h-[400px] p-4 text-sm leading-relaxed bg-transparent resize-y focus:outline-none"
+          placeholder="Start writing your draft here...&#10;&#10;This editor is for YOUR writing only. AI tools can analyse and provide feedback, but will never generate text for you."
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={runCitationCheck}
+          disabled={toolLoading !== null || !content.trim()}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+        >
+          {toolLoading === "citation" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+          Run Citation Check
+        </button>
+        <button
+          onClick={runDraftReview}
+          disabled={toolLoading !== null || !content.trim()}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+        >
+          {toolLoading === "review" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquareText className="h-3.5 w-3.5" />}
+          Run Draft Review
+        </button>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Academic integrity: This is your own writing space. AI tools only analyse and provide feedback — they never generate text.
+      </p>
+
+      {citationResult && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+          <h3 className="text-sm font-semibold text-green-800 mb-2">Citation Check Results</h3>
+          <div className="text-sm text-green-900 whitespace-pre-wrap">{citationResult}</div>
+        </div>
+      )}
+
+      {reviewResult && (
+        <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
+          <h3 className="text-sm font-semibold text-purple-800 mb-2">Draft Review Results</h3>
+          <div className="text-sm text-purple-900 whitespace-pre-wrap">{reviewResult}</div>
         </div>
       )}
     </div>

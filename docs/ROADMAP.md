@@ -61,34 +61,37 @@
 - [x] pgvector schema integration with embedding column
 - [x] Batch embedding script for existing chunks
 
-### What Remains in Phase 2 Scope
-- [ ] Google Gemini provider implementation
-- [ ] Per-user BYO API key management (encrypted storage)
-- [ ] pgvector index (IVFFlat/HNSW) for large-scale search
-- [ ] Cross-encoder reranking
-- [ ] Background job queue for file processing
-
 ---
 
-## Next: Phase 3 — Platform
+## Done: Phase 3 — Production Platform
 
-**Goal**: Multi-user platform
+**Status**: Complete
+**Goal**: Production-ready platform with per-user AI configuration, background processing, and enhanced workflows
 
 ### Key Features
-- OAuth providers (GitHub, Google)
-- Per-user BYO API key management with encrypted storage
-- Background job queue for file processing
-- pgvector index for large-scale semantic search
-- Google Gemini provider
-- Module sharing between students
-- Collaboration features
-- Advanced academic tools (plagiarism awareness, bibliography generation)
-- Mobile-responsive refinements
-- Usage analytics and insights
-- Cloud file storage (S3, Supabase Storage)
-- Rate limiting on AI API calls
-- Pricing tier for heavy users
-- Integration with university systems (LMS)
+- [x] Per-user BYO API key management (AES-256-GCM encrypted storage)
+- [x] OAuth providers (GitHub, Google) with account linking
+- [x] Profile editing and user preferences
+- [x] Background file processing (extract → chunk → embed → analyse)
+- [x] Cloud file storage abstraction (local + S3)
+- [x] Usage analytics dashboard with cost estimation
+- [x] Rate limiting on AI API calls (in-memory)
+- [x] Draft editor in essay workspace
+- [x] Source notes (user-created notes on sources)
+- [x] Mobile-responsive design refinements
+- [x] Google Gemini provider integration
+- [x] pgvector HNSW index script
+- [x] Processing status polling for uploads
+
+### What Remains
+- [ ] Rich text editor (TipTap) for draft editing
+- [ ] Redis-backed rate limiting
+- [ ] SSE for real-time processing updates
+- [ ] File migration tool (local → S3)
+- [ ] Module sharing between students
+- [ ] Collaboration features
+- [ ] Advanced academic tools (plagiarism awareness, bibliography generation)
+- [ ] Integration with university systems (LMS)
 
 ---
 
@@ -110,10 +113,11 @@
 - ~~Authentication provider choice (NextAuth vs Clerk vs custom)~~ → Chose Auth.js v5
 - ~~Database hosting~~ → PostgreSQL via Prisma 7 with adapter-pg
 - ~~Vector store choice~~ → pgvector (in-database, simple deployment)
+- ~~Per-user API key encryption strategy~~ → AES-256-GCM with ENCRYPTION_KEY env var
+- ~~Cloud storage provider~~ → S3-compatible abstraction (AWS, Supabase)
 - Pricing model (if any) for future phases
-- Mobile app vs responsive web
+- Mobile app vs responsive web → Responsive web for now
 - University partnership opportunities
 - Content moderation requirements
-- Cloud storage provider (S3 vs Supabase Storage vs UploadThing)
-- When to add pgvector index (IVFFlat vs HNSW, threshold)
-- Per-user API key encryption strategy
+- When to add Redis for rate limiting
+- TipTap vs ProseMirror for rich text editing

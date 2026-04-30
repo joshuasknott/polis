@@ -135,6 +135,7 @@ export async function updateEssay(
     thesis?: string;
     targetWordCount?: number;
     status?: string;
+    draftContent?: string;
   }
 ) {
   return prisma.essay.update({

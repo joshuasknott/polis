@@ -4,8 +4,7 @@ import path from "path";
 import { prisma } from "@/lib/db";
 import { extractTextFromFile } from "./extraction-service";
 import { chunkAndStore } from "./chunking-service";
-import { isAIConfigured } from "@/lib/ai/providers";
-import { chat } from "@/lib/ai/providers";
+import { isAIConfigured, chat } from "@/lib/ai/providers";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
 const MAX_FILE_SIZE = (parseInt(process.env.MAX_FILE_SIZE_MB || "50")) * 1024 * 1024;
@@ -54,45 +53,67 @@ export async function processUpload(
       fileSize: file.size,
       storagePath,
       status: "processing",
+      processingStatus: "extracting",
     },
   });
 
+  processInBackground(sourceId, file.name.replace(ext, ""), userId).catch(() => {});
+
+  return { sourceId, status: "processing" };
+}
+
+async function processInBackground(sourceId: string, title: string, userId: string) {
   try {
-    const extraction = await extractTextFromFile(storagePath, file.type);
+    await prisma.source.update({
+      where: { id: sourceId },
+      data: { processingStatus: "extracting" },
+    });
+
+    const source = await prisma.source.findUnique({ where: { id: sourceId } });
+    if (!source?.storagePath) throw new Error("No storage path");
+
+    const extraction = await extractTextFromFile(source.storagePath);
 
     await prisma.source.update({
       where: { id: sourceId },
       data: {
         extractedText: extraction.text,
         wordCount: extraction.wordCount,
-        status: "processing",
+        processingStatus: "chunking",
       },
     });
 
-    const chunkCount = await chunkAndStore(sourceId, extraction.text);
+    await chunkAndStore(sourceId, extraction.text);
 
     await prisma.source.update({
       where: { id: sourceId },
       data: {
+        processingStatus: isAIConfigured() ? "analysing" : "ready",
         status: "ready",
       },
     });
 
     if (isAIConfigured() && extraction.text.length > 100) {
-      analyseSourceInBackground(sourceId, file.name.replace(ext, ""), extraction.text).catch(() => {});
-    }
+      try {
+        await analyseSourceInBackground(sourceId, title, extraction.text, userId);
+      } catch {
+        // Non-fatal
+      }
 
-    return { sourceId, chunkCount, wordCount: extraction.wordCount };
+      await prisma.source.update({
+        where: { id: sourceId },
+        data: { processingStatus: "ready" },
+      });
+    }
   } catch (error) {
     await prisma.source.update({
       where: { id: sourceId },
       data: {
         status: "error",
+        processingStatus: "error",
         errorMessage: error instanceof Error ? error.message : "Processing failed",
       },
     });
-
-    throw error;
   }
 }
 
@@ -131,7 +152,8 @@ Respond in this exact JSON format:
 async function analyseSourceInBackground(
   sourceId: string,
   title: string,
-  text: string
+  text: string,
+  userId: string
 ) {
   try {
     const textToAnalyse = text.slice(0, 12000);
@@ -144,7 +166,7 @@ async function analyseSourceInBackground(
           content: `Analyse this source titled "${title}":\n\n${textToAnalyse}`,
         },
       ],
-      { temperature: 0.2, maxTokens: 1024 }
+      { temperature: 0.2, maxTokens: 1024, userId }
     );
 
     let analysis;

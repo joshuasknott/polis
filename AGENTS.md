@@ -12,7 +12,7 @@ SocialSciencr is a coursework intelligence workspace for social science students
 
 ## Current Status
 
-Phase 1: Working academic workspace foundation with database, auth, file upload, text extraction, chunking, retrieval, and source-grounded assistant. See `docs/PHASE_1_IMPLEMENTATION.md` for details.
+Phase 3: Production platform with per-user AI keys, OAuth, background processing, cloud storage, usage analytics, rate limiting, draft editor, source notes, mobile-responsive design, Google Gemini provider, and pgvector indexing. See `docs/PHASE_3_IMPLEMENTATION.md` for details.
 
 ## Tech Stack
 
@@ -20,9 +20,11 @@ Phase 1: Working academic workspace foundation with database, auth, file upload,
 - React 19
 - Tailwind CSS v4 (CSS-first config via `@theme` in globals.css — NO tailwind.config.js)
 - PostgreSQL + Prisma 7 (with @prisma/adapter-pg)
-- Auth.js v5 (credentials auth, JWT sessions)
+- Auth.js v5 (credentials + OAuth, JWT sessions)
 - lucide-react for icons
 - pdf-parse and mammoth for text extraction
+- @google/generative-ai for Google Gemini
+- @aws-sdk/client-s3 for S3-compatible storage
 
 ## Commands
 
@@ -40,9 +42,9 @@ npm run db:studio    # Prisma Studio GUI
 ## Architecture
 
 - **Pages**: Server components that fetch data via service layer, pass to client components
-- **Service Layer**: `src/lib/services/` — data-service, extraction-service, chunking-service, retrieval-service, upload-service
-- **API Routes**: `src/app/api/` — upload, assistant, essays, auth
-- **Auth**: Auth.js v5 with credentials provider, JWT sessions, middleware protection
+- **Service Layer**: `src/lib/services/` — data-service, extraction-service, chunking-service, retrieval-service, upload-service, storage-service, apikey-service, usage-service, rate-limit-service
+- **API Routes**: `src/app/api/` — upload, assistant, essays, auth, settings (api-keys, profile, usage), sources, notes, tools
+- **Auth**: Auth.js v5 with credentials + OAuth (GitHub, Google), JWT sessions, middleware protection
 - **Database**: Prisma 7 with PostgreSQL via adapter-pg, schema at `prisma/schema.prisma`
 - **Mock Data**: Preserved at `src/lib/data/mock-data.ts` for reference; real data via DB
 
@@ -125,16 +127,30 @@ src/
   lib/
     types.ts              # TypeScript type definitions
     utils.ts              # Utility functions
+    crypto.ts             # AES-256-GCM encryption for API keys
     db.ts                 # Prisma client singleton
-    auth.ts               # Auth.js configuration
+    auth.ts               # Auth.js configuration (credentials + OAuth)
     data/mock-data.ts     # Original mock data (preserved)
     ai/                   # AI provider stubs + grounded provider
+      providers.ts        # Provider registry with user-level key resolution
+      openai-provider.ts  # OpenAI SDK (chat + embeddings)
+      anthropic-provider.ts # Anthropic SDK (chat)
+      gemini-provider.ts  # Google Gemini SDK (chat)
+      grounded-provider.ts # Template-based response generation (fallback)
+      prompts.ts          # Prompt templates for 6 modes
+      response-processor.ts # Citation parsing, validation, labelling
+      tool-prompts.ts     # Prompts for citation check and draft review
     services/             # Service layer
       data-service.ts     # Data access (CRUD)
       extraction-service.ts # Text extraction
       chunking-service.ts   # Text chunking
-      retrieval-service.ts  # Keyword retrieval
-      upload-service.ts     # File upload processing
+      retrieval-service.ts  # Hybrid retrieval
+      upload-service.ts     # Background file upload processing
+      storage-service.ts    # Cloud storage abstraction (local/S3)
+      apikey-service.ts     # Encrypted API key management
+      usage-service.ts      # Usage analytics and cost estimation
+      rate-limit-service.ts # In-memory AI rate limiting
+      embedding-service.ts  # Embedding generation and storage
     ingestion/            # File ingestion stubs
     retrieval/            # RAG stubs
   types/                  # Type declarations (next-auth)

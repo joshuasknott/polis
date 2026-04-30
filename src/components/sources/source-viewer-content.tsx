@@ -14,10 +14,13 @@ import {
   RefreshCw,
   Loader2,
   Sparkles,
+  StickyNote,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SourceViewerContentProps {
   source: {
@@ -239,6 +242,8 @@ export function SourceViewerContent({
         </div>
       )}
 
+      <SourceNotesSection sourceId={source.id} />
+
       <div className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -270,6 +275,133 @@ export function SourceViewerContent({
           Open Assistant
           <ExternalLink className="h-3.5 w-3.5" />
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function SourceNotesSection({ sourceId }: { sourceId: string }) {
+  const [notes, setNotes] = useState<Array<{ id: string; content: string; tags: string | null; createdAt: string }>>([]);
+  const [newNote, setNewNote] = useState("");
+  const [newTags, setNewTags] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/sources/${sourceId}/notes`)
+      .then((res) => res.json())
+      .then((data) => { if (Array.isArray(data)) setNotes(data); })
+      .catch(() => {});
+  }, [sourceId]);
+
+  async function addNote() {
+    if (!newNote.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/sources/${sourceId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newNote, tags: newTags || null }),
+      });
+      const note = await res.json();
+      if (res.ok) {
+        setNotes([note, ...notes]);
+        setNewNote("");
+        setNewTags("");
+        setShowForm(false);
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
+  }
+
+  async function deleteNote(noteId: string) {
+    try {
+      await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+      setNotes(notes.filter((n) => n.id !== noteId));
+    } catch {}
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <StickyNote className="h-4 w-4 text-accent" />
+          Notes ({notes.length})
+        </h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1 text-xs text-accent hover:underline"
+        >
+          <Plus className="h-3 w-3" />
+          Add Note
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mb-4 space-y-2 rounded-lg border border-border p-3">
+          <textarea
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm resize-y min-h-[80px]"
+            placeholder="Write your note about this source..."
+            autoFocus
+          />
+          <input
+            type="text"
+            value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            placeholder="Tags (comma-separated, optional)"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={addNote}
+              disabled={loading || !newNote.trim()}
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {loading ? "Saving..." : "Save Note"}
+            </button>
+            <button
+              onClick={() => { setShowForm(false); setNewNote(""); }}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-muted"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {notes.length === 0 && !showForm && (
+        <p className="text-sm text-muted-foreground">No notes yet. Add notes to capture your thoughts about this source.</p>
+      )}
+
+      <div className="space-y-2">
+        {notes.map((note) => (
+          <div key={note.id} className="rounded-lg border border-border p-3 group">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm text-muted-foreground flex-1 whitespace-pre-wrap">{note.content}</p>
+              <button
+                onClick={() => deleteNote(note.id)}
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-600"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {note.tags && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {note.tags.split(",").map((tag: string) => (
+                  <span key={tag} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    {tag.trim()}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {new Date(note.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

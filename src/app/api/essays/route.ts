@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
         const essay = await updateEssay(session.user.id, essayId, data);
         return NextResponse.json(essay);
       }
+      case "updateDraft": {
+        const { essayId, draftContent } = body;
+        const essay = await updateEssay(session.user.id, essayId, { draftContent } as { draftContent: string });
+        return NextResponse.json(essay);
+      }
       case "createSection": {
         const { essayId, ...data } = body;
         const section = await createEssaySection(session.user.id, essayId, data);

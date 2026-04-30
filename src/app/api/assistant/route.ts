@@ -9,6 +9,7 @@ import {
   createConversation,
   getConversationById,
 } from "@/lib/services/data-service";
+import { checkRateLimit, recordUsage } from "@/lib/services/rate-limit-service";
 import type { AIMode, AIScope } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -24,6 +25,14 @@ export async function POST(req: NextRequest) {
 
     if (!query || typeof query !== "string") {
       return NextResponse.json({ error: "Query required" }, { status: 400 });
+    }
+
+    const rateLimit = checkRateLimit(session.user.id, 2000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.reason, retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000) },
+        { status: 429 }
+      );
     }
 
     const aiMode: AIMode = mode || "source_grounded";
@@ -56,7 +65,8 @@ export async function POST(req: NextRequest) {
     let response;
 
     if (useLLM) {
-      response = await generateLLMResponse(query, aiMode, chunks, conversationHistory);
+      response = await generateLLMResponse(query, aiMode, chunks, conversationHistory, session.user.id);
+      recordUsage(session.user.id, response.estimatedTokens || 1500);
     } else {
       response = generateRetrievalAwareResponse({
         query,
@@ -90,6 +100,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       conversationId: convId,
       aiPowered: useLLM,
+      rateLimit: { remaining: rateLimit.remaining.requests, tokensRemaining: rateLimit.remaining.tokens },
       ...response,
     });
   } catch (error) {
@@ -111,7 +122,8 @@ async function generateLLMResponse(
     score: number;
     citationLabel: string;
   }>,
-  history: Array<{ role: "user" | "assistant"; content: string }>
+  history: Array<{ role: "user" | "assistant"; content: string }>,
+  userId: string
 ) {
   const contextChunks = chunks.map(
     (c) => `From "${c.sourceTitle}" by ${c.sourceAuthors} (${c.sourceYear}):\n${c.text}`
@@ -141,7 +153,11 @@ async function generateLLMResponse(
   const llmResponse = await chat(messages, {
     temperature: mode === "brainstorm" ? 0.7 : 0.3,
     maxTokens: 2048,
+    userId,
   });
 
-  return processLLMResponse(llmResponse.content, chunks);
+  return {
+    ...processLLMResponse(llmResponse.content, chunks),
+    estimatedTokens: llmResponse.usage.totalTokens,
+  };
 }

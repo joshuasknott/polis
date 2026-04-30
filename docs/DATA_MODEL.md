@@ -185,35 +185,75 @@ DraftReview {
 ```
 AIProviderConnection {
   id: string
+  userId: string → User
   provider: string
+  encryptedApiKey: string (AES-256-GCM encrypted)
   status: "connected" | "disconnected" | "error"
   modelPreference: string
   createdAt: string
+  updatedAt: string
+}
+```
+
+### UsageLog (Phase 3)
+```
+UsageLog {
+  id: string
+  userId: string → User
+  provider: string
+  model: string
+  type: "chat" | "embedding"
+  tokensIn: number
+  tokensOut: number
+  costEstimate: number
+  createdAt: string
+}
+```
+
+### SourceNote (Phase 3)
+```
+SourceNote {
+  id: string
+  userId: string → User
+  sourceId: string → Source
+  content: string
+  tags: string (comma-separated)
+  createdAt: string
+  updatedAt: string
 }
 ```
 
 ## Relationships
 
 ```
-User 1→* Workspace
-Workspace 1→* Module
+User 1→* Module
+User 1→* Source
+User 1→* Essay
+User 1→* Conversation
+User 1→* AIProviderConnection
+User 1→* UsageLog
+User 1→* SourceNote
 Module 1→* Folder
-Module 1→* SourceFile
-Module 1→* EssayProject
-Module 1→* AIConversation
-Folder 1→* SourceFile (optional grouping)
-SourceFile 1→* SourceChunk
-SourceFile 1→* SourceNote
-AIConversation 1→* AIMessage
-AIMessage *→* SourceChunk (via CitedChunk)
-EssayProject *→* SourceFile (selected sources)
+Module 1→* Source
+Module 1→* Essay
+Module 1→* Conversation
+Folder 1→* Source (optional grouping)
+Source 1→* SourceChunk
+Source 1→* SourceNote
+Essay 1→* EssaySection
+Essay 1→* EvidenceItem
+EssaySection 1→* EvidenceItem
+EvidenceItem *→1 Source (optional)
+EvidenceItem *→1 SourceChunk (optional)
+Conversation 1→* ConversationMessage
+AIProviderConnection *→1 User (unique per provider)
 ```
 
-## Future Backend Notes
+## Database Implementation
 
-- **Database**: PostgreSQL via Prisma or Drizzle ORM
-- **File storage**: S3-compatible object storage for uploaded files
-- **Vector store**: pgvector extension or dedicated vector database (Pinecone, Weaviate)
-- **Search**: Full-text search via PostgreSQL or Meilisearch
-- **Auth**: NextAuth.js or Clerk
-- **Caching**: Redis for session data and frequent queries
+- **Engine**: PostgreSQL via Prisma 7 with @prisma/adapter-pg
+- **Schema**: `prisma/schema.prisma` (17 models)
+- **Vector search**: pgvector extension with HNSW index
+- **File storage**: Local filesystem or S3-compatible (configurable)
+- **Auth**: Auth.js v5 with JWT sessions, credentials + OAuth
+- **Encryption**: AES-256-GCM for user API keys
