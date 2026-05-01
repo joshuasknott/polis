@@ -1,4 +1,15 @@
-import type { RetrievalResultItem } from "../services/retrieval-service";
+export interface RetrievalResultItem {
+  chunkId: string;
+  sourceId: string;
+  sourceTitle: string;
+  sourceAuthors: string;
+  sourceYear: number;
+  text: string;
+  score: number;
+  semanticScore?: number;
+  keywordScore?: number;
+  citationLabel: string;
+}
 
 export interface GroundedResponseConfig {
   query: string;

@@ -2,8 +2,42 @@ import "server-only";
 import { openaiChat, isOpenAIConfigured, openaiEmbed, openaiEmbedBatch } from "./openai-provider";
 import { anthropicChat, isAnthropicConfigured } from "./anthropic-provider";
 import { geminiChat, isGeminiConfigured } from "./gemini-provider";
-import { getDecryptedApiKey, getModelPreference } from "@/lib/services/apikey-service";
-import { logUsage } from "@/lib/services/usage-service";
+import { convexServer, api } from "@/lib/convex-server";
+import { decrypt } from "@/lib/crypto";
+
+const PRICING: Record<string, { inputPerMillion: number; outputPerMillion: number }> = {
+  "gpt-4o": { inputPerMillion: 2.50, outputPerMillion: 10.00 },
+  "gpt-4o-mini": { inputPerMillion: 0.15, outputPerMillion: 0.60 },
+  "gpt-4.1": { inputPerMillion: 2.00, outputPerMillion: 8.00 },
+  "gpt-4.1-mini": { inputPerMillion: 0.40, outputPerMillion: 1.60 },
+  "gpt-4.1-nano": { inputPerMillion: 0.10, outputPerMillion: 0.40 },
+  "claude-sonnet-4-20250514": { inputPerMillion: 3.00, outputPerMillion: 15.00 },
+  "claude-3-5-haiku-latest": { inputPerMillion: 0.80, outputPerMillion: 4.00 },
+  "gemini-2.5-pro": { inputPerMillion: 1.25, outputPerMillion: 10.00 },
+  "gemini-2.5-flash": { inputPerMillion: 0.15, outputPerMillion: 0.60 },
+};
+
+async function getDecryptedApiKey(userId: string, provider: string): Promise<string | null> {
+  const conn = await convexServer.query(api.aiProviders.getByProvider, { userId, provider });
+  if (!conn?.encryptedApiKey || conn.status !== "connected") return null;
+  try { return decrypt(conn.encryptedApiKey); } catch { return null; }
+}
+
+async function getModelPreference(userId: string, provider: string): Promise<string | null> {
+  const conn = await convexServer.query(api.aiProviders.getByProvider, { userId, provider });
+  return conn?.modelPreference || null;
+}
+
+function estimateCost(model: string, tokensIn: number, tokensOut: number): number {
+  const pricing = PRICING[model];
+  if (!pricing) return 0;
+  return (tokensIn / 1_000_000) * pricing.inputPerMillion + (tokensOut / 1_000_000) * pricing.outputPerMillion;
+}
+
+async function logUsage(params: { userId: string; provider: string; model: string; type: "chat" | "embedding"; tokensIn: number; tokensOut: number }): Promise<void> {
+  const costEstimate = estimateCost(params.model, params.tokensIn, params.tokensOut);
+  await convexServer.mutation(api.usage.log, { ...params, costEstimate }).catch(() => {});
+}
 
 export interface AIProviderConfig {
   id: string;
@@ -66,6 +100,13 @@ export function isAIConfigured(): boolean {
   if (provider === "anthropic") return isAnthropicConfigured();
   if (provider === "google") return isGeminiConfigured();
   return false;
+}
+
+export async function isAIConfiguredForUser(userId?: string): Promise<boolean> {
+  if (isAIConfigured()) return true;
+  if (!userId) return false;
+  const provider = getActiveProviderId();
+  return !!(await getDecryptedApiKey(userId, provider));
 }
 
 export function getProviderStatus(): {

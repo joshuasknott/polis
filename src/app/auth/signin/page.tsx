@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { createAuthClient } from "better-auth/react";
 import { GraduationCap } from "lucide-react";
+
+const authClient = createAuthClient();
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -15,13 +18,12 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      const result = await authClient.signIn.email({
+        email,
+        password,
       });
 
-      if (!res.ok) {
+      if (result.error) {
         setError("Invalid email or password");
         return;
       }
@@ -34,9 +36,15 @@ export default function SignInPage() {
     }
   }
 
-  function handleOAuthLogin(provider: string) {
-    window.location.href = `/api/auth/callback/${provider}`;
+  function handleOAuthLogin(provider: "github" | "google") {
+    authClient.signIn.social({
+      provider,
+      callbackURL: "/dashboard",
+    });
   }
+
+  const githubEnabled = !!process.env.NEXT_PUBLIC_GITHUB_ENABLED;
+  const googleEnabled = !!process.env.NEXT_PUBLIC_GOOGLE_ENABLED;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -53,7 +61,7 @@ export default function SignInPage() {
           </p>
 
           <div className="space-y-3 mb-4">
-            {process.env.NEXT_PUBLIC_GITHUB_ENABLED && (
+            {githubEnabled && (
               <button
                 onClick={() => handleOAuthLogin("github")}
                 className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
@@ -62,7 +70,7 @@ export default function SignInPage() {
                 Continue with GitHub
               </button>
             )}
-            {process.env.NEXT_PUBLIC_GOOGLE_ENABLED && (
+            {googleEnabled && (
               <button
                 onClick={() => handleOAuthLogin("google")}
                 className="w-full flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
@@ -73,7 +81,7 @@ export default function SignInPage() {
             )}
           </div>
 
-          {(process.env.NEXT_PUBLIC_GITHUB_ENABLED || process.env.NEXT_PUBLIC_GOOGLE_ENABLED) && (
+          {(githubEnabled || googleEnabled) && (
             <div className="relative mb-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />

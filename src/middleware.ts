@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const SESSION_COOKIE = "authjs.session-token";
+const SESSION_COOKIE = "better-auth.session_token";
 
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

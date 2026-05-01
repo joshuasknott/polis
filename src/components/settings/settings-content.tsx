@@ -145,7 +145,7 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
           name,
           university,
           course,
-          yearOfStudy: yearOfStudy ? parseInt(yearOfStudy) : null,
+          ...(yearOfStudy ? { yearOfStudy: parseInt(yearOfStudy) } : {}),
         }),
       });
       const data = await res.json();
@@ -700,8 +700,8 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
         </h2>
         <div className="mt-4 space-y-2">
           {[
-            { label: "Database (PostgreSQL + Prisma)", enabled: true },
-            { label: "Authentication (Auth.js + OAuth)", enabled: true },
+            { label: "Database (Convex)", enabled: true },
+            { label: "Authentication (Better Auth + OAuth)", enabled: true },
             { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: true },
             { label: "Text Extraction", enabled: true },
             { label: "Source Chunking", enabled: true },

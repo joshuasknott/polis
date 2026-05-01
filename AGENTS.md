@@ -12,15 +12,15 @@ SocialSciencr is a coursework intelligence workspace for social science students
 
 ## Current Status
 
-Phase 3: Production platform with per-user AI keys, OAuth, background processing, cloud storage, usage analytics, rate limiting, draft editor, source notes, mobile-responsive design, Google Gemini provider, and pgvector indexing. See `docs/PHASE_3_IMPLEMENTATION.md` for details.
+Phase 3: Production platform with Convex data storage, Better Auth, per-user AI keys, OAuth, background processing, usage analytics, rate limiting, draft editor, source notes, mobile-responsive design, Google Gemini provider, and Convex vector indexing. See `docs/PHASE_3_IMPLEMENTATION.md` for details.
 
 ## Tech Stack
 
 - Next.js 16 App Router (TypeScript)
 - React 19
 - Tailwind CSS v4 (CSS-first config via `@theme` in globals.css — NO tailwind.config.js)
-- PostgreSQL + Prisma 7 (with @prisma/adapter-pg)
-- Auth.js v5 (credentials + OAuth, JWT sessions)
+- Convex backend and vector search
+- Better Auth (credentials + OAuth)
 - lucide-react for icons
 - pdf-parse and mammoth for text extraction
 - @google/generative-ai for Google Gemini
@@ -30,23 +30,21 @@ Phase 3: Production platform with per-user AI keys, OAuth, background processing
 
 ```bash
 npm run dev          # Start dev server (Turbopack)
-npm run build        # Prisma generate + production build (run before considering work done)
+npm run build        # Production build (run before considering work done)
 npm run lint         # ESLint check
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema to database
-npm run db:migrate   # Create and apply migrations
-npm run db:seed      # Seed demo data
-npm run db:studio    # Prisma Studio GUI
+npm run seed         # Seed demo data into Convex
+npx convex dev       # Start/sync Convex during development
 ```
 
 ## Architecture
 
 - **Pages**: Server components that fetch data via service layer, pass to client components
-- **Service Layer**: `src/lib/services/` — data-service, extraction-service, chunking-service, retrieval-service, upload-service, storage-service, apikey-service, usage-service, rate-limit-service
+- **Convex Backend**: `convex/` — schema, auth adapter CRUD, modules, sources, chunks, essays, notes, usage, AI provider connections
+- **Service Layer**: `src/lib/services/` — extraction-service, chunking-service, rate-limit-service
 - **API Routes**: `src/app/api/` — upload, assistant, essays, auth, settings (api-keys, profile, usage), sources, notes, tools
-- **Auth**: Auth.js v5 with credentials + OAuth (GitHub, Google), JWT sessions, middleware protection
-- **Database**: Prisma 7 with PostgreSQL via adapter-pg, schema at `prisma/schema.prisma`
-- **Mock Data**: Preserved at `src/lib/data/mock-data.ts` for reference; real data via DB
+- **Auth**: Better Auth with credentials + OAuth (GitHub, Google), middleware protection
+- **Database**: Convex schema at `convex/schema.ts`
+- **Mock Data**: Preserved at `src/lib/data/mock-data.ts` for reference; real data via Convex
 
 ## Coding Standards
 
@@ -57,7 +55,7 @@ npm run db:studio    # Prisma Studio GUI
 - Clean imports: React hooks first, then libraries, then local modules
 - Types in `src/lib/types.ts`, mock data in `src/lib/data/mock-data.ts`
 - Utility functions in `src/lib/utils.ts`
-- Database services in `src/lib/services/`
+- Convex functions in `convex/` for data access
 - Components in `src/components/` organised by feature
 - Server components for data fetching, client components for interactivity
 - All database queries must be scoped to the current user
@@ -91,7 +89,7 @@ npm run db:studio    # Prisma Studio GUI
 
 When making significant changes, update the relevant docs:
 - New features → update `docs/ROADMAP.md` and `docs/MVP_SCOPE.md`
-- Data model changes → update `docs/DATA_MODEL.md`, `prisma/schema.prisma`, and `src/lib/types.ts`
+- Data model changes → update `docs/DATA_MODEL.md`, `convex/schema.ts`, and `src/lib/types.ts`
 - Architecture changes → update `docs/RAG_ARCHITECTURE.md` or `docs/AI_PROVIDER_STRATEGY.md`
 - UX changes → update `docs/UX_FLOW.md`
 - Phase changes → update `docs/PHASE_1_IMPLEMENTATION.md`
@@ -103,7 +101,7 @@ src/
   app/                    # Next.js App Router pages
     api/                  # API routes
       assistant/          # Assistant endpoint
-      auth/               # Auth.js routes
+      auth/               # Better Auth routes
       essays/             # Essay CRUD
       sources/upload/     # File upload
     auth/signin/          # Sign-in page
@@ -128,8 +126,8 @@ src/
     types.ts              # TypeScript type definitions
     utils.ts              # Utility functions
     crypto.ts             # AES-256-GCM encryption for API keys
-    db.ts                 # Prisma client singleton
-    auth.ts               # Auth.js configuration (credentials + OAuth)
+    convex-server.ts      # Convex server client wrapper
+    auth.ts               # Better Auth configuration (credentials + OAuth)
     data/mock-data.ts     # Original mock data (preserved)
     ai/                   # AI provider stubs + grounded provider
       providers.ts        # Provider registry with user-level key resolution
@@ -144,18 +142,17 @@ src/
       data-service.ts     # Data access (CRUD)
       extraction-service.ts # Text extraction
       chunking-service.ts   # Text chunking
-      retrieval-service.ts  # Hybrid retrieval
-      upload-service.ts     # Background file upload processing
-      storage-service.ts    # Cloud storage abstraction (local/S3)
-      apikey-service.ts     # Encrypted API key management
-      usage-service.ts      # Usage analytics and cost estimation
       rate-limit-service.ts # In-memory AI rate limiting
-      embedding-service.ts  # Embedding generation and storage
-    ingestion/            # File ingestion stubs
-    retrieval/            # RAG stubs
-  types/                  # Type declarations (next-auth)
-prisma/
-  schema.prisma           # Database schema
+convex/
+  schema.ts               # Convex database schema
   seed.ts                 # Demo data seed
 docs/                     # Product documentation
 ```
+
+<!-- convex-ai-start -->
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+<!-- convex-ai-end -->

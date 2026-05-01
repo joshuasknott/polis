@@ -1,28 +1,20 @@
 import { auth } from "@/lib/auth";
-import {
-  getEssaysByModule,
-  getEssayById,
-  createEssay,
-  updateEssay,
-  createEssaySection,
-  updateEssaySection,
-  addEvidenceItem,
-  removeEvidenceItem,
-} from "@/lib/services/data-service";
+import { convexServer, api } from "@/lib/convex-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id;
 
   const { searchParams } = new URL(req.url);
   const essayId = searchParams.get("id");
   const moduleId = searchParams.get("moduleId");
 
   if (essayId) {
-    const essay = await getEssayById(session.user.id, essayId);
+    const essay = await convexServer.query(api.essays.getById, { userId, essayId });
     if (!essay) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -30,7 +22,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (moduleId) {
-    const essays = await getEssaysByModule(session.user.id, moduleId);
+    const essays = await convexServer.query(api.essays.getByModuleId, { userId, moduleId });
     return NextResponse.json(essays);
   }
 
@@ -38,10 +30,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id;
 
   const body = await req.json();
   const { action } = body;
@@ -49,37 +42,38 @@ export async function POST(req: NextRequest) {
   try {
     switch (action) {
       case "create": {
-        const essay = await createEssay(session.user.id, body);
+        const { action: _, ...data } = body;
+        const essay = await convexServer.mutation(api.essays.create, { userId, ...data });
         return NextResponse.json(essay, { status: 201 });
       }
       case "update": {
-        const { essayId, ...data } = body;
-        const essay = await updateEssay(session.user.id, essayId, data);
+        const { action: _, essayId, ...data } = body;
+        const essay = await convexServer.mutation(api.essays.update, { userId, essayId, ...data });
         return NextResponse.json(essay);
       }
       case "updateDraft": {
-        const { essayId, draftContent } = body;
-        const essay = await updateEssay(session.user.id, essayId, { draftContent } as { draftContent: string });
+        const { action: _, essayId, draftContent } = body;
+        const essay = await convexServer.mutation(api.essays.update, { userId, essayId, draftContent });
         return NextResponse.json(essay);
       }
       case "createSection": {
-        const { essayId, ...data } = body;
-        const section = await createEssaySection(session.user.id, essayId, data);
+        const { action: _, essayId, ...data } = body;
+        const section = await convexServer.mutation(api.essays.createSection, { userId, essayId, ...data });
         return NextResponse.json(section, { status: 201 });
       }
       case "updateSection": {
-        const { sectionId, ...data } = body;
-        const section = await updateEssaySection(sectionId, data);
+        const { action: _, sectionId, ...data } = body;
+        const section = await convexServer.mutation(api.essays.updateSection, { userId, sectionId, ...data });
         return NextResponse.json(section);
       }
       case "addEvidence": {
-        const { essayId, ...data } = body;
-        const evidence = await addEvidenceItem(session.user.id, essayId, data);
+        const { action: _, essayId, ...data } = body;
+        const evidence = await convexServer.mutation(api.essays.addEvidence, { userId, essayId, ...data });
         return NextResponse.json(evidence, { status: 201 });
       }
       case "removeEvidence": {
-        const { evidenceItemId } = body;
-        await removeEvidenceItem(evidenceItemId);
+        const { action: _, evidenceItemId } = body;
+        await convexServer.mutation(api.essays.removeEvidence, { userId, evidenceId: evidenceItemId });
         return NextResponse.json({ success: true });
       }
       default:

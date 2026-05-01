@@ -1,4 +1,4 @@
-import type { RetrievalResultItem } from "@/lib/services/retrieval-service";
+import type { RetrievalResultItem } from "./grounded-provider";
 import type { GroundedResponse } from "./grounded-provider";
 
 export interface CitationRef {

@@ -1,59 +1,54 @@
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { SettingsContent } from "@/components/settings/settings-content";
 import { getProviderStatus } from "@/lib/ai/providers";
-import { getUserProviderConnections } from "@/lib/services/apikey-service";
-import { prisma } from "@/lib/db";
+import { convexServer, api } from "@/lib/convex-server";
+
+function parsePreferences(preferences?: string) {
+  if (!preferences) return {};
+  try {
+    return JSON.parse(preferences) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) redirect("/auth/signin");
 
+  const userId = session.user.id;
   const providerStatus = getProviderStatus();
-  const connections = await getUserProviderConnections(session.user.id);
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      name: true,
-      email: true,
-      university: true,
-      course: true,
-      yearOfStudy: true,
-      preferences: true,
-      passwordHash: true,
-    },
-  });
-
-  const accounts = await prisma.account.findMany({
-    where: { userId: session.user.id },
-    select: { provider: true },
-  });
+  const [connections, profile, linkedProviders] = await Promise.all([
+    convexServer.query(api.aiProviders.getByUserId, { userId }),
+    convexServer.query(api.users.getProfile, { userId }),
+    convexServer.query(api.users.getLinkedProviders, { userId }),
+  ]);
 
   return (
     <AppShell user={session.user}>
       <SettingsContent
         user={{
-          name: user?.name || session.user.name || "",
-          email: user?.email || session.user.email || "",
-          university: user?.university || "",
-          course: user?.course || "",
-          yearOfStudy: user?.yearOfStudy || null,
+          name: profile?.name || session.user.name || "",
+          email: profile?.email || session.user.email || "",
+          university: profile?.university || "",
+          course: profile?.course || "",
+          yearOfStudy: profile?.yearOfStudy ?? null,
         }}
-        preferences={user?.preferences as Record<string, string> || {}}
+        preferences={parsePreferences(profile?.preferences)}
         aiConfigured={providerStatus.configured}
         providerName={providerStatus.provider}
         modelName={providerStatus.model}
         hasEmbeddings={providerStatus.hasEmbeddings}
-        connections={connections.map((c) => ({
-          provider: c.provider,
-          status: c.status,
-          modelPreference: c.modelPreference,
+        connections={connections.map((c: any) => ({
+          provider: c.provider as string,
+          status: c.status || "disconnected",
+          modelPreference: c.modelPreference ?? null,
           hasKey: !!c.encryptedApiKey,
         }))}
-        linkedProviders={accounts.map((a) => a.provider)}
-        hasPassword={!!user?.passwordHash}
+        linkedProviders={linkedProviders.map((a) => a.provider)}
+        hasPassword={profile?.hasPassword ?? false}
       />
     </AppShell>
   );

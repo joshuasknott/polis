@@ -80,7 +80,7 @@ export function Sidebar({
           <BookOpen className="h-4 w-4" />
           <span className="truncate">{user?.name || "Student"}</span>
         </Link>
-        <form action="/api/auth/signout" method="POST" className="mt-1">
+        <form action="/api/auth/sign-out" method="POST" className="mt-1">
           <button
             type="submit"
             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"

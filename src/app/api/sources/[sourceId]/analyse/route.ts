@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
-import { getSourceById, updateSourceAnalysis } from "@/lib/services/data-service";
-import { chat, isAIConfigured } from "@/lib/ai/providers";
+import { convexServer, api } from "@/lib/convex-server";
+import { chat, isAIConfiguredForUser } from "@/lib/ai/providers";
 import { NextRequest, NextResponse } from "next/server";
 
 const ANALYSIS_PROMPT = `You are an academic source analysis assistant. Analyse the provided source text and generate:
@@ -26,12 +26,13 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> }
 ) {
-  const session = await auth();
+  const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id;
 
-  if (!isAIConfigured()) {
+  if (!(await isAIConfiguredForUser(userId))) {
     return NextResponse.json(
       { error: "AI provider not configured. Set OPENAI_API_KEY in .env" },
       { status: 400 }
@@ -39,7 +40,7 @@ export async function POST(
   }
 
   const { sourceId } = await params;
-  const source = await getSourceById(session.user.id, sourceId);
+  const source = await convexServer.query(api.sources.getById, { userId, sourceId });
 
   if (!source) {
     return NextResponse.json({ error: "Source not found" }, { status: 404 });
@@ -63,7 +64,7 @@ export async function POST(
           content: `Analyse this source titled "${source.title}" by ${source.authors} (${source.year}):\n\n${textToAnalyse}`,
         },
       ],
-      { temperature: 0.2, maxTokens: 1024 }
+      { temperature: 0.2, maxTokens: 1024, userId }
     );
 
     let analysis;
@@ -80,7 +81,9 @@ export async function POST(
       };
     }
 
-    await updateSourceAnalysis(sourceId, {
+    await convexServer.mutation(api.sources.updateAnalysis, {
+      userId,
+      sourceId,
       summary: analysis.summary || "",
       keyArguments: analysis.keyArguments || "",
       concepts: analysis.concepts || "",
