@@ -1,4 +1,11 @@
 export type SourceType =
+  | "reading"
+  | "lecture"
+  | "assessment"
+  | "feedback"
+  | "note"
+  | "link"
+  | "other"
   | "journal_article"
   | "book_chapter"
   | "lecture_slides"
@@ -11,7 +18,49 @@ export type SourceType =
   | "report"
   | "news_article";
 
-export type ProcessingStatus = "processed" | "processing" | "needs_review" | "failed";
+export type ProcessingStatus = "unprocessed" | "processing" | "processed" | "needs_review" | "failed";
+
+export type SourceRelevance = "low" | "medium" | "high" | "unknown";
+
+export type WorkspaceStage = "setup" | "sources" | "knowledge" | "context" | "plan" | "draft" | "final";
+
+export type PolisSection = "overview" | "sources" | "knowledge" | "context" | "plan" | "draft" | "final";
+
+export type KnowledgePageType =
+  | "source_brief"
+  | "concept"
+  | "theory"
+  | "author"
+  | "case"
+  | "debate"
+  | "comparison"
+  | "contradiction"
+  | "synthesis"
+  | "essay_pack";
+
+export type DraftStatus = "rough" | "revised" | "final";
+
+export type AssignmentType =
+  | "essay"
+  | "research_project"
+  | "literature_review"
+  | "briefing"
+  | "exam"
+  | "quiz"
+  | "presentation"
+  | "other";
+
+export type AssignmentStatus = "detected" | "approved" | "active" | "archived" | "dismissed";
+
+export type SourceRelevanceType =
+  | "core"
+  | "supporting"
+  | "opposing"
+  | "theoretical"
+  | "empirical_case"
+  | "methodological"
+  | "background"
+  | "not_relevant";
 
 export type AIMode =
   | "source_grounded"
@@ -73,11 +122,26 @@ export interface Module {
   id: string;
   workspaceId: string;
   title: string;
+  name?: string;
   code: string;
+  moduleCode?: string;
   academicYear: string;
   semester: string;
   description: string;
+  assessmentTitle?: string;
+  assessmentQuestion?: string;
+  deadline?: string;
+  targetGrade?: string;
+  referencingStyle?: string;
+  currentStage?: WorkspaceStage;
   sourceCount: number;
+  processedSourceCount?: number;
+  knowledgePageCount?: number;
+  contextPackCount?: number;
+  hasPlan?: boolean;
+  planStatus?: string;
+  hasDraft?: boolean;
+  draftStatus?: DraftStatus | string;
   noteCount: number;
   essayProjectCount: number;
   lastActivityAt: string;
@@ -97,14 +161,20 @@ export interface Folder {
 export interface SourceFile {
   id: string;
   moduleId: string;
-  folderId: string;
+  folderId?: string;
   title: string;
   author: string;
+  authors?: string;
   year: number;
   type: SourceType;
   status: ProcessingStatus;
+  relevance?: SourceRelevance;
   tags: string[];
   citation: string;
+  fileUrl?: string;
+  storagePath?: string;
+  extractedText?: string;
+  rawText?: string;
   pageCount: number;
   uploadedAt: string;
   summary: string;
@@ -266,4 +336,169 @@ export interface QuickAction {
   description: string;
   href: string;
   icon: string;
+}
+
+export interface KnowledgePage {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  title: string;
+  type: KnowledgePageType;
+  content: string;
+  linkedSourceIds: string[];
+  linkedPageIds: string[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContextPack {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  assignmentId?: string | null;
+  title: string;
+  assessmentQuestion: string;
+  selectedSourceIds: string[];
+  selectedKnowledgePageIds: string[];
+  markingCriteria: string;
+  workingThesis: string;
+  keyClaims: string[];
+  keyQuotes: string[];
+  caseStudies: string[];
+  missingEvidence: string[];
+  draftingInstructions: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlanSection {
+  id: string;
+  title: string;
+  purpose: string;
+  claim: string;
+  evidenceSourceIds: string[];
+  knowledgePageIds: string[];
+  counterargument: string;
+  evaluation: string;
+  wordCount: number;
+  notes: string;
+}
+
+export interface Plan {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  assignmentId?: string | null;
+  contextPackId: string;
+  title: string;
+  thesis: string;
+  sections: PlanSection[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Draft {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  assignmentId?: string | null;
+  contextPackId: string;
+  planId: string;
+  title: string;
+  content: string;
+  status: DraftStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RevisionTask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface Feedback {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  draftId: string;
+  assignmentId?: string | null;
+  content: string;
+  revisionTasks: RevisionTask[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Assignment {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  title: string;
+  type: AssignmentType;
+  questionOrBrief: string;
+  weighting: string;
+  dueDate: string;
+  wordCount: number;
+  status: AssignmentStatus;
+  markingCriteriaSummary: string;
+  detectedFromSourceIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModuleProfile {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  summary: string;
+  keyThemes: string[];
+  keyConcepts: string[];
+  keyTheories: string[];
+  keyCases: string[];
+  assessmentSummary: string;
+  importantReadings: string[];
+  academicExpectations: string;
+  updatedAt: string;
+}
+
+export interface AssignmentSourceRelevance {
+  id: string;
+  userId?: string;
+  assignmentId: string;
+  moduleId: string;
+  sourceId: string;
+  relevanceType: SourceRelevanceType;
+  relevanceNote: string;
+  usefulEvidence: string;
+  usefulQuotes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ExternalSourceType = "book" | "journal_article" | "report" | "dataset" | "lecture_resource" | "website" | "other";
+
+export type ExternalRecommendationUse = "core" | "supporting" | "opposing" | "theoretical" | "empirical_case" | "methodological" | "background";
+
+export type ExternalRecommendationStatus = "suggested" | "saved" | "dismissed" | "imported";
+
+export interface ExternalSourceRecommendation {
+  id: string;
+  userId?: string;
+  moduleId: string;
+  assignmentId?: string | null;
+  title: string;
+  authors: string;
+  year: number | null;
+  sourceType: ExternalSourceType;
+  whyUseful: string;
+  recommendedUse: ExternalRecommendationUse;
+  searchQuery: string;
+  possibleCitation: string;
+  url: string;
+  publisherOrJournal: string;
+  confidence: string;
+  status: ExternalRecommendationStatus;
+  createdAt: string;
+  updatedAt: string;
 }

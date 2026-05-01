@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { SourceLibraryContent } from "@/components/sources/source-library-content";
 import { convexServer, api } from "@/lib/convex-server";
+import { normalizeSourceStatus } from "@/lib/polis/status";
 
 export default async function SourcesPage() {
   const session = await getSession();
@@ -25,7 +26,7 @@ export default async function SourcesPage() {
           author: s.authors || "",
           year: s.year || 2026,
           type: s.type as "journal_article",
-          status: s.status === "ready" ? "processed" : s.status === "error" ? "failed" : "processing",
+          status: normalizeSourceStatus(s.status, s.processingStatus),
           tags: s.concepts ? s.concepts.split(",").map((c: string) => c.trim()) : [],
           citation: `${s.authors} (${s.year})`,
           pageCount: Math.max(1, Math.ceil((s.wordCount || 0) / 300)),

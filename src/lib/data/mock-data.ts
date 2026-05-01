@@ -679,7 +679,7 @@ const mockGaps: ResearchGap[] = [
 ];
 
 export const mockEssayProject: EssayProject = {
-  id: "essay_01",
+  id: "legacy_mock_essay",
   moduleId: "mod_02",
   title: "Majoritarianism vs Consensus Democracy",
   question:
@@ -775,12 +775,12 @@ export const mockTools: AcademicTool[] = [
   },
   {
     id: "evidence_bank",
-    title: "Evidence Bank",
-    description: "Extract and organise key evidence, quotes, and data points from your sources by theme or argument.",
+    title: "Context Pack Builder",
+    description: "Select and organise the sources, claims, quotes, and gaps that matter for one assessment.",
     inputType: "Selected sources or folder",
-    outputType: "Organised evidence collection with citations",
+    outputType: "Assessment context pack",
     icon: "Database",
-    academicIntegrityNote: "Evidence banks help organise source material. All quotes must be properly cited in final work.",
+    academicIntegrityNote: "Context packs organise source material. All quotes must be verified and properly cited in final work.",
   },
   {
     id: "argument_map",

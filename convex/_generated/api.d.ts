@@ -9,13 +9,22 @@
  */
 
 import type * as aiProviders from "../aiProviders.js";
+import type * as assignmentSourceRelevance from "../assignmentSourceRelevance.js";
+import type * as assignments from "../assignments.js";
 import type * as auth from "../auth.js";
 import type * as authCrud from "../authCrud.js";
+import type * as contextPacks from "../contextPacks.js";
 import type * as conversations from "../conversations.js";
+import type * as drafts from "../drafts.js";
 import type * as essays from "../essays.js";
+import type * as externalSourceRecommendations from "../externalSourceRecommendations.js";
+import type * as feedback from "../feedback.js";
 import type * as folders from "../folders.js";
+import type * as knowledgePages from "../knowledgePages.js";
+import type * as moduleProfiles from "../moduleProfiles.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
+import type * as plans from "../plans.js";
 import type * as seed from "../seed.js";
 import type * as serverAuth from "../serverAuth.js";
 import type * as sourceChunks from "../sourceChunks.js";
@@ -31,13 +40,22 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   aiProviders: typeof aiProviders;
+  assignmentSourceRelevance: typeof assignmentSourceRelevance;
+  assignments: typeof assignments;
   auth: typeof auth;
   authCrud: typeof authCrud;
+  contextPacks: typeof contextPacks;
   conversations: typeof conversations;
+  drafts: typeof drafts;
   essays: typeof essays;
+  externalSourceRecommendations: typeof externalSourceRecommendations;
+  feedback: typeof feedback;
   folders: typeof folders;
+  knowledgePages: typeof knowledgePages;
+  moduleProfiles: typeof moduleProfiles;
   modules: typeof modules;
   notes: typeof notes;
+  plans: typeof plans;
   seed: typeof seed;
   serverAuth: typeof serverAuth;
   sourceChunks: typeof sourceChunks;

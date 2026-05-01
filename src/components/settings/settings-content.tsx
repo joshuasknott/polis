@@ -42,7 +42,7 @@ interface SettingsContentProps {
   hasPassword: boolean;
 }
 
-type SettingsTab = "profile" | "ai" | "connections" | "academic" | "features";
+type SettingsTab = "profile" | "ai" | "connections" | "academic" | "features" | "integrations";
 
 export function SettingsContent({
   user,
@@ -63,6 +63,7 @@ export function SettingsContent({
     { id: "ai", label: "AI Layer", icon: <Zap className="h-4 w-4" /> },
     { id: "academic", label: "Academic", icon: <Shield className="h-4 w-4" /> },
     { id: "features", label: "Features", icon: <Database className="h-4 w-4" /> },
+    { id: "integrations", label: "Integrations", icon: <FolderOpen className="h-4 w-4" /> },
   ];
 
   return (
@@ -105,6 +106,9 @@ export function SettingsContent({
       )}
       {activeTab === "features" && (
         <FeatureStatusSection aiConfigured={aiConfigured} hasEmbeddings={hasEmbeddings} />
+      )}
+      {activeTab === "integrations" && (
+        <IntegrationsSection />
       )}
     </div>
   );
@@ -754,6 +758,101 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             <div key={folder} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
               <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
               {folder}
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function IntegrationsSection() {
+  const [codexEnabled, setCodexEnabled] = useState(false);
+  const [codexConnectionMode, setCodexConnectionMode] = useState("placeholder");
+  const [codexNotes, setCodexNotes] = useState("");
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-card p-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+            <Brain className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">Codex Experimental</h2>
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">Experimental</span>
+            </div>
+            <p className="text-xs text-muted-foreground">OpenAI Codex integration surface</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-xs text-amber-800">
+            This is an experimental integration surface for future coding, review, and repository-linked workflows.
+            It is not required for core coursework functionality and is not currently used for essay or content generation.
+            No code execution, file access, or background tasks are performed through this integration.
+          </p>
+        </div>
+
+        <div className="mt-4 space-y-4">
+          <label className="flex items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={codexEnabled}
+              onChange={(e) => setCodexEnabled(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span>Enable Codex experimental surface</span>
+          </label>
+
+          {codexEnabled && (
+            <div className="space-y-3 rounded-lg border border-border p-4">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Connection mode</label>
+                <select
+                  value={codexConnectionMode}
+                  onChange={(e) => setCodexConnectionMode(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  disabled
+                >
+                  <option value="placeholder">Not connected (placeholder)</option>
+                  <option value="chatgpt" disabled>ChatGPT sign-in</option>
+                  <option value="cli" disabled>Local CLI</option>
+                  <option value="cloud" disabled>Cloud SDK</option>
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">Connection modes are placeholders. No active connection is made.</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Notes</label>
+                <textarea
+                  value={codexNotes}
+                  onChange={(e) => setCodexNotes(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  placeholder="Notes about intended use or configuration (stored locally only)"
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="text-sm font-semibold">Future integrations</h2>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Additional integrations may be added in future phases. These are not currently wired.
+        </p>
+        <div className="mt-4 space-y-2">
+          {[
+            { name: "Zotero / reference manager", status: "Planned" },
+            { name: "Google Scholar search", status: "Planned" },
+            { name: "University library API", status: "Planned" },
+          ].map((integration) => (
+            <div key={integration.name} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+              <span className="text-sm">{integration.name}</span>
+              <span className="text-xs text-muted-foreground">{integration.status}</span>
             </div>
           ))}
         </div>

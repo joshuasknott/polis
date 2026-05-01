@@ -1,4 +1,14 @@
-# SocialSciencr — MVP Scope
+# Polis — MVP Scope
+
+## Current MVP Direction
+
+Polis is now a module-first academic knowledge base and writing system for Politics and International Relations coursework.
+
+Implemented MVP flow:
+
+Raw Sources → Knowledge Pages → Context Pack → Plan → Draft → Final
+
+The legacy SocialSciencr scope below is retained as historical context. Current product work should prioritise the six-section module workspace, source upload/extraction, Knowledge Pages, Context Packs, Plans, Drafts, Feedback, and final revision/export.
 
 ## Phase 0: Static Prototype (Current)
 

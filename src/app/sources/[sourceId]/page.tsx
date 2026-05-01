@@ -20,6 +20,11 @@ export default async function SourcePage({
 
   if (!source) notFound();
 
+  const activeContextPack = await convexServer.query(api.contextPacks.getActive, {
+    userId: session.user.id,
+    moduleId: source.moduleId,
+  });
+
   return (
     <AppShell user={session.user}>
       <SourceViewerContent
@@ -28,12 +33,13 @@ export default async function SourcePage({
           moduleId: source.moduleId as string,
           folderId: source.folderId || "",
           title: source.title as string,
-          author: source.authors || "",
+          author: (source as any).author || source.authors || "Unknown",
           year: source.year || 2026,
           type: source.type as string,
-          status: source.status === "ready" ? "processed" : source.status === "error" ? "failed" : "processing",
-          tags: (source as any).concepts ? (source as any).concepts.split(",").map((c: string) => c.trim()) : [],
-          citation: `${source.authors} (${source.year})`,
+          status: source.status as string,
+          relevance: (source as any).relevance || "unknown",
+          tags: (source as any).tags || ((source as any).concepts ? (source as any).concepts.split(",").map((c: string) => c.trim()) : []),
+          citation: (source as any).citation || `${(source as any).author || source.authors || "Unknown"} (${source.year || new Date().getFullYear()})`,
           pageCount: Math.max(1, Math.ceil((source.wordCount || 0) / 300)),
           uploadedAt: new Date(source._creationTime).toISOString(),
           summary: (source as any).summary || "",
@@ -49,6 +55,8 @@ export default async function SourcePage({
           text: c.text as string,
           chunkIndex: c.chunkIndex as number,
         }))}
+        linkedKnowledgePages={(source as any).linkedKnowledgePages || []}
+        activeContextPack={activeContextPack}
       />
     </AppShell>
   );

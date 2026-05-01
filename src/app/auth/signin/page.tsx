@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createAuthClient } from "better-auth/react";
-import { GraduationCap } from "lucide-react";
+import { Landmark } from "lucide-react";
 
 const authClient = createAuthClient();
 
@@ -50,8 +50,8 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <GraduationCap className="h-8 w-8 text-accent" />
-          <span className="text-2xl font-bold tracking-tight">SocialSciencr</span>
+          <Landmark className="h-8 w-8 text-accent" />
+          <span className="text-2xl font-bold tracking-tight">Polis</span>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
@@ -137,7 +137,7 @@ export default function SignInPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          SocialSciencr Academic Workspace
+          Personal academic knowledge base
         </p>
       </div>
     </div>

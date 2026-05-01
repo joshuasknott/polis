@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SocialSciencr — Coursework Intelligence Workspace",
+  title: "Polis — Academic Knowledge Base",
   description:
-    "Turn scattered readings into structured arguments. Source-grounded AI for social science students.",
+    "Build module knowledge. Plan with context. Draft from evidence.",
 };
 
 export default function RootLayout({

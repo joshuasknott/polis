@@ -9,7 +9,6 @@ import {
   Shield,
   Loader2,
   Zap,
-  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,26 +117,6 @@ export function AssistantContent({
     }
   }
 
-  async function handleAddToEvidence(chunk: ChatMessage["citedChunks"][0]) {
-    try {
-      await fetch("/api/essays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "addEvidence",
-          essayId: "essay_01",
-          sourceId: chunk.sourceId,
-          sourceChunkId: chunk.chunkId,
-          claim: chunk.quote.slice(0, 200),
-          evidenceText: chunk.quote,
-          citation: chunk.pageRange,
-        }),
-      });
-    } catch {
-      // Silently fail — evidence add is non-critical
-    }
-  }
-
   function startNewConversation() {
     setMessages([]);
     setConversationId(null);
@@ -146,9 +125,9 @@ export function AssistantContent({
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">AI Assistant</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Contextual Assistant</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ask questions about your modules and sources. Answers are source-grounded.
+          Ask source-grounded questions when you need clarification. Structured work belongs in Sources, Knowledge, Plan, Draft, and Final.
         </p>
       </div>
 
@@ -255,7 +234,7 @@ export function AssistantContent({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-medium">
-                  {message.role === "user" ? "You" : "SocialSciencr"}
+                  {message.role === "user" ? "You" : "Polis"}
                 </span>
                 {message.role === "assistant" && message.labels.length > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
@@ -281,13 +260,6 @@ export function AssistantContent({
                       <p className="mt-1 text-xs text-blue-900 italic">
                         &ldquo;{chunk.quote}&rdquo;
                       </p>
-                      <button
-                        onClick={() => handleAddToEvidence(chunk)}
-                        className="mt-2 inline-flex items-center gap-1 rounded border border-blue-300 bg-blue-100 px-2 py-1 text-xs text-blue-700 hover:bg-blue-200 transition-colors"
-                      >
-                        <FileText className="h-3 w-3" />
-                        Add to Evidence Bank
-                      </button>
                     </div>
                   ))}
                 </div>

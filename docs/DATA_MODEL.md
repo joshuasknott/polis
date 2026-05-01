@@ -1,259 +1,65 @@
-# SocialSciencr — Data Model
+# Polis — Data Model
+
+Polis is now organised around the academic workflow:
+
+Raw Sources → Compiled Knowledge Base → Essay Context Pack → Plan → Draft → Final
 
 ## Core Entities
 
-### User
-```
-User {
-  id: string
-  name: string
-  email: string
-  university: string
-  course: string
-  yearOfStudy: number
-  createdAt: string
-}
-```
+### Module / Workspace
+The existing `modules` table remains the internal workspace table for migration safety.
 
-### Workspace
-```
-Workspace {
-  id: string
-  ownerId: string
-  name: string
-  description: string
-}
-```
-A workspace is a top-level container. Each user has at least one personal workspace.
+Fields now support module identity plus assessment focus: `userId`, `name`, `moduleCode`, `description`, `assessmentTitle`, `assessmentQuestion`, `deadline`, `targetGrade`, `referencingStyle`, `currentStage`, `createdAt`, and `updatedAt`.
 
-### Module
-```
-Module {
-  id: string
-  workspaceId: string → Workspace
-  title: string
-  code: string
-  academicYear: string
-  semester: string
-  description: string
-  sourceCount: number
-  noteCount: number
-  essayProjectCount: number
-  lastActivityAt: string
-  color: string
-}
-```
-Maps to a university module (e.g., "International Security" / PIRR30041).
+`currentStage` values: `setup`, `sources`, `knowledge`, `context`, `plan`, `draft`, `final`.
 
-### Folder
-```
-Folder {
-  id: string
-  moduleId: string → Module
-  parentFolderId: string | null → Folder
-  name: string
-  type: FolderType
-  sortOrder: number
-  sourceCount: number
-}
-```
-Default folders per module: Module Info, Readings, Lecture and Seminar Material, Source Notes, Essay Plans, Drafts and Feedback, Final Submission.
+### Source
+`sources` remains the raw material layer and keeps upload/extraction compatibility.
 
-### SourceFile
-```
-SourceFile {
-  id: string
-  moduleId: string → Module
-  folderId: string → Folder
-  title: string
-  author: string
-  year: number
-  type: SourceType
-  status: ProcessingStatus
-  tags: string[]
-  citation: string
-  pageCount: number
-  uploadedAt: string
-  summary: string
-  mainArgument: string
-  keyConcepts: string[]
-}
-```
-Represents an uploaded or linked source document.
+Sources support module ownership, metadata, processing status, relevance, citation, file/storage data, extracted text, summary fields, and tags. Folders may remain for legacy data, but they are not a core Polis navigation concept.
+
+Source types: `reading`, `lecture`, `assessment`, `feedback`, `note`, `link`, `other`.
+
+Source statuses shown in the UI: `unprocessed`, `processing`, `processed`, `failed`.
 
 ### SourceChunk
-```
-SourceChunk {
-  id: string
-  sourceId: string → SourceFile
-  text: string
-  pageStart: number
-  pageEnd: number
-  citationLabel: string
-}
-```
-A text segment extracted from a source for retrieval purposes.
+`sourceChunks` remain retrieval infrastructure for extracted source text and vector search. They are not the knowledge layer.
 
-### SourceNote
-```
-SourceNote {
-  id: string
-  sourceId: string → SourceFile
-  userId: string → User
-  content: string
-  createdAt: string
-  tags: string[]
-}
-```
-User-created notes attached to a source.
+### KnowledgePage
+`knowledgePages` is the compiled module knowledge layer.
 
-### AIConversation
-```
-AIConversation {
-  id: string
-  moduleId: string → Module
-  title: string
-  scope: AIScope
-  mode: AIMode
-  messages: AIMessage[]
-  createdAt: string
-}
-```
+Fields: `userId`, `moduleId`, `title`, `type`, `content`, `linkedSourceIds`, `linkedPageIds`, `tags`, `createdAt`, `updatedAt`.
 
-### AIMessage
-```
-AIMessage {
-  id: string
-  role: MessageRole
-  content: string
-  citedChunks: CitedChunk[]
-  warnings: string[]
-  labels: MessageLabel[]
-  followUpSuggestions: string[]
-  createdAt: string
-}
-```
+Types: `source_brief`, `concept`, `theory`, `author`, `case`, `debate`, `comparison`, `contradiction`, `synthesis`, `essay_pack`.
 
-### CitedChunk (embedded in AIMessage)
-```
-CitedChunk {
-  chunkId: string
-  sourceId: string → SourceFile
-  sourceTitle: string
-  quote: string
-  pageRange: string
-}
-```
+### ContextPack
+`contextPacks` is the selected knowledge bundle for one assessment.
 
-### EssayProject
-```
-EssayProject {
-  id: string
-  moduleId: string → Module
-  title: string
-  question: string
-  wordCount: number
-  dueDate: string
-  rubric: RubricCriterion[]
-  selectedSourceIds: string[]
-  thesis: string
-  status: EssayStatus
-  structure: EssaySection[]
-  evidenceBank: EvidenceItem[]
-  counterarguments: Counterargument[]
-  gaps: ResearchGap[]
-  draftContent: string
-}
-```
+Fields: `userId`, `moduleId`, `title`, `assessmentQuestion`, `selectedSourceIds`, `selectedKnowledgePageIds`, `markingCriteria`, `workingThesis`, `keyClaims`, `keyQuotes`, `caseStudies`, `missingEvidence`, `draftingInstructions`, `createdAt`, `updatedAt`.
 
-### DraftReview
-```
-DraftReview {
-  id: string
-  draftId: string
-  strengths: string[]
-  weaknesses: string[]
-  missingEvidence: string[]
-  unsupportedClaims: string[]
-  revisionPriorities: string[]
-  estimatedBandRisk: string
-  overallFeedback: string
-}
-```
+Context Packs are managed inside Plan, not as a top-level navigation item.
 
-### AIProviderConnection
-```
-AIProviderConnection {
-  id: string
-  userId: string → User
-  provider: string
-  encryptedApiKey: string (AES-256-GCM encrypted)
-  status: "connected" | "disconnected" | "error"
-  modelPreference: string
-  createdAt: string
-  updatedAt: string
-}
-```
+### Plan
+`plans` stores structured plans linked to a Context Pack.
 
-### UsageLog (Phase 3)
-```
-UsageLog {
-  id: string
-  userId: string → User
-  provider: string
-  model: string
-  type: "chat" | "embedding"
-  tokensIn: number
-  tokensOut: number
-  costEstimate: number
-  createdAt: string
-}
-```
+Fields: `userId`, `moduleId`, `contextPackId`, `title`, `thesis`, `sections`, `createdAt`, `updatedAt`.
 
-### SourceNote (Phase 3)
-```
-SourceNote {
-  id: string
-  userId: string → User
-  sourceId: string → Source
-  content: string
-  tags: string (comma-separated)
-  createdAt: string
-  updatedAt: string
-}
-```
+Each section supports `id`, `title`, `purpose`, `claim`, `evidenceSourceIds`, `knowledgePageIds`, `counterargument`, `evaluation`, `wordCount`, and `notes`.
 
-## Relationships
+### Draft
+`drafts` stores module drafts linked to a Context Pack and Plan.
 
-```
-User 1→* Module
-User 1→* Source
-User 1→* Essay
-User 1→* Conversation
-User 1→* AIProviderConnection
-User 1→* UsageLog
-User 1→* SourceNote
-Module 1→* Folder
-Module 1→* Source
-Module 1→* Essay
-Module 1→* Conversation
-Folder 1→* Source (optional grouping)
-Source 1→* SourceChunk
-Source 1→* SourceNote
-Essay 1→* EssaySection
-Essay 1→* EvidenceItem
-EssaySection 1→* EvidenceItem
-EvidenceItem *→1 Source (optional)
-EvidenceItem *→1 SourceChunk (optional)
-Conversation 1→* ConversationMessage
-AIProviderConnection *→1 User (unique per provider)
-```
+Fields: `userId`, `moduleId`, `contextPackId`, `planId`, `title`, `content`, `status`, `createdAt`, `updatedAt`.
 
-## Database Implementation
+Statuses: `rough`, `revised`, `final`.
 
-- **Engine**: PostgreSQL via Prisma 7 with @prisma/adapter-pg
-- **Schema**: `prisma/schema.prisma` (17 models)
-- **Vector search**: pgvector extension with HNSW index
-- **File storage**: Local filesystem or S3-compatible (configurable)
-- **Auth**: Auth.js v5 with JWT sessions, credentials + OAuth
-- **Encryption**: AES-256-GCM for user API keys
+### Feedback
+`feedback` stores draft-specific feedback and revision tasks.
+
+Fields: `userId`, `moduleId`, `draftId`, `content`, `revisionTasks`, `createdAt`, `updatedAt`.
+
+Tutor feedback can also be uploaded as a Source of type `feedback`; draft-specific revision work belongs in `feedback`.
+
+## Legacy Entities
+
+`folders`, `essays`, `essaySections`, `evidenceItems`, and global `conversations` remain for compatibility with older routes and data. They are not the primary Polis workflow.

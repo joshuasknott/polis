@@ -178,14 +178,14 @@ async function processInBackground(sourceId: string, title: string, userId: stri
 function inferSourceType(ext: string): string {
   switch (ext) {
     case ".pdf":
-      return "journal_article";
+      return "reading";
     case ".docx":
-      return "draft";
+      return "note";
     case ".txt":
     case ".md":
-      return "seminar_notes";
+      return "note";
     default:
-      return "report";
+      return "other";
   }
 }
 

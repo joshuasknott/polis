@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, GraduationCap } from "lucide-react";
+import { Menu, Landmark } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { Sidebar } from "./sidebar";
@@ -10,12 +10,12 @@ export function TopBar() {
     <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
       <div className="flex items-center gap-4">
         <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">
-          SocialSciencr Workspace
+          Build workspace knowledge. Plan with context. Draft from evidence.
         </h2>
       </div>
       <div className="flex items-center gap-3">
-        <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-          Database Connected
+        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+          Private workspace
         </span>
       </div>
     </header>
@@ -37,8 +37,8 @@ export function MobileNav({
     <div className="lg:hidden">
       <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-accent" />
-          <span className="font-semibold text-sm">SocialSciencr</span>
+          <Landmark className="h-5 w-5 text-accent" />
+          <span className="font-semibold text-sm">Polis</span>
         </Link>
         <button
           onClick={() => setOpen(!open)}

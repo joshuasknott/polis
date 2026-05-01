@@ -3,80 +3,88 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { convexServer, api } from "@/lib/convex-server";
+import { normalizeSourceStatus } from "@/lib/polis/status";
 
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session?.user?.id) redirect("/auth/signin");
 
   const userId = session.user.id;
-  const [modules, sources, conversations, deadlines] = await Promise.all([
-    convexServer.query(api.modules.getByUserId, { userId }),
-    convexServer.query(api.sources.getByUserId, { userId }),
-    convexServer.query(api.conversations.getByUserId, { userId }),
-    convexServer.query(api.essays.getUpcoming, { userId }),
-  ]);
+  const modules = await convexServer.query(api.modules.getByUserId, { userId });
+
+  const workspaces = await Promise.all(
+    modules.map(async (module: any) => {
+      const [sources, knowledgePages, contextPack] = await Promise.all([
+        convexServer.query(api.sources.getByModuleId, { userId, moduleId: module.id }),
+        convexServer.query(api.knowledgePages.listByModule, { userId, moduleId: module.id }),
+        convexServer.query(api.contextPacks.getActive, { userId, moduleId: module.id }),
+      ]);
+      const plan = await convexServer.query(api.plans.getCurrent, {
+        userId,
+        moduleId: module.id,
+        contextPackId: contextPack?.id,
+      });
+      const draft = await convexServer.query(api.drafts.getCurrent, {
+        userId,
+        moduleId: module.id,
+        planId: plan?.id,
+      });
+
+      return {
+        id: module.id as string,
+        workspaceId: module.id as string,
+        title: module.title as string,
+        name: module.name as string,
+        code: module.code as string,
+        moduleCode: module.moduleCode as string,
+        academicYear: module.academicYear || "",
+        semester: module.semester || "",
+        description: module.description || "",
+        assessmentTitle: module.assessmentTitle || "",
+        assessmentQuestion: module.assessmentQuestion || "",
+        deadline: module.deadline || "",
+        targetGrade: module.targetGrade || "",
+        referencingStyle: module.referencingStyle || "Harvard",
+        currentStage: module.currentStage || "setup",
+        sourceCount: sources.length,
+        processedSourceCount: sources.filter((source: any) => normalizeSourceStatus(source.status) === "processed").length,
+        knowledgePageCount: knowledgePages.length,
+        noteCount: 0,
+        essayProjectCount: 0,
+        lastActivityAt: module.updatedAt || new Date(module._creationTime).toISOString(),
+        color: module.colour || "#1e3a5f",
+        sources: sources.map((source: any) => ({
+          id: source.id as string,
+          moduleId: source.moduleId as string,
+          folderId: source.folderId || "",
+          title: source.title as string,
+          author: source.author || source.authors || "Unknown",
+          authors: source.authors || source.author || "Unknown",
+          year: source.year || new Date().getFullYear(),
+          type: source.type || "reading",
+          status: normalizeSourceStatus(source.status),
+          relevance: source.relevance || "unknown",
+          tags: source.tags || [],
+          citation: source.citation || "",
+          pageCount: Math.max(1, Math.ceil((source.wordCount || 0) / 300)),
+          uploadedAt: source.createdAt || new Date(source._creationTime).toISOString(),
+          summary: source.summary || "",
+          mainArgument: source.keyArguments || "",
+          keyConcepts: source.tags || [],
+        })),
+        knowledgePages,
+        contextPack,
+        plan,
+        draft,
+      };
+    }),
+  );
 
   return (
     <AppShell user={session.user}>
       <DashboardContent
-        user={{
-          id: session.user.id,
-          name: session.user.name || "Student",
-          email: session.user.email || "",
-          university: "",
-          course: "",
-          yearOfStudy: 0,
-          createdAt: new Date().toISOString(),
-        }}
-        modules={modules.map((m: any) => ({
-          id: m.id as string,
-          workspaceId: "",
-          title: m.title as string,
-          code: m.code as string,
-          academicYear: m.academicYear || "",
-          semester: m.semester || "",
-          description: m.description || "",
-          sourceCount: m._sourceCount,
-          noteCount: 0,
-          essayProjectCount: m._essayCount,
-          lastActivityAt: new Date(m._creationTime).toISOString(),
-          color: m.colour || "#1e3a5f",
-        }))}
-        sources={sources.map((s: any) => ({
-          id: s.id as string,
-          moduleId: s.moduleId as string,
-          folderId: s.folderId || "",
-          title: s.title as string,
-          author: s.authors || "",
-          year: s.year || 2026,
-          type: s.type as "journal_article",
-          status: s.status === "ready" ? "processed" : "processing",
-          tags: s.concepts ? s.concepts.split(",").map((c: string) => c.trim()) : [],
-          citation: `${s.authors} (${s.year})`,
-          pageCount: Math.max(1, Math.ceil((s.wordCount || 0) / 300)),
-          uploadedAt: new Date(s._creationTime).toISOString(),
-          summary: s.summary || "",
-          mainArgument: s.keyArguments || "",
-          keyConcepts: s.concepts ? s.concepts.split(",").map((c: string) => c.trim()) : [],
-        }))}
-        conversations={conversations.map((c) => ({
-          id: c.id,
-          moduleId: c.moduleId || "",
-          title: c.title,
-          scope: "whole_module" as const,
-          mode: c.mode as "source_grounded",
-          messages: [],
-          createdAt: new Date(c._creationTime).toISOString(),
-        }))}
-        deadlines={deadlines.map((d: any) => ({
-          id: d.id as string,
-          moduleId: d.moduleId as string,
-          title: d.title as string,
-          question: d.question || "",
-          wordCount: d.targetWordCount,
-          thesis: d.thesis || "",
-          status: d.status as string,
-        }))}
+        user={{ name: session.user.name || "Student" }}
+        workspaces={workspaces}
       />
     </AppShell>
   );

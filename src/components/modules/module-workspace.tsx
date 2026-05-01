@@ -54,7 +54,7 @@ const moduleTools = [
   { name: "Reading Summary", icon: BookOpen, href: "/tools" },
   { name: "Concept Extractor", icon: GraduationCap, href: "/tools" },
   { name: "Theory Comparison", icon: Wrench, href: "/tools" },
-  { name: "Evidence Bank", icon: FileText, href: "/tools" },
+  { name: "Plan", icon: FileText, href: "?section=plan" },
 ];
 
 export function ModuleWorkspace({

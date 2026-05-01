@@ -33,6 +33,13 @@ export function truncate(str: string, maxLength: number): string {
 export function getSourceTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     journal_article: "Journal Article",
+    reading: "Reading",
+    lecture: "Lecture",
+    assessment: "Assessment",
+    feedback: "Feedback",
+    note: "Note",
+    link: "Link",
+    other: "Other",
     book_chapter: "Book Chapter",
     book: "Book",
     lecture_slides: "Lecture Slides",
@@ -50,9 +57,12 @@ export function getSourceTypeLabel(type: string): string {
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     processed: "bg-green-100 text-green-800",
+    ready: "bg-green-100 text-green-800",
+    unprocessed: "bg-stone-100 text-stone-800",
     processing: "bg-blue-100 text-blue-800",
     needs_review: "bg-amber-100 text-amber-800",
     failed: "bg-red-100 text-red-800",
+    error: "bg-red-100 text-red-800",
   };
   return colors[status] || "bg-stone-100 text-stone-800";
 }
@@ -60,9 +70,12 @@ export function getStatusColor(status: string): string {
 export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     processed: "Processed",
+    ready: "Processed",
+    unprocessed: "Unprocessed",
     processing: "Processing",
     needs_review: "Needs Review",
     failed: "Failed",
+    error: "Failed",
   };
   return labels[status] || status;
 }
