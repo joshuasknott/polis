@@ -10,12 +10,12 @@ export function TopBar() {
     <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
       <div className="flex items-center gap-4">
         <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">
-          Build workspace knowledge. Plan with context. Draft from evidence.
+          Build module knowledge. Plan with context. Draft from evidence.
         </h2>
       </div>
       <div className="flex items-center gap-3">
         <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-          Private workspace
+          Private module
         </span>
       </div>
     </header>

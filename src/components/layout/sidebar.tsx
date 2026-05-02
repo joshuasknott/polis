@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Workspaces", href: "/dashboard", icon: LibraryBig },
+  { name: "Modules", href: "/dashboard", icon: LibraryBig },
 ];
 
 export function Sidebar({
@@ -77,14 +77,10 @@ export function Sidebar({
           <Settings className="h-4 w-4 shrink-0" />
           Settings
         </Link>
-        <Link
-          href="/settings"
-          onClick={onClose}
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
+        <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground">
           <Landmark className="h-4 w-4" />
           <span className="truncate">{user?.name || "Student"}</span>
-        </Link>
+        </div>
         <form action="/api/auth/sign-out" method="POST">
           <button
             type="submit"

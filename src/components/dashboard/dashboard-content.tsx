@@ -8,7 +8,7 @@ import { getPolisNextAction } from "@/lib/polis/next-action";
 import { normalizeSourceStatus, stageLabel } from "@/lib/polis/status";
 import type { ContextPack, Draft, KnowledgePage, Module, Plan, SourceFile, User } from "@/lib/types";
 
-interface WorkspaceCard extends Module {
+interface ModuleCard extends Module {
   sources: SourceFile[];
   knowledgePages: KnowledgePage[];
   contextPack: ContextPack | null;
@@ -18,7 +18,7 @@ interface WorkspaceCard extends Module {
 
 interface DashboardContentProps {
   user: Pick<User, "name">;
-  workspaces: WorkspaceCard[];
+  workspaces: ModuleCard[];
 }
 
 async function postPolis(action: string, payload: Record<string, unknown>) {
@@ -57,7 +57,7 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
       });
       router.push(`/modules/${result.id}?section=overview`);
     } catch (error) {
-      setCreateError(error instanceof Error ? error.message : "Failed to create workspace");
+      setCreateError(error instanceof Error ? error.message : "Failed to create module");
       setCreating(false);
     }
   }
@@ -65,12 +65,12 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
   return (
     <div className="max-w-6xl space-y-8">
       <header className="space-y-2">
-        <p className="text-sm font-medium text-accent">Workspaces</p>
+        <p className="text-sm font-medium text-accent">Modules</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Your workspaces</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Your modules</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {user.name ? `${user.name.split(" ")[0]}, ` : ""}each workspace is a source-aware knowledge base for one assessment workflow.
+              {user.name ? `${user.name.split(" ")[0]}, ` : ""}each module is a source-aware knowledge base for one assessment workflow.
             </p>
           </div>
           <button
@@ -78,7 +78,7 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
             className="inline-flex w-fit items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
-            Create workspace
+            Create module
           </button>
         </div>
       </header>
@@ -86,14 +86,14 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
       {showCreate && (
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">New workspace</h2>
+            <h2 className="text-lg font-semibold">New module</h2>
             <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Title *</label>
+              <label className="text-xs font-medium text-muted-foreground">Module title *</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -145,7 +145,7 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
               className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Create workspace
+              Create module
             </button>
             {createError && <span className="text-xs text-red-600">{createError}</span>}
           </div>
@@ -183,7 +183,7 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
                     {workspace.title}
                   </h2>
                   <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                    {workspace.assessmentQuestion || workspace.assessmentTitle || workspace.description || "Set an assessment question in the workspace overview."}
+                    {workspace.assessmentQuestion || workspace.assessmentTitle || workspace.description || "Set an assessment question in the module dashboard."}
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
@@ -227,16 +227,16 @@ export function DashboardContent({ user, workspaces }: DashboardContentProps) {
       {workspaces.length === 0 && !showCreate && (
         <div className="rounded-2xl border border-border bg-card p-12 text-center">
           <LibraryBig className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h2 className="mt-4 text-lg font-semibold">No workspaces yet</h2>
+          <h2 className="mt-4 text-lg font-semibold">Create your first module</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Create your first workspace to start organising module material and building coursework context.
+            Start by creating a module, then upload lectures, readings, assessment briefs, and notes.
           </p>
           <button
             onClick={() => setShowCreate(true)}
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
-            Create your first workspace
+            Create module
           </button>
         </div>
       )}

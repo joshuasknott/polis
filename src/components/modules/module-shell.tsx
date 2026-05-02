@@ -101,14 +101,22 @@ interface ModuleShellProps {
   activeAssignmentId: string | null;
 }
 
-const sections: Array<{ id: PolisSection; label: string }> = [
-  { id: "overview", label: "Overview" },
+const foundationSections: Array<{ id: PolisSection; label: string }> = [
+  { id: "overview", label: "Control Dashboard" },
   { id: "sources", label: "Sources" },
   { id: "knowledge", label: "Knowledge" },
+];
+
+const assignmentSections: Array<{ id: PolisSection; label: string }> = [
   { id: "context", label: "Context" },
   { id: "plan", label: "Plan" },
   { id: "draft", label: "Draft" },
   { id: "final", label: "Final" },
+];
+
+const sections: Array<{ id: PolisSection; label: string }> = [
+  ...foundationSections,
+  ...assignmentSections,
 ];
 
 async function postPolis(action: string, payload: Record<string, unknown>) {
@@ -168,6 +176,10 @@ export function ModuleShell({
       <div className="flex min-h-[calc(100vh-3.5rem)] flex-col lg:flex-row">
         <aside className="w-full shrink-0 border-b border-border bg-card lg:w-60 lg:border-b-0 lg:border-r">
           <div className="border-b border-border p-4">
+            <Link href="/dashboard" className="mb-2 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-accent">
+              <ChevronRight className="h-3 w-3 rotate-180" />
+              All modules
+            </Link>
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg text-xs font-bold text-white" style={{ backgroundColor: module.colour }}>
                 {module.code.slice(0, 3)}
@@ -178,8 +190,29 @@ export function ModuleShell({
               </div>
             </div>
           </div>
-          <nav className="flex gap-1 overflow-x-auto p-3 lg:block lg:space-y-1">
-            {sections.map((section) => (
+          <nav className="flex gap-1 overflow-x-auto p-3 lg:block lg:space-y-0.5">
+            <p className="hidden px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground lg:block">Foundation</p>
+            {foundationSections.map((section) => (
+              <Link
+                key={section.id}
+                href={`/modules/${module.id}?section=${section.id}`}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors lg:flex lg:items-center lg:justify-between",
+                  activeSection === section.id
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {section.label}
+                {activeSection === section.id && <ChevronRight className="hidden h-3.5 w-3.5 lg:block" />}
+              </Link>
+            ))}
+            <div className="hidden lg:block">
+              <div className="mx-3 my-2 border-t border-border" />
+              <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Assignment Workflow</p>
+            </div>
+            <div className="mx-1 h-6 border-l border-border lg:hidden" />
+            {assignmentSections.map((section) => (
               <Link
                 key={section.id}
                 href={`/modules/${module.id}?section=${section.id}${activeAssignmentId ? `&assignmentId=${activeAssignmentId}` : ""}`}
@@ -217,7 +250,7 @@ export function ModuleShell({
                 </div>
                 <h1 className="mt-3 text-2xl font-bold tracking-tight">{module.title}</h1>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {module.assessmentQuestion || module.assessmentTitle || "Set the assessment question so the workspace can focus sources, knowledge, and context for planning and drafting."}
+                  {module.assessmentQuestion || module.assessmentTitle || "Set the assessment question so Polis can focus sources, knowledge, and context for planning and drafting."}
                 </p>
               </div>
               <Link
@@ -463,10 +496,10 @@ function ModuleOverview({
 
   return (
     <div className="grid max-w-6xl gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-      <section className="space-y-6">
+      <section className="space-y-6" id="module-dashboard-main">
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Workspace details</h2>
+            <h2 className="text-sm font-semibold">Module details</h2>
             <button onClick={() => setProfileEditing(!profileEditing)} className="text-xs text-accent hover:underline">
               {profileEditing ? "Cancel" : "Edit"}
             </button>
@@ -476,13 +509,13 @@ function ModuleOverview({
               <span className="rounded-full bg-accent-muted px-2.5 py-0.5 text-xs font-medium text-accent">{module.code}</span>
               <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">{stageLabel(module.currentStage)}</span>
             </div>
-            <p className="text-sm text-muted-foreground">{module.description || "Add a description to help identify this workspace."}</p>
+            <p className="text-sm text-muted-foreground">{module.description || "Add a description to help identify this module."}</p>
           </div>
         </div>
 
         {sources.length === 0 && (
           <div className="rounded-2xl border-2 border-dashed border-accent/30 bg-accent/5 p-6">
-            <h2 className="text-sm font-semibold text-accent">Get started with this workspace</h2>
+            <h2 className="text-sm font-semibold text-accent">Get started with this module</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Follow these steps to build coursework context from your module material:
             </p>
@@ -520,7 +553,7 @@ function ModuleOverview({
 
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Module profile</h2>
+            <h2 className="text-sm font-semibold">Module Profile</h2>
             <div className="flex items-center gap-2">
               <button onClick={generateProfile} disabled={profileGenerating} className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline disabled:opacity-50">
                 {profileGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
@@ -600,11 +633,11 @@ function ModuleOverview({
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-sm font-semibold">Workspace settings</h2>
+          <h2 className="text-sm font-semibold">Module settings</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="text-xs font-medium text-muted-foreground">
               Title
-              <input value={workspaceTitle} onChange={(e) => setWorkspaceTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="Workspace title" />
+              <input value={workspaceTitle} onChange={(e) => setWorkspaceTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="Module title" />
             </label>
             <label className="text-xs font-medium text-muted-foreground">
               Assessment title
@@ -612,7 +645,7 @@ function ModuleOverview({
             </label>
             <label className="text-xs font-medium text-muted-foreground sm:col-span-2">
               Description
-              <textarea value={workspaceDescription} onChange={(e) => setWorkspaceDescription(e.target.value)} className="mt-1 min-h-16 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="Describe this workspace" />
+              <textarea value={workspaceDescription} onChange={(e) => setWorkspaceDescription(e.target.value)} className="mt-1 min-h-16 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" placeholder="Describe this module" />
             </label>
             <label className="text-xs font-medium text-muted-foreground sm:col-span-2">
               Assessment question
@@ -649,7 +682,7 @@ function ModuleOverview({
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-sm font-semibold">Next action</h2>
+          <h2 className="text-sm font-semibold">Recommended next step</h2>
           <p className="mt-3 text-lg font-medium">{nextAction.label}</p>
           <Link href={`/modules/${module.id}?section=${nextAction.section}`} className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline">
             Go to {sections.find((section) => section.id === nextAction.section)?.label}
@@ -747,7 +780,7 @@ function ModuleOverview({
           <StatCard label="Draft" value={draft ? draftStatusLabel(draft.status) : "Not started"} detail={plan ? "Plan available" : "Plan needed"} />
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-sm font-semibold">Workflow status</h2>
+          <h2 className="text-sm font-semibold">Module workflow</h2>
           <div className="mt-4 space-y-3">
             {[
               { label: "Sources", section: "sources" as PolisSection, done: sources.length > 0 },
@@ -917,13 +950,13 @@ function AssignmentDetail({
   const assignmentContextPacks = contextPacks.filter((cp) => cp.assignmentId === assignment.id);
   const hasContextPack = assignmentContextPacks.length > 0;
 
-  useState(() => {
-    setRelevanceLoading(true);
+  const [_initDone] = useState(() => {
     postPolis("listAssignmentSourceRelevance", { assignmentId: assignment.id })
       .then((data) => setRelevanceRecords(Array.isArray(data) ? data : []))
       .catch(() => setRelevanceRecords([]))
       .finally(() => setRelevanceLoading(false));
     loadRecommendations();
+    return true;
   });
 
   async function handleSave(data: Record<string, unknown>) {
@@ -1089,7 +1122,7 @@ function AssignmentDetail({
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <button onClick={onBack} className="mb-2 text-xs text-accent hover:underline">Back to overview</button>
+            <button onClick={onBack} className="mb-2 text-xs text-accent hover:underline">Back to module dashboard</button>
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">{assignmentTypeLabel(assignment.type)}</span>
               <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", assignmentStatusLabelClass(assignment.status))}>{assignment.status}</span>
@@ -1284,9 +1317,9 @@ function AssignmentDetail({
       <div className="rounded-2xl border border-border bg-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold">Recommended external sources</h3>
+            <h3 className="text-sm font-semibold">Suggested external leads</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              AI-suggested readings outside your uploaded sources. These are leads to search for, not imported sources.
+              AI-suggested readings outside your uploaded sources. Search your library for these leads. Citations may be approximate.
             </p>
           </div>
           <button
@@ -1375,7 +1408,7 @@ function AssignmentDetail({
           href={`/modules/${module.id}?section=overview`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline"
         >
-          Clear assignment / back to workspace
+          Clear assignment / back to module dashboard
         </Link>
       </div>
     </div>
@@ -1742,7 +1775,7 @@ function ModuleKnowledge({ module, sources, initialPages }: { module: PolisModul
             {sources.length === 0 ? (
               <>
                 <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Upload sources first, then create source briefs and concept pages from your readings.</p>
-                <Link href={`/modules/${module.id}?section=overview`} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">Add sources <ArrowRight className="h-3.5 w-3.5" /></Link>
+                <Link href={`/modules/${module.id}?section=sources`} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground">Add sources <ArrowRight className="h-3.5 w-3.5" /></Link>
               </>
             ) : (
               <>
@@ -1926,7 +1959,7 @@ function ModuleContext({
     } catch {}
   }
 
-  useState(() => { loadSavedRecommendations(); });
+  const [_recInitDone] = useState(() => { loadSavedRecommendations(); return true; });
 
   return (
     <div className="max-w-7xl space-y-6">
@@ -1968,7 +2001,7 @@ function ModuleContext({
       {!activeAssignment && assignments.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-xs text-amber-800">
-            Select an assignment from the Overview to build assignment-specific context packs. Module-level packs are shown below.
+            Select an assignment from the Control Dashboard to build assignment-specific context packs. Module-level packs are shown below.
           </p>
         </div>
       )}
@@ -2032,9 +2065,9 @@ function ModuleContext({
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold">Recommended external sources</h3>
+            <h3 className="text-sm font-semibold">Suggested external leads</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              {activeAssignment ? "Recommendations for this assignment." : "Recommendations for this workspace."} These are leads to search for, not uploaded sources.
+              {activeAssignment ? "Recommendations for this assignment." : "Recommendations for this module."} These are suggested leads to search for, not uploaded sources.
             </p>
           </div>
           <button
@@ -2090,14 +2123,14 @@ function ModuleContext({
           <h3 className="mt-3 text-sm font-semibold">No assignment selected</h3>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             {sources.length === 0
-              ? "Upload sources and set up an assignment in Overview first, then build a focused context pack."
-              : "Go to Overview and select an assignment to build a focused context pack. Or create a module-level pack above."}
+              ? "Upload sources and set up an assignment from the Control Dashboard first, then build a focused context pack."
+              : "Go to the Control Dashboard and select an assignment to build a focused context pack. Or create a module-level pack above."}
           </p>
           <Link
             href={`/modules/${module.id}?section=overview`}
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
           >
-            Go to Overview
+            Go to Control Dashboard
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </section>
