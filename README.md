@@ -1,4 +1,4 @@
-# SocialSciencr
+# Polis
 
 Coursework intelligence workspace for social science students.
 
