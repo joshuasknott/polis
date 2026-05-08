@@ -6,11 +6,11 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="flex flex-col items-center">
         <Image 
-          src="/brand/polis-logo.png" 
+          src="/brand/polis-wordmark.svg" 
           alt="Polis" 
           width={140} 
           height={40} 
-          className="object-contain mb-8" 
+          className="h-8 w-auto mb-8" 
           priority
         />
         <SignUp />

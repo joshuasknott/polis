@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Lora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "./convex-provider";
 import "./globals.css";
@@ -14,18 +14,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Polis — Coursework Intelligence Workspace",
   description:
     "Turn scattered readings into structured arguments. Source-grounded AI for social science students.",
   icons: {
-    icon: "/brand/polis-icon.png",
-    apple: "/brand/polis-icon.png",
+    icon: "/brand/polis-icon.svg",
+    apple: "/brand/polis-icon.svg",
   },
   openGraph: {
     images: [
       {
-        url: "/brand/polis-logo.png",
+        url: "/brand/polis-wordmark.svg",
       },
     ],
   },
@@ -40,7 +45,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">
           <ConvexClientProvider>{children}</ConvexClientProvider>
