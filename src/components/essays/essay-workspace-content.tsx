@@ -52,222 +52,199 @@ interface EssayWorkspaceContentProps {
 type Tab = "overview" | "structure" | "evidence" | "draft" | "tools";
 
 export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [activeTab, setActiveTab] = useState<"draft" | "overview" | "structure">("draft");
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  const mainTabs = [
+    { id: "draft", label: "Draft", icon: <Pencil className="h-4 w-4" /> },
     { id: "overview", label: "Overview", icon: <Target className="h-4 w-4" /> },
     { id: "structure", label: "Structure", icon: <FileText className="h-4 w-4" /> },
-    { id: "evidence", label: "Evidence", icon: <BookOpen className="h-4 w-4" /> },
-    { id: "draft", label: "Draft", icon: <Pencil className="h-4 w-4" /> },
-    { id: "tools", label: "AI Tools", icon: <ShieldCheck className="h-4 w-4" /> },
-  ];
+  ] as const;
 
   return (
-    <div className="max-w-5xl space-y-6">
-      <div>
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 max-w-full">
+      {/* Header */}
+      <div className="p-6 border-b border-border bg-card shrink-0 z-10 shadow-sm relative">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Dashboard
         </Link>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getEssayStatusColor(essay.status))}>
                 {getEssayStatusLabel(essay.status)}
               </span>
-              <span className="text-xs text-muted-foreground">{essay.moduleTitle}</span>
+              <span className="text-xs text-muted-foreground">{essay.moduleTitle} &middot; {essay.moduleCode}</span>
             </div>
-            <h1 className="text-xl font-bold">{essay.title}</h1>
+            <h1 className="text-2xl font-bold font-serif">{essay.title}</h1>
             {essay.question && (
-              <p className="mt-2 text-sm text-muted-foreground italic">&ldquo;{essay.question}&rdquo;</p>
+              <p className="mt-2 text-sm text-muted-foreground italic font-serif">&ldquo;{essay.question}&rdquo;</p>
             )}
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <FileText className="h-3.5 w-3.5" />
-            {essay.wordCount} words target
-          </span>
-          <span className="flex items-center gap-1">
-            <BookOpen className="h-3.5 w-3.5" />
-            {essay.evidence.length} evidence items
-          </span>
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 rounded-lg border border-border font-medium">
+              <FileText className="h-4 w-4 text-accent" />
+              {essay.wordCount} words target
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-border overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
-              activeTab === tab.id
-                ? "border-accent text-accent"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === "overview" && (
-        <div className="space-y-6">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Target className="h-4 w-4 text-accent" />
-              Thesis
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              {essay.thesis || "No thesis defined yet. Edit your essay to add a thesis statement."}
-            </p>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Pane: Main Workspace (Draft/Structure) */}
+        <div className="flex-1 flex flex-col border-r border-border overflow-hidden bg-background">
+          <div className="flex gap-1 border-b border-border px-6 pt-2 bg-muted/10 shrink-0">
+            {mainTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+                  activeTab === tab.id
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                )}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold mb-3">Essay Sections ({essay.sections.length})</h2>
-            <div className="space-y-2">
-              {essay.sections.map((section) => (
-                <div key={section.id} className="rounded-lg border border-border bg-card p-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{section.heading}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{section.purpose}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-accent shrink-0 ml-4">{section.wordAllocation}w</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === "structure" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Proposed essay structure. Total: {essay.sections.reduce((sum, s) => sum + s.wordAllocation, 0)} words.
-          </p>
-          {essay.sections.map((section, index) => (
-            <div key={section.id} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-muted text-xs font-bold text-accent">
-                    {index + 1}
-                  </span>
-                  <h3 className="text-sm font-semibold">{section.heading}</h3>
-                </div>
-                <span className="text-xs text-muted-foreground">{section.wordAllocation} words</span>
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            {activeTab === "draft" && (
+              <div className="h-full flex flex-col">
+                <DraftEditor essay={essay} />
               </div>
-              {section.purpose && (
-                <p className="mt-2 text-xs text-muted-foreground">{section.purpose}</p>
-              )}
-              <ul className="mt-3 space-y-1.5">
-                {section.points.map((point: string, i: number) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <ChevronRight className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                    {point}
-                  </li>
+            )}
+
+            {activeTab === "overview" && (
+              <div className="p-8 max-w-3xl mx-auto space-y-8">
+                <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-accent" />
+                    Working Thesis
+                  </h2>
+                  <p className="font-serif text-[15px] leading-relaxed text-foreground">
+                    {essay.thesis || "No thesis defined yet. Edit your essay settings to add a thesis statement."}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "structure" && (
+              <div className="p-8 max-w-3xl mx-auto space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Essay Outline</h2>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    Total: {essay.sections.reduce((sum, s) => sum + s.wordAllocation, 0)} words
+                  </p>
+                </div>
+                {essay.sections.map((section, index) => (
+                  <div key={section.id} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent mt-0.5">
+                          {index + 1}
+                        </span>
+                        <div>
+                          <h3 className="text-base font-bold font-serif">{section.heading}</h3>
+                          {section.purpose && (
+                            <p className="mt-1 text-sm text-muted-foreground">{section.purpose}</p>
+                          )}
+                          <ul className="mt-4 space-y-2">
+                            {section.points.map((point: string, i: number) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                                <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+                                {point}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                        {section.wordAllocation} w
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            </div>
-          ))}
-          {essay.sections.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <p className="text-sm text-muted-foreground">No sections defined yet.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "evidence" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {essay.evidence.length} evidence items from your sources
-          </p>
-          {essay.evidence.map((evidence) => (
-            <div key={evidence.id} className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-3.5 w-3.5 text-source" />
-                    <span className="text-xs font-medium text-source">{evidence.sourceTitle}</span>
-                    <span className="text-xs text-muted-foreground">{evidence.pageRange}</span>
+                {essay.sections.length === 0 && (
+                  <div className="rounded-xl border border-border bg-card p-12 text-center border-dashed">
+                    <p className="text-sm text-muted-foreground">No structural sections defined yet.</p>
                   </div>
-                  <p className="text-sm font-medium mb-1">{evidence.claim}</p>
-                  {evidence.quote && (
-                    <blockquote className="text-sm italic text-muted-foreground border-l-2 border-source/20 pl-3">
-                      &ldquo;{evidence.quote}&rdquo;
-                    </blockquote>
-                  )}
-                  {evidence.argumentUse && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      <span className="font-medium">Use:</span> {evidence.argumentUse}
-                    </p>
-                  )}
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Pane: Evidence & Tools */}
+        <div className="w-[420px] shrink-0 flex flex-col border-l border-border bg-muted/20">
+          <div className="p-4 border-b border-border bg-muted/30">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-source" />
+              Evidence Bank ({essay.evidence.length})
+            </h2>
+          </div>
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+            {essay.evidence.map((evidence) => (
+              <div key={evidence.id} className="rounded-xl border border-source/20 bg-card p-4 shadow-sm group hover:border-source/40 transition-colors cursor-grab active:cursor-grabbing">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="inline-flex items-center rounded-md bg-source/10 px-2 py-0.5 text-[10px] font-bold text-source uppercase tracking-wider">
+                    Evidence
+                  </span>
+                  <span className="text-xs font-medium text-muted-foreground truncate flex-1">{evidence.sourceTitle}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{evidence.pageRange}</span>
+                </div>
+                <p className="text-sm font-semibold mb-2 leading-snug">{evidence.claim}</p>
+                {evidence.quote && (
+                  <blockquote className="text-[13px] font-serif italic text-muted-foreground border-l-2 border-source/30 pl-3 py-0.5">
+                    &ldquo;{evidence.quote}&rdquo;
+                  </blockquote>
+                )}
+                <div className="mt-3 pt-3 border-t border-border/50 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="text-[11px] font-medium text-source hover:underline inline-flex items-center gap-1">
+                    <ArrowLeft className="h-3 w-3" /> Insert Citation
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
-          {essay.evidence.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-8 text-center">
-              <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No evidence items yet.</p>
-              <p className="text-xs text-muted-foreground mt-1">Add evidence from your sources to build your argument.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "draft" && (
-        <DraftEditor essay={essay} />
-      )}
-
-      {activeTab === "tools" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            AI-powered tools to help strengthen your essay. These tools analyse and suggest — they do not write for you.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck className="h-5 w-5 text-success" />
-                <h3 className="text-sm font-semibold">Citation Safety Check</h3>
+            ))}
+            {essay.evidence.length === 0 && (
+              <div className="text-center py-12">
+                <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-20" />
+                <p className="text-sm text-muted-foreground">No evidence added yet.</p>
+                <p className="text-[11px] text-muted-foreground/70 mt-1">Browse your sources and save evidence here to use in your draft.</p>
               </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Check your draft for claims that lack proper citation support. Identifies supported, weakly supported, and unsupported claims.
-              </p>
+            )}
+          </div>
+          
+          <div className="p-4 border-t border-border bg-card">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-interpretation" />
+              AI Review Tools
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
               <Link
                 href="/tools"
-                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 p-3 text-center hover:bg-muted hover:border-muted-foreground/30 transition-all"
               >
-                Run Citation Check
+                <ShieldCheck className="h-4 w-4 text-success" />
+                <span className="text-[11px] font-semibold text-muted-foreground">Citation Check</span>
               </Link>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <MessageSquareText className="h-5 w-5 text-interpretation" />
-                <h3 className="text-sm font-semibold">Draft Review</h3>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Get structured feedback on your draft including strengths, weaknesses, missing evidence, and revision priorities.
-              </p>
               <Link
                 href="/tools"
-                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
+                className="flex flex-col items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 p-3 text-center hover:bg-muted hover:border-muted-foreground/30 transition-all"
               >
-                Review Draft
+                <MessageSquareText className="h-4 w-4 text-interpretation" />
+                <span className="text-[11px] font-semibold text-muted-foreground">Review Draft</span>
               </Link>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -276,9 +253,6 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
   const [content, setContent] = useState(essay.draftContent || "");
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [reviewResult, setReviewResult] = useState<string | null>(null);
-  const [citationResult, setCitationResult] = useState<string | null>(null);
-  const [toolLoading, setToolLoading] = useState<string | null>(null);
 
   const words = wordCount(content);
 
@@ -288,97 +262,38 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
     setSaving(false);
   }, []);
 
-  async function runCitationCheck() {
-    if (!content.trim()) return;
-    setToolLoading("citation");
-    setCitationResult(null);
-    setCitationResult("Citation checking is paused while the backend foundation migrates to Convex.");
-    setToolLoading(null);
-  }
-
-  async function runDraftReview() {
-    if (!content.trim()) return;
-    setToolLoading("review");
-    setReviewResult(null);
-    setReviewResult("Draft review is paused while the backend foundation migrates to Convex.");
-    setToolLoading(null);
-  }
-
   return (
-    <div className="space-y-4">
-      {(essay.question || essay.thesis) && (
-        <div className="rounded-lg border border-source/20 bg-source/10 p-3 text-sm">
-          {essay.question && (
-            <p><span className="font-medium text-source">Question:</span> <span className="text-source/80 italic">&ldquo;{essay.question}&rdquo;</span></p>
-          )}
-          {essay.thesis && (
-            <p className="mt-1"><span className="font-medium text-source">Thesis:</span> <span className="text-source/80">{essay.thesis}</span></p>
-          )}
+    <div className="flex flex-col h-full bg-background relative">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-6 py-3">
+        <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground">
+          <span className={cn(words > essay.wordCount ? "text-warning" : "")}>
+            {words} / {essay.wordCount} words
+          </span>
+          {saving ? (
+            <span className="text-source flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin"/> Saving...</span>
+          ) : lastSaved ? (
+            <span>Saved at {lastSaved}</span>
+          ) : null}
         </div>
-      )}
-
-      <div className="rounded-xl border border-border bg-card">
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span>{words} words</span>
-            <span>Target: {essay.wordCount}</span>
-            {saving && <span className="text-source">Saving...</span>}
-            {lastSaved && !saving && <span>Saved at {lastSaved}</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={saveDraft}
-              disabled={saving}
-              className="rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full min-h-[400px] p-4 text-sm leading-relaxed bg-transparent resize-y focus:outline-none"
-          placeholder="Start writing your draft here...&#10;&#10;This editor is for YOUR writing only. AI tools can analyse and provide feedback, but will never generate text for you."
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
         <button
-          onClick={runCitationCheck}
-          disabled={toolLoading !== null || !content.trim()}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+          onClick={saveDraft}
+          disabled={saving}
+          className="rounded-md border border-border bg-card px-3 py-1 text-xs font-semibold hover:bg-muted transition-colors disabled:opacity-50"
         >
-          {toolLoading === "citation" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-          Run Citation Check
-        </button>
-        <button
-          onClick={runDraftReview}
-          disabled={toolLoading !== null || !content.trim()}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
-        >
-          {toolLoading === "review" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquareText className="h-3.5 w-3.5" />}
-          Run Draft Review
+          Save Draft
         </button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Academic integrity: This is your own writing space. AI tools only analyse and provide feedback — they never generate text.
-      </p>
-
-      {citationResult && (
-        <div className="rounded-xl border border-success/20 bg-success/10 p-4">
-          <h3 className="text-sm font-semibold text-success mb-2">Citation Check Results</h3>
-          <div className="text-sm text-success whitespace-pre-wrap">{citationResult}</div>
+      <div className="flex-1 overflow-y-auto scrollbar-thin flex justify-center py-12 px-6">
+        <div className="w-full max-w-3xl">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="w-full min-h-[600px] text-[17px] font-serif leading-[2] bg-transparent resize-y focus:outline-none placeholder:font-sans placeholder:text-muted-foreground/40 text-foreground/90"
+            placeholder="Begin writing your draft here...&#10;&#10;Use the Evidence Bank on the right to insert source-backed claims. Click 'Citation Check' when you want Polis to review your academic integrity."
+          />
         </div>
-      )}
-
-      {reviewResult && (
-        <div className="rounded-xl border border-interpretation/20 bg-interpretation/10 p-4">
-          <h3 className="text-sm font-semibold text-interpretation mb-2">Draft Review Results</h3>
-          <div className="text-sm text-interpretation whitespace-pre-wrap">{reviewResult}</div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

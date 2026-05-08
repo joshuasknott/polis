@@ -84,183 +84,177 @@ export function SourceViewerContent({
   }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 max-w-full">
+      <div className="p-6 border-b border-border bg-card shrink-0 z-10 shadow-sm relative">
         <Link
           href="/sources"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Sources
         </Link>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-6">
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="inline-flex items-center rounded-full bg-source/10 px-2.5 py-0.5 text-xs font-medium text-source">
-            {getSourceTypeLabel(source.type)}
-          </span>
-          <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
-            {getStatusLabel(source.status)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {moduleTitle} &middot; {moduleCode}
-          </span>
-        </div>
-
-        <h1 className="text-xl font-bold leading-tight">{source.title}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {source.author} ({source.year}) &middot; {source.pageCount} pages
-        </p>
-
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 rounded-lg bg-muted/50 p-3 font-mono text-xs text-muted-foreground">
-            {source.citation}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="inline-flex items-center rounded-full bg-source/10 px-2.5 py-0.5 text-xs font-medium text-source">
+                {getSourceTypeLabel(source.type)}
+              </span>
+              <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
+                {getStatusLabel(source.status)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {moduleTitle} &middot; {moduleCode}
+              </span>
+            </div>
+            <h1 className="text-2xl font-bold leading-tight font-serif text-foreground">{source.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {source.author} ({source.year}) &middot; {source.pageCount} pages
+            </p>
           </div>
-          <button className="shrink-0 rounded-lg border border-border p-2 hover:bg-muted transition-colors" title="Copy citation">
-            <Copy className="h-4 w-4 text-muted-foreground" />
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-muted/50 px-3 py-1.5 font-mono text-xs text-muted-foreground max-w-[300px] truncate">
+                {source.citation}
+              </div>
+              <button className="shrink-0 rounded-lg border border-border p-1.5 hover:bg-muted transition-colors" title="Copy citation">
+                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
         </div>
-
         {source.errorMessage && (
-          <div className="mt-4 rounded-lg border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+          <div className="mt-3 rounded-lg border border-danger/20 bg-danger/5 p-2 text-xs text-danger">
             <strong>Error:</strong> {source.errorMessage}
           </div>
         )}
-
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {source.tags.map((tag: string) => (
-            <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-              <Tag className="h-3 w-3" />
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <FileText className="h-4 w-4 text-accent" />
-              Summary
-            </h2>
-            <button
-              onClick={handleRegenerateSummary}
-              disabled={regenerating}
-              className="inline-flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50"
-            >
-              {regenerating ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3 w-3" />
-              )}
-              {currentSummary ? "Regenerate" : "Generate"}
-            </button>
-          </div>
-          {(aiGenerated || currentSummary) && (
-            <span className="mt-1 inline-flex items-center gap-1 text-xs text-purple-600">
-              <Sparkles className="h-3 w-3" />
-              AI-generated
-            </span>
-          )}
-          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            {currentSummary || "No summary available yet. Click Generate to create an AI summary."}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <BookOpen className="h-4 w-4 text-accent" />
-            Main Argument
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Pane: Reading Material */}
+        <div className="w-1/2 border-r border-border overflow-y-auto scrollbar-thin bg-background p-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6 font-sans">
+            Source Text
           </h2>
-          <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-            {currentArgument || "No argument extracted yet."}
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Lightbulb className="h-4 w-4 text-accent" />
-          Key Concepts
-        </h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {currentConcepts.map((concept: string) => (
-            <span
-              key={concept}
-              className="inline-flex items-center rounded-lg border border-border px-3 py-1.5 text-sm"
-            >
-              {concept}
-            </span>
-          ))}
-          {currentConcepts.length === 0 && (
-            <p className="text-sm text-muted-foreground">No concepts extracted yet.</p>
-          )}
-        </div>
-      </div>
-
-      {chunks.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold">
-              Extracted Text ({chunks.length} chunks)
-            </h2>
-            <button
-              onClick={() => setShowChunks(!showChunks)}
-              className="text-xs text-accent hover:underline"
-            >
-              {showChunks ? "Hide chunks" : "Show chunks"}
-            </button>
-          </div>
-          {showChunks && (
-            <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin">
+          {chunks.length > 0 ? (
+            <div className="space-y-6">
               {chunks.map((chunk) => (
-                <div key={chunk.id} className="rounded-lg border border-border bg-muted/30 p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Chunk {chunk.chunkIndex + 1}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {chunk.text.slice(0, 500)}{chunk.text.length > 500 ? "..." : ""}
+                <div 
+                  key={chunk.id} 
+                  className="group relative pl-4 border-l-2 border-transparent hover:border-source transition-colors"
+                >
+                  <p className="absolute -left-6 top-1 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    {chunk.chunkIndex + 1}
+                  </p>
+                  <p className="font-serif text-[15px] leading-relaxed text-foreground/90">
+                    {chunk.text}
                   </p>
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <BookOpen className="h-8 w-8 text-muted-foreground mb-3 opacity-50" />
+              <p className="text-sm text-muted-foreground">No extracted text available for this source.</p>
+            </div>
           )}
         </div>
-      )}
 
-      <SourceNotesSection sourceId={source.id} />
+        {/* Right Pane: Analysis & Workspace */}
+        <div className="w-1/2 overflow-y-auto scrollbar-thin bg-muted/20 p-8 space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <FileText className="h-4 w-4 text-interpretation" />
+                  AI Summary
+                </h2>
+                <button
+                  onClick={handleRegenerateSummary}
+                  disabled={regenerating}
+                  className="inline-flex items-center gap-1.5 text-xs text-interpretation hover:underline disabled:opacity-50 font-medium"
+                >
+                  {regenerating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  {currentSummary ? "Regenerate" : "Generate"}
+                </button>
+              </div>
+              <p className="font-serif text-sm leading-relaxed text-foreground">
+                {currentSummary || "No summary available yet. Click Generate to create an AI summary."}
+              </p>
+              {(aiGenerated || currentSummary) && (
+                <div className="mt-4 flex items-center gap-1.5 text-[11px] font-medium text-interpretation bg-interpretation/10 inline-flex px-2 py-1 rounded-md">
+                  <Sparkles className="h-3 w-3" />
+                  AI-Generated Interpretation
+                </div>
+              )}
+            </div>
 
-      <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {actions.map((action) => (
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                <BookOpen className="h-4 w-4 text-source" />
+                Main Argument
+              </h2>
+              <p className="font-serif text-sm leading-relaxed text-foreground">
+                {currentArgument || "No argument extracted yet."}
+              </p>
+            </div>
+            
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                <Lightbulb className="h-4 w-4 text-interpretation" />
+                Key Concepts
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {currentConcepts.map((concept: string) => (
+                  <span
+                    key={concept}
+                    className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium"
+                  >
+                    {concept}
+                  </span>
+                ))}
+                {currentConcepts.length === 0 && (
+                  <p className="text-sm text-muted-foreground font-serif">No concepts extracted yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <SourceNotesSection sourceId={source.id} />
+
+          <div className="grid grid-cols-2 gap-3">
+            {actions.map((action) => (
+              <Link
+                key={action.label}
+                href="/assistant"
+                className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                <action.icon className="h-4 w-4 text-muted-foreground" />
+                {action.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="rounded-xl border border-source/20 bg-source/5 p-6 shadow-sm">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-source mb-2">
+              <MessageSquare className="h-4 w-4" />
+              Ask About This Source
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Use the AI assistant to ask questions about this reading, extract arguments, compare with other sources, or plan how to use it in your essay.
+            </p>
             <Link
-              key={action.label}
               href="/assistant"
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm hover:bg-muted transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source hover:underline"
             >
-              <action.icon className="h-4 w-4 text-muted-foreground" />
-              {action.label}
+              Open Assistant
+              <ExternalLink className="h-3.5 w-3.5" />
             </Link>
-          ))}
+          </div>
         </div>
-      </div>
-
-      <div className="rounded-xl border border-accent/20 bg-accent-muted/30 p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-accent">
-          <MessageSquare className="h-4 w-4" />
-          Ask About This Source
-        </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Use the AI assistant to ask questions about this reading, extract arguments, compare with other sources, or plan how to use it in your essay.
-        </p>
-        <Link
-          href="/assistant"
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
-        >
-          Open Assistant
-          <ExternalLink className="h-3.5 w-3.5" />
-        </Link>
       </div>
     </div>
   );

@@ -2,16 +2,15 @@
 
 import { useState, useRef } from "react";
 import {
-  FolderOpen,
   BookOpen,
   FileText,
-  GraduationCap,
-  MessageSquare,
-  ChevronRight,
-  Wrench,
-  ArrowRight,
   Upload,
   Loader2,
+  ArrowRight,
+  Info,
+  StickyNote,
+  CheckCircle,
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -23,6 +22,7 @@ interface ModuleWorkspaceProps {
     code: string;
     description: string;
     colour: string;
+    activeTab: string;
   };
   folders: Array<{
     id: string;
@@ -50,25 +50,103 @@ interface ModuleWorkspaceProps {
   }>;
 }
 
-const moduleTools = [
-  { name: "Reading Summary", icon: BookOpen, href: "/tools" },
-  { name: "Concept Extractor", icon: GraduationCap, href: "/tools" },
-  { name: "Theory Comparison", icon: Wrench, href: "/tools" },
-  { name: "Evidence Bank", icon: FileText, href: "/tools" },
-];
-
 export function ModuleWorkspace({
   module,
   folders,
   sources,
   essays,
 }: ModuleWorkspaceProps) {
-  const [selectedFolder, setSelectedFolder] = useState(folders[1]?.id || folders[0]?.id || "");
+  const { activeTab } = module;
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "info":
+        return <ModuleInfo module={module} />;
+      case "readings":
+        return <ModuleReadings module={module} folders={folders} sources={sources} />;
+      case "module-notes":
+        return <EmptyState icon={FileText} title="Module Notes" description="Your consolidated module notes will appear here." />;
+      case "source-notes":
+        return <EmptyState icon={StickyNote} title="Source Notes" description="Annotations and notes from your readings will appear here." />;
+      case "essays":
+        return <ModuleEssays essays={essays} />;
+      case "submission":
+        return <EmptyState icon={CheckCircle} title="Final Submission" description="Assemble your final essay submission here." />;
+      default:
+        return <ModuleInfo module={module} />;
+    }
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto pb-12">
+      {/* Module Header Area */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+          <Link href="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
+            <ArrowLeft className="h-3 w-3" /> Workspaces
+          </Link>
+          <span>/</span>
+          <span>{module.code}</span>
+        </div>
+        <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground">{module.title}</h1>
+        {module.description && (
+          <p className="mt-4 text-muted-foreground text-base md:text-lg max-w-3xl leading-relaxed">
+            {module.description}
+          </p>
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="min-h-[500px]">
+        {renderContent()}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 py-24 text-center">
+      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+        <Icon className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-medium">{title}</h3>
+      <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function ModuleInfo({ module }: { module: any }) {
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6">Module Details</h3>
+        <dl className="space-y-5">
+          <div>
+            <dt className="text-xs text-muted-foreground">Module Code</dt>
+            <dd className="text-sm font-medium mt-1">{module.code}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Workspace ID</dt>
+            <dd className="text-sm font-medium mt-1 font-mono">{module.id}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="rounded-2xl border border-border bg-card p-6 md:p-8 flex flex-col items-center justify-center text-center">
+        <Info className="h-8 w-8 text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+          Use the left sidebar to navigate between your readings, notes, and essay plans for this module workspace.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ModuleReadings({ folders, sources }: { module: any, folders: any[], sources: any[] }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const selectedFolderData = folders.find((f) => f.id === selectedFolder);
-  const folderSources = sources.filter((s) => s.folderId === selectedFolder);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -81,208 +159,127 @@ export function ModuleWorkspace({
   }
 
   return (
-    <div className="max-w-full -m-6">
-      <div className="flex h-[calc(100vh-3.5rem)]">
-        <div className="w-56 shrink-0 border-r border-border bg-card overflow-y-auto scrollbar-thin">
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <div
-                className="h-7 w-7 rounded-md flex items-center justify-center text-white text-xs font-bold"
-                style={{ backgroundColor: module.colour }}
-              >
-                {module.code.slice(0, 3)}
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold leading-tight">{module.title}</h2>
-                <p className="text-xs text-muted-foreground">{module.code}</p>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-10">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Readings & Sources</h2>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity shadow-sm"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          Upload Source
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.docx,.txt,.md"
+          onChange={handleUpload}
+          disabled={uploading}
+        />
+      </div>
 
-          <div className="p-3">
-            <p className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Folders
-            </p>
-            <div className="space-y-0.5">
-              {folders.map((folder) => (
-                <button
-                  key={folder.id}
-                  onClick={() => setSelectedFolder(folder.id)}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
-                    selectedFolder === folder.id
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate text-left">{folder.name}</span>
-                  <span className="ml-auto text-xs opacity-70">{folder.sourceCount}</span>
-                </button>
-              ))}
-            </div>
-
-            <p className="px-2 mt-5 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-              Academic Tools
-            </p>
-            <div className="space-y-0.5">
-              {moduleTools.map((tool) => (
-                <Link
-                  key={tool.name}
-                  href={tool.href}
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <tool.icon className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{tool.name}</span>
-                </Link>
-              ))}
-            </div>
-
-            {essays.length > 0 && (
-              <>
-                <p className="px-2 mt-5 text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                  Essay Projects
-                </p>
-                {essays.map((essay) => (
+      <div className="space-y-10">
+        {folders.map(folder => {
+          const folderSources = sources.filter(s => s.folderId === folder.id);
+          
+          if (folderSources.length === 0) {
+             return (
+               <div key={folder.id} className="space-y-4">
+                  <h3 className="flex items-center text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-3">
+                    {folder.name} <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">0</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground italic py-4">No sources in this folder.</p>
+               </div>
+             );
+          }
+          
+          return (
+            <div key={folder.id} className="space-y-4">
+              <h3 className="flex items-center text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-3">
+                {folder.name} <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{folderSources.length}</span>
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {folderSources.map(source => (
                   <Link
-                    key={essay.id}
-                    href={`/essays/${essay.id}`}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    key={source.id}
+                    href={`/sources/${source.id}`}
+                    className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-foreground/30 hover:shadow-sm transition-all group"
                   >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{essay.title}</span>
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider", getStatusColor(source.status))}>
+                          {getStatusLabel(source.status)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{getSourceTypeLabel(source.type)}</span>
+                      </div>
+                      <h4 className="font-semibold text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-foreground transition-colors">{source.title}</h4>
+                      <p className="text-xs text-muted-foreground">{source.author} ({source.year})</p>
+                    </div>
+                    <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border/50">
+                      <span>{source.pageCount} pages</span>
+                      <ArrowRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
+                    </div>
                   </Link>
                 ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="p-6">
-            <div className="mb-6">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                <span>{module.title}</span>
-                <ChevronRight className="h-3 w-3" />
-                <span>{selectedFolderData?.name}</span>
-              </div>
-              <h1 className="text-xl font-bold">{selectedFolderData?.name}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {folderSources.length} source{folderSources.length !== 1 ? "s" : ""} in this folder
-              </p>
-            </div>
-
-            <div className="rounded-xl border-2 border-dashed border-border p-8 mb-6 text-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept=".pdf,.docx,.txt,.md"
-                onChange={handleUpload}
-                disabled={uploading}
-              />
-              <div className="flex flex-col items-center gap-2">
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
-                    <p className="text-sm font-medium">Uploading and processing...</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium">Upload Sources</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">
-                      Drop PDF, DOCX, TXT, or Markdown files. They will be extracted and chunked automatically.
-                    </p>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="mt-1 rounded-lg border border-border px-4 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
-                    >
-                      Browse Files
-                    </button>
-                  </>
-                )}
               </div>
             </div>
-
-            <div className="space-y-3">
-              {folderSources.map((source) => (
-                <Link
-                  key={source.id}
-                  href={`/sources/${source.id}`}
-                  className="block rounded-xl border border-border bg-card p-4 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="mt-0.5 h-8 w-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold leading-tight">{source.title}</h3>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {source.author} ({source.year}) &middot; {source.pageCount} pages
-                        </p>
-                        <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{source.summary}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
-                            {getSourceTypeLabel(source.type)}
-                          </span>
-                          <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
-                            {getStatusLabel(source.status)}
-                          </span>
-                          {source.tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {folderSources.length === 0 && (
-              <div className="rounded-xl border border-border bg-card p-12 text-center">
-                <FolderOpen className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="mt-3 text-sm font-medium">No sources yet</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Upload files to this folder to get started
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="w-80 shrink-0 border-l border-border bg-card overflow-y-auto scrollbar-thin">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-semibold">AI Assistant</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Ask about this module and its sources
-            </p>
-          </div>
-
-          <div className="p-4 space-y-4">
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                Try asking: &ldquo;What are the main differences between consensus and majoritarian democracy?&rdquo;
-              </p>
-            </div>
-
-            <Link
-              href="/assistant"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 transition-opacity"
-            >
-              <MessageSquare className="h-4 w-4" />
-              Open Full Assistant
-            </Link>
-          </div>
-        </div>
+          );
+        })}
       </div>
+
+      {sources.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border p-12 text-center">
+          <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+          <p className="mt-4 text-sm font-medium">No readings yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Upload your first source to start building this module's library.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModuleEssays({ essays }: { essays: any[] }) {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <h2 className="text-xl font-semibold">Essay Plans</h2>
+        <button className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity shadow-sm">
+          New Essay
+        </button>
+      </div>
+
+      {essays.length > 0 ? (
+        <div className="grid gap-4">
+          {essays.map(essay => (
+            <Link
+              key={essay.id}
+              href={`/essays/${essay.id}`}
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-6 hover:border-foreground/30 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                  <FileText className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-base">{essay.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Status: <span className="capitalize font-medium">{essay.status.replace('-', ' ')}</span></p>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={FileText} title="No Essay Plans" description="Create an essay plan to start drafting and outlining your arguments." />
+      )}
     </div>
   );
 }

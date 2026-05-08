@@ -10,6 +10,7 @@ import {
   Loader2,
   Zap,
   FileText,
+  FolderOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -166,24 +167,34 @@ export function AssistantContent({
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card">
-        <div className="border-b border-border p-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold">
-              {messages.length > 0 ? "Current Conversation" : "Ask a Question"}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {sources.length} sources available &middot; Mode: {selectedMode.replace(/_/g, " ")}
-            </p>
+      <div className="rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border p-4 bg-muted/20">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                {messages.length > 0 ? "Current Analysis" : "New Query"}
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+                <FolderOpen className="h-3 w-3" />
+                Scope: {modules.find(m => m.id === selectedModule)?.title || "All Modules"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+                <Lightbulb className="h-3 w-3" />
+                Mode: {selectedMode.replace(/_/g, " ")}
+              </span>
+              {messages.length > 0 && (
+                <button
+                  onClick={startNewConversation}
+                  className="text-xs text-accent hover:underline ml-2 font-medium"
+                >
+                  New Query
+                </button>
+              )}
+            </div>
           </div>
-          {messages.length > 0 && (
-            <button
-              onClick={startNewConversation}
-              className="text-xs text-accent hover:underline"
-            >
-              New Conversation
-            </button>
-          )}
         </div>
 
         <div className="max-h-[500px] overflow-y-auto p-4 space-y-4 scrollbar-thin">
@@ -214,47 +225,47 @@ export function AssistantContent({
           {messages.map((message, i) => (
             <div
               key={i}
-              className={cn(
-                "rounded-lg p-4",
-                message.role === "user"
-                  ? "bg-accent text-accent-foreground ml-12"
-                  : "bg-muted/50"
-              )}
+              className="py-6 border-b border-border last:border-0"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-medium">
-                  {message.role === "user" ? "You" : "Polis"}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {message.role === "user" ? "Research Question" : "Analysis"}
                 </span>
                 {message.role === "assistant" && message.labels.length > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-source/10 px-2 py-0.5 text-xs text-source">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
                     <BookOpen className="h-3 w-3" />
                     {message.labels[0].text}
                   </span>
                 )}
               </div>
-              <div className="text-sm leading-relaxed whitespace-pre-line">{message.content}</div>
+              <div className={cn(
+                "leading-relaxed whitespace-pre-line",
+                message.role === "user" ? "text-lg font-medium text-foreground" : "font-serif text-[15px] text-foreground/90"
+              )}>
+                {message.content}
+              </div>
 
               {message.citedChunks.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">Cited Sources:</p>
+                <div className="mt-6 space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Source Evidence</p>
                   {message.citedChunks.map((chunk, j) => (
                     <div
                       key={j}
-                      className="rounded-lg border border-source/20 bg-source/10 p-3"
+                      className="group relative pl-4 border-l-2 border-source/40 hover:border-source transition-colors"
                     >
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-xs font-medium text-source">{chunk.sourceTitle}</span>
-                        <span className="text-xs text-source/80">{chunk.pageRange}</span>
+                        <span className="text-xs text-muted-foreground">{chunk.pageRange}</span>
                       </div>
-                      <p className="mt-1 text-xs text-source italic">
+                      <p className="font-serif text-[13px] text-muted-foreground leading-relaxed">
                         &ldquo;{chunk.quote}&rdquo;
                       </p>
                       <button
                         onClick={() => handleAddToEvidence(chunk)}
-                        className="mt-2 inline-flex items-center gap-1 rounded border border-source/20 bg-source/10 px-2 py-1 text-xs text-source hover:bg-source/20 transition-colors"
+                        className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm"
                       >
                         <FileText className="h-3 w-3" />
-                        Add to Evidence Bank
+                        Save to Evidence Bank
                       </button>
                     </div>
                   ))}

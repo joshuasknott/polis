@@ -94,41 +94,46 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((source) => (
           <Link
             key={source.id}
             href={`/sources/${source.id}`}
-            className="group rounded-xl border border-border bg-card p-4 hover:shadow-sm transition-shadow"
+            className="group relative flex flex-col rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all overflow-hidden"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-source/40 to-source/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-md bg-source/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-source">
                   {getSourceTypeLabel(source.type)}
                 </span>
-                <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
+                <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", getStatusColor(source.status))}>
                   {getStatusLabel(source.status)}
                 </span>
               </div>
               <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </div>
-            <h3 className="mt-3 text-sm font-semibold leading-tight line-clamp-2 group-hover:text-accent transition-colors">
+            <h3 className="text-base font-bold font-serif leading-tight line-clamp-2 text-foreground group-hover:text-source transition-colors">
               {source.title}
             </h3>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-[13px] font-medium text-muted-foreground">
               {source.author} ({source.year})
             </p>
-            <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{source.summary}</p>
-            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <FolderOpen className="h-3 w-3" />
-              <span>{source.moduleName}</span>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {source.tags.slice(0, 3).map((tag: string) => (
-                <span key={tag} className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  {tag}
-                </span>
-              ))}
+            <p className="mt-3 text-[13px] text-muted-foreground leading-relaxed line-clamp-3 flex-1">
+              {source.summary}
+            </p>
+            <div className="mt-4 pt-4 border-t border-border flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <FolderOpen className="h-3.5 w-3.5" />
+                <span className="truncate">{source.moduleName}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {source.tags.slice(0, 3).map((tag: string) => (
+                  <span key={tag} className="rounded-md border border-border/50 bg-muted/30 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </Link>
         ))}
