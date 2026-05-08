@@ -1,5 +1,6 @@
-import { mutationGeneric as mutation, queryGeneric as query } from "convex/server";
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthIdentifier } from "./lib/auth";
 
 export const getCurrentUserProfile = query({
   args: {},
@@ -9,17 +10,9 @@ export const getCurrentUserProfile = query({
 
     return await ctx.db
       .query("userProfiles")
-      .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
-      .unique();
-  },
-});
-
-export const getProfile = query({
-  args: { externalId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("userProfiles")
-      .withIndex("by_externalId", (q) => q.eq("externalId", args.externalId))
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
       .unique();
   },
 });
@@ -33,11 +26,13 @@ export const upsertCurrentUserProfile = mutation({
     const now = Date.now();
     const existing = await ctx.db
       .query("userProfiles")
-      .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
       .unique();
 
     const profileData = {
-      externalId: identity.subject,
+      tokenIdentifier: identity.tokenIdentifier,
       email: identity.email ?? undefined,
       name: identity.name ?? undefined,
       image: identity.pictureUrl ?? undefined,
@@ -65,12 +60,13 @@ export const updateProfile = mutation({
     preferences: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    const tokenIdentifier = await getAuthIdentifier(ctx);
 
     const existing = await ctx.db
       .query("userProfiles")
-      .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", tokenIdentifier),
+      )
       .unique();
 
     if (!existing) throw new Error("Profile not found");
@@ -88,14 +84,16 @@ export const ensureUserProfile = mutation({
 
     const existing = await ctx.db
       .query("userProfiles")
-      .withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
       .unique();
 
     if (existing) return existing._id;
 
     const now = Date.now();
     return await ctx.db.insert("userProfiles", {
-      externalId: identity.subject,
+      tokenIdentifier: identity.tokenIdentifier,
       email: identity.email ?? undefined,
       name: identity.name ?? undefined,
       image: identity.pictureUrl ?? undefined,
