@@ -1,25 +1,26 @@
-import { auth } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { ModuleWorkspace } from "@/components/modules/module-workspace";
-import { getModuleById, getModuleSources, getEssaysByModule } from "@/lib/services/data-service";
+import {
+  getFoldersForModule,
+  getModuleById,
+  getSourcesForModule,
+  mockEssayProject,
+} from "@/lib/data/mock-data";
 
 export default async function ModulePage({
   params,
 }: {
   params: Promise<{ moduleId: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/auth/signin");
-
   const { moduleId } = await params;
-  const [mod, sources, essays] = await Promise.all([
-    getModuleById(session.user.id, moduleId),
-    getModuleSources(moduleId),
-    getEssaysByModule(session.user.id, moduleId),
-  ]);
+  const mod = getModuleById(moduleId);
 
   if (!mod) notFound();
+
+  const sources = getSourcesForModule(moduleId);
+  const folders = getFoldersForModule(moduleId);
+  const essays = mockEssayProject.moduleId === moduleId ? [mockEssayProject] : [];
 
   const folderSourceCounts: Record<string, number> = {};
   for (const source of sources) {
@@ -28,33 +29,33 @@ export default async function ModulePage({
   }
 
   return (
-    <AppShell user={session.user}>
+    <AppShell>
       <ModuleWorkspace
         module={{
           id: mod.id,
           title: mod.title,
           code: mod.code,
           description: mod.description,
-          colour: mod.colour,
+          colour: mod.color,
         }}
-        folders={mod.folders.map((f) => ({
+        folders={folders.map((f) => ({
           id: f.id,
           name: f.name,
           type: f.type,
-          sortOrder: f.displayOrder,
+          sortOrder: f.sortOrder,
           sourceCount: folderSourceCounts[f.id] || 0,
         }))}
         sources={sources.map((s) => ({
           id: s.id,
-          folderId: s.folderId || "",
+          folderId: s.folderId,
           title: s.title,
-          author: s.authors,
+          author: s.author,
           year: s.year,
           type: s.type,
-          status: s.status === "ready" ? "processed" : s.status === "error" ? "failed" : "processing",
-          tags: s.concepts ? s.concepts.split(",").map((c) => c.trim()) : [],
+          status: s.status,
+          tags: s.tags,
           summary: s.summary || "",
-          pageCount: Math.max(1, Math.ceil((s.wordCount || 0) / 300)),
+          pageCount: s.pageCount,
         }))}
         essays={essays.map((e) => ({
           id: e.id,

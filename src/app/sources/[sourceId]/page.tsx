@@ -1,51 +1,44 @@
-import { auth } from "@/lib/auth";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { SourceViewerContent } from "@/components/sources/source-viewer-content";
-import { getSourceById } from "@/lib/services/data-service";
+import { getModuleById, getSourceById } from "@/lib/data/mock-data";
 
 export default async function SourcePage({
   params,
 }: {
   params: Promise<{ sourceId: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/auth/signin");
-
   const { sourceId } = await params;
-  const source = await getSourceById(session.user.id, sourceId);
+  const source = getSourceById(sourceId);
 
   if (!source) notFound();
+  const moduleInfo = getModuleById(source.moduleId);
 
   return (
-    <AppShell user={session.user}>
+    <AppShell>
       <SourceViewerContent
         source={{
           id: source.id,
           moduleId: source.moduleId,
-          folderId: source.folderId || "",
+          folderId: source.folderId,
           title: source.title,
-          author: source.authors,
+          author: source.author,
           year: source.year,
           type: source.type,
-          status: source.status === "ready" ? "processed" : source.status === "error" ? "failed" : "processing",
-          tags: source.concepts ? source.concepts.split(",").map((c) => c.trim()) : [],
-          citation: `${source.authors} (${source.year})`,
-          pageCount: Math.max(1, Math.ceil((source.wordCount || 0) / 300)),
-          uploadedAt: source.createdAt.toISOString(),
+          status: source.status,
+          tags: source.tags,
+          citation: source.citation,
+          pageCount: source.pageCount,
+          uploadedAt: source.uploadedAt,
           summary: source.summary || "",
-          mainArgument: source.keyArguments || "",
-          keyConcepts: source.concepts ? source.concepts.split(",").map((c) => c.trim()) : [],
-          extractedText: source.extractedText || "",
-          errorMessage: source.errorMessage || "",
+          mainArgument: source.mainArgument || "",
+          keyConcepts: source.keyConcepts,
+          extractedText: "",
+          errorMessage: "",
         }}
-        moduleTitle={source.module?.title || ""}
-        moduleCode={source.module?.code || ""}
-        chunks={source.chunks.map((c) => ({
-          id: c.id,
-          text: c.text,
-          chunkIndex: c.chunkIndex,
-        }))}
+        moduleTitle={moduleInfo?.title || ""}
+        moduleCode={moduleInfo?.code || ""}
+        chunks={[]}
       />
     </AppShell>
   );

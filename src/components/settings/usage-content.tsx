@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, DollarSign, Zap, Activity } from "lucide-react";
 
@@ -23,32 +22,14 @@ interface UsageStats {
 }
 
 export function UsageContent() {
-  const [stats, setStats] = useState<UsageStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/settings/usage")
-      .then((res) => res.json())
-      .then((data) => setStats(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="max-w-3xl space-y-6">
-        <p className="text-sm text-muted-foreground">Loading usage data...</p>
-      </div>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="max-w-3xl space-y-6">
-        <p className="text-sm text-muted-foreground">Could not load usage data.</p>
-      </div>
-    );
-  }
+  const stats: UsageStats = {
+    allTime: { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 },
+    thisMonth: { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 },
+    byType: [],
+    byModel: [],
+    retrievalBreakdown: [],
+    recentLogs: [],
+  };
 
   return (
     <div className="max-w-3xl space-y-6">

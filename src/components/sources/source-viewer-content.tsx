@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface SourceViewerContentProps {
   source: {
@@ -75,26 +75,12 @@ export function SourceViewerContent({
 
   async function handleRegenerateSummary() {
     setRegenerating(true);
-    try {
-      const res = await fetch(`/api/sources/${source.id}/analyse`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.analysis) {
-        setCurrentSummary(data.analysis.summary || currentSummary);
-        setCurrentArgument(data.analysis.keyArguments || currentArgument);
-        setCurrentConcepts(
-          data.analysis.concepts
-            ? data.analysis.concepts.split(",").map((c: string) => c.trim())
-            : currentConcepts
-        );
-        setAiGenerated(true);
-      }
-    } catch {
-      // Silently fail
-    } finally {
-      setRegenerating(false);
-    }
+    setCurrentSummary(currentSummary);
+    setCurrentArgument(currentArgument);
+    setCurrentConcepts(currentConcepts);
+    setAiGenerated(true);
+    alert("Source analysis is paused while the backend foundation migrates to Convex.");
+    setRegenerating(false);
   }
 
   return (
@@ -287,39 +273,27 @@ function SourceNotesSection({ sourceId }: { sourceId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetch(`/api/sources/${sourceId}/notes`)
-      .then((res) => res.json())
-      .then((data) => { if (Array.isArray(data)) setNotes(data); })
-      .catch(() => {});
-  }, [sourceId]);
-
   async function addNote() {
     if (!newNote.trim()) return;
     setLoading(true);
-    try {
-      const res = await fetch(`/api/sources/${sourceId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newNote, tags: newTags || null }),
-      });
-      const note = await res.json();
-      if (res.ok) {
-        setNotes([note, ...notes]);
-        setNewNote("");
-        setNewTags("");
-        setShowForm(false);
-      }
-    } catch {} finally {
-      setLoading(false);
-    }
+    setNotes([
+      {
+        id: `local-${Date.now()}`,
+        content: newNote,
+        tags: newTags || null,
+        createdAt: new Date().toISOString(),
+      },
+      ...notes,
+    ]);
+    setNewNote("");
+    setNewTags("");
+    setShowForm(false);
+    setLoading(false);
   }
 
   async function deleteNote(noteId: string) {
-    try {
-      await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
-      setNotes(notes.filter((n) => n.id !== noteId));
-    } catch {}
+    void sourceId;
+    setNotes(notes.filter((n) => n.id !== noteId));
   }
 
   return (

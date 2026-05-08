@@ -46,7 +46,7 @@ export function DashboardContent({
           Welcome back, {user.name.split(" ")[0]}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {user.course || "SocialSciencr Workspace"}{" "}
+          {user.course || "Polis Workspace"}{" "}
           {user.yearOfStudy ? `, Year ${user.yearOfStudy}` : ""}{" "}
           {user.university ? `· ${user.university}` : ""}
         </p>

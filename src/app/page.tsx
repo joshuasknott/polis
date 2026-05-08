@@ -19,7 +19,7 @@ export default function LandingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-accent" />
-            <span className="text-lg font-semibold tracking-tight">SocialSciencr</span>
+            <span className="text-lg font-semibold tracking-tight">Polis</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
@@ -47,7 +47,7 @@ export default function LandingPage() {
             <span className="text-accent">structured arguments</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-            SocialSciencr helps social science students organise sources, understand
+            Polis helps social science students organise sources, understand
             readings, build essay plans, and review drafts — using source-grounded AI
             that keeps citations visible and evidence honest.
           </p>
@@ -100,7 +100,7 @@ export default function LandingPage() {
             From chaos to clarity, one step at a time
           </h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-            SocialSciencr mirrors how you actually work: collect materials, understand them, connect ideas, build arguments, draft essays, and review.
+            Polis mirrors how you actually work: collect materials, understand them, connect ideas, build arguments, draft essays, and review.
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -196,7 +196,7 @@ export default function LandingPage() {
                 Academic integrity is not optional
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed max-w-2xl">
-                SocialSciencr is built to support learning, not replace it. Every AI output is
+                Polis is built to support learning, not replace it. Every AI output is
                 labelled as source-supported, interpretation, or general context. Unsupported
                 claims are flagged. Citations are traced to real source text. The student
                 remains responsible for their final work.
@@ -227,7 +227,7 @@ export default function LandingPage() {
             Start organising your coursework
           </h2>
           <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
-            Explore the prototype. See how SocialSciencr would help you move from scattered PDFs to coherent, source-grounded coursework.
+            Explore the prototype. See how Polis would help you move from scattered PDFs to coherent, source-grounded coursework.
           </p>
           <Link
             href="/dashboard"
@@ -243,7 +243,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <GraduationCap className="h-4 w-4" />
-            <span>SocialSciencr — Phase 0 Prototype</span>
+            <span>Polis — Phase 0 Prototype</span>
           </div>
           <div className="text-xs text-muted-foreground">
             Built for social science students. Not a cheating tool.

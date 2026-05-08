@@ -1,14 +1,9 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { UsageContent } from "@/components/settings/usage-content";
 
-export default async function UsagePage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect("/auth/signin");
-
+export default function UsagePage() {
   return (
-    <AppShell user={session.user}>
+    <AppShell>
       <UsageContent />
     </AppShell>
   );

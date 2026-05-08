@@ -167,27 +167,9 @@ function UploadButton({ modules }: { modules: ModuleItem[] }) {
     if (!file || !selectedModule) return;
 
     setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("moduleId", selectedModule);
-
-      const res = await fetch("/api/sources/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Upload failed");
-      }
-    } catch {
-      alert("Upload failed");
-    } finally {
-      setUploading(false);
-    }
+    alert("Uploads are paused while the backend foundation migrates to Convex.");
+    e.target.value = "";
+    setUploading(false);
   }
 
   return (

@@ -76,30 +76,14 @@ export function AssistantContent({
     setLoading(true);
 
     try {
-      const res = await fetch("/api/assistant", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          moduleId: selectedModule || undefined,
-          mode: selectedMode,
-          conversationId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.conversationId) {
-        setConversationId(data.conversationId);
-      }
-
+      setConversationId(conversationId || "convex-migration-placeholder");
       const assistantMsg: ChatMessage = {
         role: "assistant",
-        content: data.content || "No response generated.",
-        citedChunks: data.citedChunks || [],
-        warnings: data.warnings || [],
-        labels: data.labels || [],
-        followUpSuggestions: data.followUpSuggestions || [],
+        content: "The old assistant API has been removed while Polis migrates to Convex. Runtime AI will be rebuilt later with the new backend foundation.",
+        citedChunks: [],
+        warnings: ["Convex migration placeholder"],
+        labels: [],
+        followUpSuggestions: ["Create Convex-backed conversations", "Add source retrieval", "Wire the future AI provider"],
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -119,23 +103,7 @@ export function AssistantContent({
   }
 
   async function handleAddToEvidence(chunk: ChatMessage["citedChunks"][0]) {
-    try {
-      await fetch("/api/essays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "addEvidence",
-          essayId: "essay_01",
-          sourceId: chunk.sourceId,
-          sourceChunkId: chunk.chunkId,
-          claim: chunk.quote.slice(0, 200),
-          evidenceText: chunk.quote,
-          citation: chunk.pageRange,
-        }),
-      });
-    } catch {
-      // Silently fail — evidence add is non-critical
-    }
+    void chunk;
   }
 
   function startNewConversation() {
@@ -255,7 +223,7 @@ export function AssistantContent({
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xs font-medium">
-                  {message.role === "user" ? "You" : "SocialSciencr"}
+                  {message.role === "user" ? "You" : "Polis"}
                 </span>
                 {message.role === "assistant" && message.labels.length > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">

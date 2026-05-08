@@ -51,43 +51,11 @@ export function ToolsContent() {
     setActiveTool(toolId);
     setToolResult(null);
 
-    try {
-      if (toolId === "citation_safety_check") {
-        const res = await fetch("/api/tools/citation-check", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: toolInput }),
-        });
-        const data = await res.json();
-        setToolResult(data);
-      } else if (toolId === "draft_review") {
-        const res = await fetch("/api/tools/draft-review", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: toolInput }),
-        });
-        const data = await res.json();
-        setToolResult(data);
-      } else {
-        const res = await fetch("/api/assistant", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: toolInput,
-            mode: toolId === "reading_summary" ? "reading_summary"
-              : toolId === "concept_extractor" ? "source_grounded"
-              : toolId === "essay_plan_builder" ? "essay_planning"
-              : "source_grounded",
-          }),
-        });
-        const data = await res.json();
-        setToolResult({ success: true, result: data });
-      }
-    } catch {
-      setToolResult({ success: false, error: "Tool request failed. Make sure an AI provider is configured." });
-    } finally {
-      setLoading(false);
-    }
+    setToolResult({
+      success: false,
+      error: "Academic tools are paused while the backend foundation migrates to Convex.",
+    });
+    setLoading(false);
   }
 
   return (

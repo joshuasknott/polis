@@ -284,54 +284,24 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
 
   const saveDraft = useCallback(async () => {
     setSaving(true);
-    try {
-      await fetch("/api/essays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "updateDraft", essayId: essay.id, draftContent: content }),
-      });
-      setLastSaved(new Date().toLocaleTimeString());
-    } catch {} finally {
-      setSaving(false);
-    }
-  }, [content, essay.id]);
+    setLastSaved(`${new Date().toLocaleTimeString()} (local only)`);
+    setSaving(false);
+  }, []);
 
   async function runCitationCheck() {
     if (!content.trim()) return;
     setToolLoading("citation");
     setCitationResult(null);
-    try {
-      const res = await fetch("/api/tools/citation-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content, essayId: essay.id }),
-      });
-      const data = await res.json();
-      setCitationResult(data.result || data.feedback || JSON.stringify(data, null, 2));
-    } catch {
-      setCitationResult("Error running citation check. Make sure AI is configured.");
-    } finally {
-      setToolLoading(null);
-    }
+    setCitationResult("Citation checking is paused while the backend foundation migrates to Convex.");
+    setToolLoading(null);
   }
 
   async function runDraftReview() {
     if (!content.trim()) return;
     setToolLoading("review");
     setReviewResult(null);
-    try {
-      const res = await fetch("/api/tools/draft-review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content, essayId: essay.id }),
-      });
-      const data = await res.json();
-      setReviewResult(data.result || data.feedback || JSON.stringify(data, null, 2));
-    } catch {
-      setReviewResult("Error running draft review. Make sure AI is configured.");
-    } finally {
-      setToolLoading(null);
-    }
+    setReviewResult("Draft review is paused while the backend foundation migrates to Convex.");
+    setToolLoading(null);
   }
 
   return (

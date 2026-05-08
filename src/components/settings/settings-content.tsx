@@ -136,29 +136,8 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
   async function saveProfile() {
     setSaving(true);
     setMessage(null);
-    try {
-      const res = await fetch("/api/settings/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "updateProfile",
-          name,
-          university,
-          course,
-          yearOfStudy: yearOfStudy ? parseInt(yearOfStudy) : null,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage({ type: "success", text: "Profile updated" });
-      } else {
-        setMessage({ type: "error", text: data.error || "Failed to update" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Network error" });
-    } finally {
-      setSaving(false);
-    }
+    setMessage({ type: "success", text: "Profile changes are local until Convex auth is wired" });
+    setSaving(false);
   }
 
   async function changePassword() {
@@ -169,46 +148,16 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
       setPasswordSaving(false);
       return;
     }
-    try {
-      const res = await fetch("/api/settings/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "changePassword",
-          currentPassword,
-          newPassword,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPasswordMessage({ type: "success", text: "Password changed" });
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      } else {
-        setPasswordMessage({ type: "error", text: data.error || "Failed" });
-      }
-    } catch {
-      setPasswordMessage({ type: "error", text: "Network error" });
-    } finally {
-      setPasswordSaving(false);
-    }
+    void currentPassword;
+    setPasswordMessage({ type: "error", text: "Password auth is paused during the Convex migration" });
+    setPasswordSaving(false);
   }
 
   async function savePreferences() {
     setPrefSaving(true);
-    try {
-      await fetch("/api/settings/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "updatePreferences",
-          preferences: { defaultAiMode, citationStyle },
-        }),
-      });
-    } catch {} finally {
-      setPrefSaving(false);
-    }
+    void defaultAiMode;
+    void citationStyle;
+    setPrefSaving(false);
   }
 
   return (
@@ -419,42 +368,20 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
   const [message, setMessage] = useState<{ provider: string; type: "success" | "error"; text: string } | null>(null);
 
   const providerConfig = [
-    { id: "openai", name: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano"], defaultModel: "gpt-4o-mini" },
-    { id: "anthropic", name: "Anthropic", models: ["claude-sonnet-4-20250514", "claude-3-5-haiku-latest"], defaultModel: "claude-sonnet-4-20250514" },
-    { id: "google", name: "Google Gemini", models: ["gemini-2.5-pro", "gemini-2.5-flash"], defaultModel: "gemini-2.5-pro" },
+    { id: "zai", name: "z.ai", models: ["glm-4.5", "glm-4.5-air"], defaultModel: "glm-4.5-air" },
   ];
 
   async function saveKey(providerId: string) {
     setConnecting(providerId);
     setMessage(null);
-    try {
-      const res = await fetch("/api/settings/api-keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: providerId, apiKey, modelPreference: modelPref || undefined }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage({ provider: providerId, type: "success", text: "Key saved and validated" });
-        setApiKey("");
-        setModelPref("");
-      } else {
-        setMessage({ provider: providerId, type: "error", text: data.error || "Failed" });
-      }
-    } catch {
-      setMessage({ provider: providerId, type: "error", text: "Network error" });
-    } finally {
-      setConnecting(null);
-    }
+    void apiKey;
+    void modelPref;
+    setMessage({ provider: providerId, type: "error", text: "Runtime AI provider connections will be rebuilt after Convex auth" });
+    setConnecting(null);
   }
 
   async function removeKey(providerId: string) {
-    try {
-      await fetch(`/api/settings/api-keys?provider=${providerId}`, { method: "DELETE" });
-      setMessage({ provider: providerId, type: "success", text: "Key removed" });
-    } catch {
-      setMessage({ provider: providerId, type: "error", text: "Failed to remove" });
-    }
+    setMessage({ provider: providerId, type: "error", text: "Runtime AI provider connections are paused during migration" });
   }
 
   return (
@@ -651,7 +578,7 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
         <div className="text-xs text-amber-800">
           <p className="font-medium">Configuration</p>
           <p className="mt-0.5">
-            Set OPENAI_API_KEY in your .env file for app-level defaults, or connect your own key above for personal use.
+            Runtime AI keys are paused during the Convex migration. z.ai/Zhipu provider support will be added later.
           </p>
         </div>
       </div>
@@ -700,33 +627,33 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
         </h2>
         <div className="mt-4 space-y-2">
           {[
-            { label: "Database (PostgreSQL + Prisma)", enabled: true },
-            { label: "Authentication (Auth.js + OAuth)", enabled: true },
-            { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: true },
-            { label: "Text Extraction", enabled: true },
-            { label: "Source Chunking", enabled: true },
-            { label: "Keyword Retrieval", enabled: true },
-            { label: "Real AI Provider (OpenAI/Anthropic/Gemini)", enabled: aiConfigured },
-            { label: "BYO API Key (encrypted per-user keys)", enabled: true },
+            { label: "Convex backend foundation", enabled: true },
+            { label: "Authentication", enabled: false },
+            { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: false },
+            { label: "Text Extraction", enabled: false },
+            { label: "Source Chunking", enabled: false },
+            { label: "Keyword Retrieval", enabled: false },
+            { label: "Runtime AI Provider", enabled: aiConfigured },
+            { label: "BYO API Key storage", enabled: false },
             { label: "Vector Embeddings / Semantic Search", enabled: hasEmbeddings },
             { label: "Hybrid Retrieval (semantic + keyword)", enabled: hasEmbeddings },
             { label: "LLM-Powered Source-Grounded Assistant", enabled: aiConfigured },
             { label: "Auto-Generated Source Summaries", enabled: aiConfigured },
             { label: "Citation Safety Check", enabled: aiConfigured },
             { label: "Draft Review with Rubric Analysis", enabled: aiConfigured },
-            { label: "Conversation Memory (multi-turn)", enabled: true },
-            { label: "Template Fallback (no API key needed)", enabled: true },
-            { label: "Background File Processing", enabled: true },
-            { label: "Source Notes", enabled: true },
-            { label: "Usage Analytics", enabled: true },
-            { label: "Rate Limiting", enabled: true },
+            { label: "Conversation Memory (multi-turn)", enabled: false },
+            { label: "Template Fallback (no API key needed)", enabled: false },
+            { label: "Background File Processing", enabled: false },
+            { label: "Source Notes", enabled: false },
+            { label: "Usage Analytics", enabled: false },
+            { label: "Rate Limiting", enabled: false },
             { label: "Draft Editor", enabled: true },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-sm">
               <CheckCircle className={`h-4 w-4 ${item.enabled ? "text-green-600" : "text-muted-foreground"}`} />
               <span className={item.enabled ? "" : "text-muted-foreground"}>{item.label}</span>
               <span className={`text-xs ${item.enabled ? "text-green-700" : "text-muted-foreground"}`}>
-                {item.enabled ? "Active" : "Needs API Key"}
+                {item.enabled ? "Active" : "Paused"}
               </span>
             </div>
           ))}
