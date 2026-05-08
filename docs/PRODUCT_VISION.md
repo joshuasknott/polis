@@ -2,13 +2,42 @@
 
 ## Product Thesis
 
-Polis is a coursework intelligence workspace for social science students. It helps students transform scattered readings, lecture notes, essay briefs, and drafts into organised, source-grounded academic work.
+Polis is a coursework intelligence workspace for social science students. It guides students through a structured production workflow — from ingesting readings to refining a finished submission — with source-grounded AI that preserves citation integrity at every stage.
+
+## Product Model
+
+```
+Module → Assignment → Argument → Draft
+```
+
+- **Module**: mirrors a university module (e.g., PIRR30041 International Security)
+- **Assignment**: a piece of coursework within a module with a question, rubric, deadline, and source selection
+- **Argument**: a structured claim within an assignment, linked to evidence from sources
+- **Draft**: a versioned piece of written work for an assignment, subject to review and refinement
+
+## Production Workflow
+
+Every assignment moves through seven stages:
+
+```
+Ingest → Understand → Map → Judge → Build → Draft → Refine
+```
+
+| Stage | Purpose | Key actions |
+|-------|---------|-------------|
+| **Ingest** | Collect raw material | Upload PDFs, DOCXs, slides, briefs; text extraction and chunking |
+| **Understand** | Comprehend individual sources | Reading summaries, key concept extraction, main argument identification |
+| **Map** | Connect ideas across sources | Theory comparison, literature matrix, evidence linking, theme mapping |
+| **Judge** | Evaluate argument strength | Gap analysis, counterargument identification, evidence sufficiency checking |
+| **Build** | Structure the submission | Argument construction, section planning, evidence allocation, word budgeting |
+| **Draft** | Write the submission | Composing text, citing sources, integrating evidence |
+| **Refine** | Polish and validate | Draft review against rubric, citation safety check, revision priorities |
 
 ## Target Users
 
 - Third-year undergraduate students in Politics, International Relations, Sociology, History, Law, Philosophy, Public Policy, PPE, Criminology, and related fields
 - Students who are overwhelmed by the volume and complexity of assigned readings
-- Students who want to build better essays from sources rather than from generic AI output
+- Students who want to build better coursework from sources rather than from generic AI output
 - Students who take academic integrity seriously
 
 ## The Problem
@@ -18,7 +47,7 @@ Social science coursework involves managing large volumes of complex material ac
 - Track dozens of readings per module across multiple modules
 - Extract arguments and evidence from dense academic texts
 - Compare theories and frameworks across sources
-- Build coherent, evidence-based essays under time pressure
+- Build coherent, evidence-based submissions under time pressure
 - Ensure proper citation and avoid unsupported claims
 - Manage drafts, feedback, and revision cycles
 
@@ -26,11 +55,11 @@ Existing tools either fail to handle academic workflows (generic note-taking app
 
 ## The Solution
 
-Polis provides a structured workspace that mirrors actual coursework workflows:
+Polis provides a structured workspace that mirrors actual coursework production:
 
-**Collect** → **Understand** → **Connect** → **Argue** → **Draft** → **Review**
+**Ingest** → **Understand** → **Map** → **Judge** → **Build** → **Draft** → **Refine**
 
-Each step is supported by source-grounded AI that references actual uploaded materials, distinguishes between source-supported claims and model interpretation, and warns when evidence is insufficient.
+Each step is supported by a source-grounded CoThinker that references actual uploaded materials, distinguishes between source-supported claims and model interpretation, and warns when evidence is insufficient.
 
 ## Differentiation
 
@@ -43,20 +72,20 @@ Polis is NOT:
 
 Polis IS:
 
-- A coursework workflow system designed around how students actually work
-- A source-grounded assistant that preserves citation integrity
+- A coursework production system designed around how students actually work
+- A source-grounded CoThinker that preserves citation integrity
 - A planning and review tool that supports learning, not replaces it
 - A module organiser that mirrors university course structures
 
 ## Core Workflow
 
 1. **Create a module workspace** matching a university module (e.g., International Security, Comparative Government)
-2. **Organise materials** into default folders (Readings, Lectures, Source Notes, Essay Plans, Drafts)
-3. **Upload sources** (journal articles, book chapters, lecture slides, essay briefs)
-4. **Ask questions** scoped to modules, folders, or specific sources
-5. **Generate academic outputs** (summaries, concept cards, theory comparisons, evidence banks, essay plans)
-6. **Plan essays** using source-grounded arguments with visible evidence and gaps
-7. **Draft and review** with feedback on structure, evidence use, and citation safety
+2. **Organise materials** into default folders (Readings, Lectures, Source Notes, Assignments, Submissions)
+3. **Upload sources** (journal articles, book chapters, lecture slides, assignment briefs)
+4. **Create an assignment** with the coursework question, rubric, and deadline
+5. **Build arguments** by linking claims to evidence from sources
+6. **Ask the CoThinker** scoped to modules, folders, or specific sources
+7. **Draft and refine** with feedback on structure, evidence use, and citation safety
 8. **Submit** with confidence that claims are source-grounded
 
 ## Non-Goals

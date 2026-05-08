@@ -1,6 +1,6 @@
 # Polis — MVP Scope
 
-## Phase 0: Static Prototype (Current)
+## Phase 0: Static Prototype (Complete)
 
 **Goal**: Build a polished, convincing frontend prototype with realistic mock data.
 
@@ -9,9 +9,9 @@
 - Dashboard with module cards, recent activity, quick actions
 - Module workspace with folder navigation and source management
 - Source library and source viewer with metadata and summaries
-- AI assistant panel with mock source-grounded responses
-- Essay project workspace with planning, evidence bank, and draft review
-- Academic tools page with 11 tool cards
+- CoThinker panel with mock source-grounded responses
+- Assignment workspace with planning, evidence linking, and draft review
+- Workbench page with stage-appropriate tool cards
 - Settings page with provider configuration placeholders
 - Complete TypeScript data model and realistic mock data
 - AI provider abstraction stubs and RAG architecture documentation
@@ -25,25 +25,19 @@
 - Database persistence
 - Payment or billing
 
-## Phase 1: Core Functionality
+## Phase 1: Core Functionality (Complete)
 
 **Goal**: Make the prototype functional with real file upload and AI integration.
 
 **Includes**:
 - File upload and text extraction (PDF, DOCX, PPTX)
 - AI provider integration (BYO API key, server-side)
-- Real conversational AI scoped to modules/sources
+- Real conversational CoThinker scoped to modules/sources
 - Basic chunking and retrieval
 - Source summarisation and concept extraction
-- Essay planning with live AI assistance
+- Assignment planning with live CoThinker assistance
 
-**Does NOT include**:
-- Advanced RAG (hybrid search, reranking)
-- Full citation grounding with page-level references
-- Draft review AI
-- User authentication
-
-## Phase 2: Intelligence Layer
+## Phase 2: Intelligence Layer (Complete)
 
 **Goal**: Build robust source-grounded AI with citation integrity.
 
@@ -53,17 +47,34 @@
 - Citation safety checking
 - Draft review against rubrics
 - Theory comparison and literature matrices
-- Evidence bank with source-grounded entries
+- Evidence linking with source-grounded entries
 - Argument mapping
 
-## Phase 3: Platform
+## Phase 3: Production Platform (Complete)
 
-**Goal**: Expand to a multi-user platform.
+**Goal**: Expand to a production-ready platform.
 
 **Includes**:
-- User authentication and accounts
-- Module sharing and collaboration
-- Advanced academic tools
-- Usage tracking and limits
+- User authentication and accounts (OAuth)
+- Per-user BYO API key management
+- Background file processing
+- Cloud storage abstraction
+- Usage analytics and rate limiting
+- Draft editor in assignment workspace
+- Source notes
 - Mobile-responsive design refinements
-- Potential pricing tier
+- Google Gemini provider integration
+
+## Phase 4: Product Model (Current)
+
+**Goal**: Implement the full Module → Assignment → Argument → Draft product model with the 7-stage production workflow.
+
+**Includes**:
+- Assignment entity replacing EssayProject
+- Argument construction with evidence linking
+- Versioned drafts with review history
+- Judgement system for evidence quality assessment
+- CoThinker with stage-aware behaviour
+- Workbench with stage-appropriate tool surfacing
+- Production stage tracking per assignment
+- Convex backend for all new entities
