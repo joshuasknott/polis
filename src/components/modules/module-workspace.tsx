@@ -61,18 +61,14 @@ export function ModuleWorkspace({
 
   const renderContent = () => {
     switch (activeTab) {
-      case "info":
+      case "overview":
         return <ModuleInfo module={module} />;
-      case "readings":
+      case "sources":
         return <ModuleReadings module={module} folders={folders} sources={sources} />;
-      case "module-notes":
-        return <EmptyState icon={FileText} title="Module Notes" description="Your consolidated module notes will appear here." />;
-      case "source-notes":
-        return <EmptyState icon={StickyNote} title="Source Notes" description="Annotations and notes from your readings will appear here." />;
-      case "essays":
-        return <ModuleEssays essays={essays} />;
-      case "submission":
-        return <EmptyState icon={CheckCircle} title="Submissions" description="Keep final submission materials here." />;
+      case "notes":
+        return <EmptyState icon={StickyNote} title="Notes" description="Your module notes and source annotations will appear here." />;
+      case "assignments":
+        return <ModuleAssignments assignments={essays} module={module} />;
       default:
         return <ModuleInfo module={module} />;
     }
@@ -247,7 +243,7 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
   );
 }
 
-function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
+function ModuleAssignments({ assignments, module }: { assignments: ModuleWorkspaceProps["essays"], module: ModuleWorkspaceProps["module"] }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
@@ -257,12 +253,12 @@ function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
         </button>
       </div>
 
-      {essays.length > 0 ? (
+      {assignments.length > 0 ? (
         <div className="grid gap-4">
-          {essays.map(essay => (
+          {assignments.map(assignment => (
             <Link
-              key={essay.id}
-              href={`/essays/${essay.id}`}
+              key={assignment.id}
+              href={`/modules/${module.id}/assignments/${assignment.id}`}
               className="flex items-center justify-between rounded-xl border border-border bg-card p-6 hover:border-foreground/30 hover:shadow-sm transition-all group"
             >
               <div className="flex items-center gap-4">
@@ -270,8 +266,8 @@ function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
                   <FileText className="h-5 w-5 text-muted-foreground group-hover:text-accent-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-base">{essay.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">Status: <span className="capitalize font-medium">{essay.status.replace('-', ' ')}</span></p>
+                  <h3 className="font-semibold text-base">{assignment.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Status: <span className="capitalize font-medium">{assignment.status.replace('-', ' ')}</span></p>
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />

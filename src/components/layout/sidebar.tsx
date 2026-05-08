@@ -93,12 +93,10 @@ export function Sidebar({
             
             <div className="space-y-0.5">
               {[
-                { name: "Module Info", id: "info", icon: Info, href: `/modules/${moduleContext.id}?tab=info` },
-                { name: "Sources", id: "readings", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=readings` },
-                { name: "Module Notes", id: "module-notes", icon: FileText, href: `/modules/${moduleContext.id}?tab=module-notes` },
-                { name: "Source Notes", id: "source-notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=source-notes` },
-                { name: "Assignments", id: "essays", icon: PenTool, href: `/modules/${moduleContext.id}?tab=essays` },
-                { name: "Submissions", id: "submission", icon: CheckCircle, href: `/modules/${moduleContext.id}?tab=submission` },
+                { name: "Overview", id: "overview", icon: Info, href: `/modules/${moduleContext.id}?tab=overview` },
+                { name: "Sources", id: "sources", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=sources` },
+                { name: "Notes", id: "notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=notes` },
+                { name: "Assignments", id: "assignments", icon: PenTool, href: `/modules/${moduleContext.id}?tab=assignments` },
               ].map((item) => {
                 const isActive = moduleContext.activeTab === item.id;
                 return (

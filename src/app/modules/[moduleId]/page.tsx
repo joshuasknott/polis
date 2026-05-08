@@ -17,7 +17,7 @@ export default async function ModulePage({
 }) {
   const { moduleId } = await params;
   const resolvedSearchParams = await searchParams;
-  const tab = typeof resolvedSearchParams.tab === "string" ? resolvedSearchParams.tab : "info";
+  const tab = typeof resolvedSearchParams.tab === "string" ? resolvedSearchParams.tab : "overview";
   const mod = getModuleById(moduleId);
 
   if (!mod) notFound();
