@@ -10,13 +10,26 @@ import {
 
 export default async function ModulePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ moduleId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { moduleId } = await params;
+  const resolvedSearchParams = await searchParams;
+  const tab = typeof resolvedSearchParams.tab === "string" ? resolvedSearchParams.tab : "info";
   const mod = getModuleById(moduleId);
 
   if (!mod) notFound();
+
+  const modContext = {
+    id: mod.id,
+    title: mod.title,
+    code: mod.code,
+    description: mod.description,
+    colour: mod.color,
+    activeTab: tab,
+  };
 
   const sources = getSourcesForModule(moduleId);
   const folders = getFoldersForModule(moduleId);
@@ -29,15 +42,9 @@ export default async function ModulePage({
   }
 
   return (
-    <AppShell>
+    <AppShell moduleContext={modContext}>
       <ModuleWorkspace
-        module={{
-          id: mod.id,
-          title: mod.title,
-          code: mod.code,
-          description: mod.description,
-          colour: mod.color,
-        }}
+        module={modContext}
         folders={folders.map((f) => ({
           id: f.id,
           name: f.name,

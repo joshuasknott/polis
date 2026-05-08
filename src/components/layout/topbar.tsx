@@ -7,15 +7,21 @@ import Image from "next/image";
 import { Sidebar } from "./sidebar";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 
-export function TopBar() {
+export function TopBar({ moduleContext }: { moduleContext?: { title: string; code: string } }) {
   const { isSignedIn, isLoaded } = useUser();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4 sm:px-6">
+    <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-4">
-        <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">
-          Polis Workspace
-        </h2>
+        {moduleContext ? (
+          <h2 className="text-sm font-medium text-foreground hidden sm:block">
+            {moduleContext.code} &middot; {moduleContext.title}
+          </h2>
+        ) : (
+          <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">
+            Polis Workspace
+          </h2>
+        )}
       </div>
       <div className="flex items-center gap-3">
         {isLoaded && isSignedIn ? (
@@ -32,7 +38,7 @@ export function TopBar() {
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ moduleContext }: { moduleContext?: any }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -40,11 +46,11 @@ export function MobileNav() {
       <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Image 
-            src="/brand/polis-wordmark.png" 
+            src="/brand/polis-wordmark.svg" 
             alt="Polis" 
             width={90} 
             height={24} 
-            className="h-6 w-auto object-contain" 
+            className="h-5 w-auto" 
             priority
           />
         </Link>
@@ -64,7 +70,7 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
           />
           <div className="fixed left-0 top-0 z-50 h-full w-60">
-            <Sidebar onClose={() => setOpen(false)} />
+            <Sidebar onClose={() => setOpen(false)} moduleContext={moduleContext} />
           </div>
         </>
       )}
