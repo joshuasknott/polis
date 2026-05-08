@@ -46,7 +46,7 @@ export function DashboardContent({
           </div>
           <h3 className="text-lg font-medium text-foreground font-serif">No workspaces yet</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-            Create your first module workspace to start organising your readings, notes, and essay plans.
+            Create your first module workspace to start organising readings, notes, and assignments.
           </p>
           <button className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors">
             <Plus className="h-4 w-4" />
@@ -97,7 +97,7 @@ export function DashboardContent({
                   </span>
                   <span className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-md">
                     <FileText className="h-3.5 w-3.5" />
-                    {mod.essayProjectCount} essays
+                    {mod.assignmentCount} assignments
                   </span>
                 </div>
               </div>

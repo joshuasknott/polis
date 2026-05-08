@@ -24,8 +24,8 @@ import { cn } from "@/lib/utils";
 const navigation = [
   { name: "Workspaces", href: "/dashboard", icon: LayoutDashboard },
   { name: "Sources", href: "/sources", icon: Library },
-  { name: "Tools", href: "/tools", icon: Wrench },
-  { name: "Assistant", href: "/assistant", icon: MessageSquare },
+  { name: "Workbench", href: "/tools", icon: Wrench },
+  { name: "CoThinker", href: "/assistant", icon: MessageSquare },
 ];
 
 export function Sidebar({
@@ -97,8 +97,8 @@ export function Sidebar({
                 { name: "Sources", id: "readings", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=readings` },
                 { name: "Module Notes", id: "module-notes", icon: FileText, href: `/modules/${moduleContext.id}?tab=module-notes` },
                 { name: "Source Notes", id: "source-notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=source-notes` },
-                { name: "Coursework Plans", id: "essays", icon: PenTool, href: `/modules/${moduleContext.id}?tab=essays` },
-                { name: "Final Submission", id: "submission", icon: CheckCircle, href: `/modules/${moduleContext.id}?tab=submission` },
+                { name: "Assignments", id: "essays", icon: PenTool, href: `/modules/${moduleContext.id}?tab=essays` },
+                { name: "Submissions", id: "submission", icon: CheckCircle, href: `/modules/${moduleContext.id}?tab=submission` },
               ].map((item) => {
                 const isActive = moduleContext.activeTab === item.id;
                 return (
@@ -123,7 +123,7 @@ export function Sidebar({
         ) : (
           navigation.filter(item => {
             if (pathname === "/dashboard") {
-              return !["Sources", "Tools", "Assistant"].includes(item.name);
+              return !["Sources", "Workbench", "CoThinker"].includes(item.name);
             }
             return true;
           }).map((item) => {

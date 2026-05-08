@@ -54,7 +54,7 @@ export function AssistantContent({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState(modules[0]?.id || "");
-  const [selectedMode, setSelectedMode] = useState("source_grounded");
+  const [selectedMode, setSelectedMode] = useState("understand");
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -80,7 +80,7 @@ export function AssistantContent({
       setConversationId(conversationId || "convex-migration-placeholder");
       const assistantMsg: ChatMessage = {
         role: "assistant",
-        content: "The old assistant API has been removed while Polis migrates to Convex. Runtime AI will be rebuilt later with the new backend foundation.",
+        content: "The old CoThinker API has been removed while Polis migrates to Convex. Runtime AI will be rebuilt later with the new backend foundation.",
         citedChunks: [],
         warnings: ["Convex migration placeholder"],
         labels: [],
@@ -115,9 +115,9 @@ export function AssistantContent({
   return (
     <div className="max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">AI Assistant</h1>
+        <h1 className="text-2xl font-bold tracking-tight">CoThinker</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ask questions about your modules and sources. Answers are source-grounded.
+          Ask questions about modules, assignments, arguments, and sources. Answers are source-grounded.
         </p>
       </div>
 
@@ -144,12 +144,13 @@ export function AssistantContent({
             onChange={(e) => setSelectedMode(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
           >
-            <option value="source_grounded">Source-grounded answer</option>
-            <option value="reading_summary">Reading summary</option>
-            <option value="essay_planning">Essay planning</option>
-            <option value="brainstorm">Brainstorm</option>
-            <option value="draft_feedback">Draft feedback</option>
-            <option value="citation_safety">Citation safety</option>
+              <option value="ingest">Ingest</option>
+              <option value="understand">Understand</option>
+              <option value="map">Map</option>
+              <option value="judge">Judge</option>
+              <option value="build">Build</option>
+              <option value="draft">Draft</option>
+              <option value="refine">Refine</option>
           </select>
         </div>
         <div className="space-y-1.5 self-end">
@@ -208,7 +209,7 @@ export function AssistantContent({
                 {[
                   "What are the main differences between consensus and majoritarian democracy?",
                   "Summarise the key arguments about great power competition",
-                  "Help me plan an essay on electoral systems",
+                  "Help me map arguments for an electoral systems assignment",
                 ].map((suggestion) => (
                   <button
                     key={suggestion}

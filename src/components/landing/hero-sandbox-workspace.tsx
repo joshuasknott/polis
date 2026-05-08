@@ -193,7 +193,7 @@ export function HeroSandboxWorkspace() {
                     What comes out
                   </div>
                   <div className="text-[11px] font-semibold text-[#0f284d] mb-5">
-                    Coursework Plan — POL2028 Essay
+                    Argument Map — POL2028 Assignment
                   </div>
                   <div className="space-y-2">
                     {OUTPUT_ITEMS.map((item, i) => (

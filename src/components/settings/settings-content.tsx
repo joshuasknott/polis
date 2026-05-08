@@ -129,7 +129,7 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const [defaultAiMode, setDefaultAiMode] = useState(preferences.defaultAiMode || "source_grounded");
+  const [defaultAiMode, setDefaultAiMode] = useState(preferences.defaultAiMode || "understand");
   const [citationStyle, setCitationStyle] = useState(preferences.citationStyle || "harvard");
   const [prefSaving, setPrefSaving] = useState(false);
 
@@ -318,18 +318,19 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
         </h2>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Default AI Mode</label>
+            <label className="text-xs font-medium text-muted-foreground">Default CoThinker Stage</label>
             <select
               value={defaultAiMode}
               onChange={(e) => { setDefaultAiMode(e.target.value); }}
               className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             >
-              <option value="source_grounded">Source Grounded</option>
-              <option value="brainstorm">Brainstorm</option>
-              <option value="reading_summary">Reading Summary</option>
-              <option value="essay_planning">Essay Planning</option>
-              <option value="draft_feedback">Draft Feedback</option>
-              <option value="citation_safety">Citation Safety</option>
+              <option value="ingest">Ingest</option>
+              <option value="understand">Understand</option>
+              <option value="map">Map</option>
+              <option value="judge">Judge</option>
+              <option value="build">Build</option>
+              <option value="draft">Draft</option>
+              <option value="refine">Refine</option>
             </select>
           </div>
           <div>
@@ -637,7 +638,7 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             { label: "BYO API Key storage", enabled: false },
             { label: "Vector Embeddings / Semantic Search", enabled: hasEmbeddings },
             { label: "Hybrid Retrieval (semantic + keyword)", enabled: hasEmbeddings },
-            { label: "LLM-Powered Source-Grounded Assistant", enabled: aiConfigured },
+            { label: "LLM-Powered Source-Grounded CoThinker", enabled: aiConfigured },
             { label: "Auto-Generated Source Summaries", enabled: aiConfigured },
             { label: "Citation Safety Check", enabled: aiConfigured },
             { label: "Draft Review with Rubric Analysis", enabled: aiConfigured },
@@ -674,9 +675,10 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             "Readings",
             "Lecture and Seminar Material",
             "Source Notes",
-            "Essay Plans",
-            "Drafts and Feedback",
-            "Final Submission",
+            "Assignments",
+            "Argument Maps",
+            "Drafts and Reviews",
+            "Submissions",
           ].map((folder, i) => (
             <div key={folder} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
               <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>

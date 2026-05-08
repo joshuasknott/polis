@@ -242,13 +242,13 @@ export function SourceViewerContent({
               Ask About This Source
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Use the AI assistant to ask questions about this reading, extract arguments, compare with other sources, or plan how to use it in your essay.
+              Use CoThinker to ask questions about this reading, extract arguments, compare with other sources, or plan how to use it in your assignment.
             </p>
             <Link
               href="/assistant"
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source hover:underline"
             >
-              Open Assistant
+              Open CoThinker
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           </div>
