@@ -17,8 +17,8 @@ const PIPELINE = [
   { label: "Source Base", desc: "Preserves breadth" },
   { label: "Module Notes", desc: "Adds lecture context" },
   { label: "Evidence Map", desc: "Filters by assignment" },
-  { label: "Coursework Plan", desc: "Binds claims to sources" },
-  { label: "Final Coursework", desc: "Scans while writing" },
+  { label: "Argument Map", desc: "Binds claims to sources" },
+  { label: "Draft & Review", desc: "Scans while writing" },
 ];
 
 export function GroundedGenerationSection() {

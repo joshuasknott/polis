@@ -37,7 +37,7 @@ export function getSourceTypeLabel(type: string): string {
     book: "Book",
     lecture_slides: "Lecture Slides",
     module_handbook: "Module Handbook",
-    essay_brief: "Essay Brief",
+    assignment_brief: "Assignment Brief",
     marking_rubric: "Marking Rubric",
     seminar_notes: "Seminar Notes",
     draft: "Draft",
@@ -69,22 +69,26 @@ export function getStatusLabel(status: string): string {
 
 export function getEssayStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    planning: "Planning",
-    drafting: "Drafting",
-    reviewing: "Reviewing",
-    revising: "Revising",
-    submitted: "Submitted",
+    ingest: "Ingest",
+    understand: "Understand",
+    map: "Map",
+    judge: "Judge",
+    build: "Build",
+    draft: "Draft",
+    refine: "Refine",
   };
   return labels[status] || status;
 }
 
 export function getEssayStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    planning: "bg-accent/10 text-accent",
-    drafting: "bg-warning/10 text-warning",
-    reviewing: "bg-interpretation/10 text-interpretation",
-    revising: "bg-warning/20 text-warning",
-    submitted: "bg-success/10 text-success",
+    ingest: "bg-muted text-muted-foreground",
+    understand: "bg-accent/10 text-accent",
+    map: "bg-source/10 text-source",
+    judge: "bg-warning/10 text-warning",
+    build: "bg-interpretation/10 text-interpretation",
+    draft: "bg-warning/20 text-warning",
+    refine: "bg-success/10 text-success",
   };
   return colors[status] || "bg-muted text-muted-foreground";
 }

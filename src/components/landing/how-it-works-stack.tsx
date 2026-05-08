@@ -95,7 +95,7 @@ const STAGES = [
   },
   {
     id: 4,
-    label: "Coursework Plan",
+    label: "Argument Map",
     icon: PenTool,
     phase: 2,
     headline: "Build argument structure from evidence",
@@ -112,11 +112,11 @@ const STAGES = [
   },
   {
     id: 5,
-    label: "Final Coursework",
+    label: "Draft & Refine",
     icon: Edit3,
     phase: 2,
     headline: "Write with evidence still attached",
-    body: "Write and expand from the Coursework Plan. Generate draft material, refine paragraphs, keep source links attached, suggest where evidence belongs, flag unsupported claims, and run scans for grammar, missing citations, evidence gaps, and assignment alignment.",
+    body: "Draft from the argument map, refine paragraphs, keep source links attached, suggest where evidence belongs, flag unsupported claims, and run scans for grammar, missing citations, evidence gaps, and assignment alignment.",
     visual: {
       title: "Writing Canvas — Draft in progress",
       items: [

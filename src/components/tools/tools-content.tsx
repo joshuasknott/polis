@@ -61,7 +61,7 @@ export function ToolsContent() {
   return (
     <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Academic Tools</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Workbench</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Source-grounded tools to support your reading, planning, and writing workflow.
         </p>
@@ -96,7 +96,7 @@ export function ToolsContent() {
 
               {(tool.id === "reading_summary" ||
                 tool.id === "concept_extractor" ||
-                tool.id === "essay_plan_builder" ||
+                tool.id === "argument_builder" ||
                 tool.id === "counterargument_finder" ||
                 tool.id === "draft_review" ||
                 tool.id === "citation_safety_check" ||
@@ -134,7 +134,7 @@ export function ToolsContent() {
 
               {!(tool.id === "reading_summary" ||
                 tool.id === "concept_extractor" ||
-                tool.id === "essay_plan_builder" ||
+                tool.id === "argument_builder" ||
                 tool.id === "counterargument_finder" ||
                 tool.id === "draft_review" ||
                 tool.id === "citation_safety_check" ||
@@ -147,7 +147,7 @@ export function ToolsContent() {
                     href="/assistant"
                     className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent hover:underline"
                   >
-                    Open Assistant
+                    Open CoThinker
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -186,10 +186,10 @@ export function ToolsContent() {
       )}
 
       <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
-        <p className="text-sm font-medium">AI-Powered Tools</p>
+        <p className="text-sm font-medium">Workbench Tools</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          These tools use AI to generate outputs grounded in your uploaded sources when an API key is configured.
-          Without an API key, the assistant uses template-based keyword retrieval.
+          These workbench tools generate source-grounded outputs when an API key is configured.
+          Without an API key, CoThinker uses template-based keyword retrieval.
         </p>
       </div>
     </div>

@@ -5,16 +5,15 @@
 ### First Visit
 1. User lands on the **Landing Page**
 2. Reads value proposition: "Turn scattered readings into structured arguments"
-3. Sees workflow explanation, feature cards, academic integrity commitment
+3. Sees workflow explanation (Ingest → Understand → Map → Judge → Build → Draft → Refine)
 4. Clicks "Get Started" → navigates to **Dashboard**
 
 ### Dashboard
 1. Welcome message with user context (university, course, year)
 2. Module cards showing active modules with source counts and activity
-3. Recent sources list
-4. Recent AI conversations
-5. Upcoming essay deadlines
-6. Quick actions (Create Module, Upload Source, Start Essay)
+3. Active assignments with deadlines and current production stage
+4. Recent CoThinker conversations
+5. Quick actions (Create Module, Upload Source, New Assignment)
 
 ## Module Journey
 
@@ -27,17 +26,17 @@
 ### Working in a Module
 1. Click module card → **Module Workspace**
 2. Left panel: folder tree navigation
-3. Center panel: folder contents or overview
-4. Right panel: AI assistant
+3. Centre panel: folder contents or overview
+4. Right panel: CoThinker
 
 ### Module Workspace Layout
 ```
 ┌──────────────┬────────────────────────────┬──────────────────┐
-│  Module Nav  │     Main Content Area      │  AI Assistant    │
+│  Module Nav  │     Main Content Area      │  CoThinker       │
 │              │                            │                  │
 │  Folders     │  Source List / Source View  │  Scope Selector  │
-│  Tools       │  Essay Overview            │  Chat Messages   │
-│  Essays      │  Evidence Bank             │  Citations       │
+│  Workbench   │  Assignment Overview       │  Chat Messages   │
+│  Assignments │  Argument Map              │  Citations       │
 │              │                            │  Warnings        │
 └──────────────┴────────────────────────────┴──────────────────┘
 ```
@@ -54,58 +53,78 @@
 1. Click source from list → **Source Viewer**
 2. Header: title, author, year, type badge, citation
 3. Tabs or sections: Summary, Main Argument, Key Concepts, Evidence, Limitations
-4. Actions: Summarise, Extract Concepts, Add to Evidence Bank, Compare, Use in Essay
+4. Actions: Summarise, Extract Concepts, Add to Evidence Bank, Compare, Link to Argument
 
-### Understanding a Source
-1. Open AI assistant with source selected
+### Understanding a Source (Understand stage)
+1. Open CoThinker with source selected
 2. Ask "What is the main argument of this reading?"
 3. Receive source-grounded answer with citations
 4. See "Supported by sources" badges
-5. Follow up with "How could I use this in my essay?"
+5. Follow up with "How could I use this in my assignment?"
 
-## Essay Journey
+## Assignment Journey
 
-### Starting an Essay
-1. From module workspace → Essay Plans folder
-2. Click "Create Essay Project"
-3. Enter essay question, word count, due date
+### Creating an Assignment
+1. From module workspace → Assignments folder
+2. Click "New Assignment"
+3. Enter coursework question, word limit, due date
 4. Select or upload marking rubric
 5. Select relevant sources
+6. Assignment enters the **Ingest** stage
 
-### Planning an Essay
-1. **Essay Project Workspace** opens
-2. View essay question and rubric
-3. Use AI to generate thesis options
-4. Build essay structure section by section
-5. Allocate evidence to sections
-6. Identify counterarguments
-7. See research gaps highlighted
+### Production Workflow
 
-### Drafting an Essay
-1. Write draft in the essay workspace or paste from external editor
-2. AI provides real-time feedback:
+#### Ingest → Understand
+1. Review selected sources in the assignment workspace
+2. Use CoThinker to summarise individual readings
+3. Extract key concepts and arguments
+4. Stage advances to **Understand** when sources are processed
+
+#### Map
+1. Use the literature matrix or theory comparison tools
+2. Build connections between sources
+3. Identify themes and patterns across readings
+4. Begin linking evidence to potential claims
+
+#### Judge
+1. Run gap analysis on the current evidence base
+2. Identify counterarguments to emerging claims
+3. Check evidence sufficiency for each planned section
+4. Receive Judgements flagging weak areas
+
+#### Build
+1. **Assignment Workspace** opens
+2. View coursework question and rubric
+3. Construct structured Arguments with linked evidence
+4. Allocate word budget to sections
+5. CoThinker helps refine thesis and structure
+
+#### Draft
+1. Write draft in the assignment workspace or paste from external editor
+2. CoThinker provides contextual feedback:
    - Unsupported claims flagged
    - Missing citations highlighted
    - Structure suggestions
-3. Evidence bank shows available evidence by section
+3. Evidence links show available evidence by argument
 
-### Reviewing a Draft
-1. Submit draft for AI review
-2. Receive structured feedback:
+#### Refine
+1. Submit draft for review
+2. Receive structured Review:
    - Strengths
    - Weaknesses
    - Missing evidence
    - Unsupported claims
    - Revision priorities
-   - Estimated mark range
+   - Rubric alignment assessment
 3. Iterate on draft
+4. Run citation safety check
 
-## Assistant Journey
+## CoThinker Journey
 
 ### Asking Questions
-1. Open AI assistant panel (right side of module workspace)
-2. Select scope: whole module / current folder / selected sources / essay project
-3. Select mode: source-grounded / brainstorm / reading summary / essay planning / draft feedback / citation safety
+1. Open CoThinker panel (right side of module workspace)
+2. Select scope: whole module / current folder / selected sources / assignment
+3. CoThinker adapts to the current production stage
 4. Type question
 5. Receive answer with:
    - Source citations where applicable
@@ -119,19 +138,32 @@
 User: "What is the difference between Lijphart's consensus model and
        Tsebelis's veto player theory?"
 
-AI:   [Source-supported] Lijphart classifies democracies along a
-      majoritarian-consensus dimension using 10 institutional variables...
-      (Lijphart, 1999, pp. 2-3)
+CoThinker: [Source-supported] Lijphart classifies democracies along a
+           majoritarian-consensus dimension using 10 institutional variables...
+           (Lijphart, 1999, pp. 2-3)
 
-      [Source-supported] Tsebelis identifies "veto players" whose
-      agreement is necessary for policy change... (Tsebelis, 2002, p. 19)
+           [Source-supported] Tsebelis identifies "veto players" whose
+           agreement is necessary for policy change... (Tsebelis, 2002, p. 19)
 
-      [Interpretation] These frameworks complement each other:
-      Lijphart for classification, Tsebelis for mechanism.
+           [Interpretation] These frameworks complement each other:
+           Lijphart for classification, Tsebelis for mechanism.
 
-      ⚠️ Warning: Your source base does not include a direct comparison
-      of these two theorists. Consider adding a comparative source.
+           ⚠️ Warning: Your source base does not include a direct comparison
+           of these two theorists. Consider adding a comparative source.
 
-      Follow-up: "How does Tsebelis explain policy change in consensus
-      systems?"
+           Follow-up: "How does Tsebelis explain policy change in consensus
+           systems?"
 ```
+
+## Workbench Journey
+
+The Workbench (formerly Academic Tools) provides stage-appropriate tools:
+
+| Production Stage | Available Tools |
+|-----------------|-----------------|
+| Understand | Reading Summary, Key Concept Extractor |
+| Map | Theory Comparison, Literature Matrix, Evidence Bank |
+| Judge | Counterargument Finder, Research Gap Finder, Argument Map |
+| Build | Argument Builder, Section Planner |
+| Draft | Draft Editor |
+| Refine | Draft Review, Citation Safety Check |

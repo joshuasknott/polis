@@ -181,7 +181,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
           </div>
         </div>
 
-        {/* Right Pane: Evidence & Tools */}
+        {/* Right Pane: Evidence & Workbench */}
         <div className="w-[420px] shrink-0 flex flex-col border-l border-border bg-muted/20">
           <div className="p-4 border-b border-border bg-muted/30">
             <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -224,7 +224,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
           <div className="p-4 border-t border-border bg-card">
             <h2 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
               <ShieldCheck className="h-3.5 w-3.5 text-interpretation" />
-              AI Review Tools
+              Review Workbench
             </h2>
             <div className="grid grid-cols-2 gap-2">
               <Link

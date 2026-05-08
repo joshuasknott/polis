@@ -3,9 +3,9 @@ import { AppShell } from "@/components/layout/shell";
 import { ModuleWorkspace } from "@/components/modules/module-workspace";
 import {
   getFoldersForModule,
+  getAssignmentsForModule,
   getModuleById,
   getSourcesForModule,
-  mockEssayProject,
 } from "@/lib/data/mock-data";
 
 export default async function ModulePage({
@@ -33,7 +33,7 @@ export default async function ModulePage({
 
   const sources = getSourcesForModule(moduleId);
   const folders = getFoldersForModule(moduleId);
-  const essays = mockEssayProject.moduleId === moduleId ? [mockEssayProject] : [];
+  const assignments = getAssignmentsForModule(moduleId);
 
   const folderSourceCounts: Record<string, number> = {};
   for (const source of sources) {
@@ -64,10 +64,10 @@ export default async function ModulePage({
           summary: s.summary || "",
           pageCount: s.pageCount,
         }))}
-        essays={essays.map((e) => ({
-          id: e.id,
-          title: e.title,
-          status: e.status,
+        essays={assignments.map((assignment) => ({
+          id: assignment.id,
+          title: assignment.title,
+          status: assignment.stage,
         }))}
       />
     </AppShell>

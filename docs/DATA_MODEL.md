@@ -2,7 +2,23 @@
 
 ## Current Backend Status
 
-Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active foundational schema now lives in `convex/schema.ts`; this document remains the product-level model reference and will be reconciled as Convex-backed features are rebuilt.
+Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active foundational schema now lives in `convex/schema.ts`; this document is the authoritative product-level model reference and will be reconciled as Convex-backed features are rebuilt.
+
+## Product Model
+
+```
+Module → Assignment → Argument → Draft
+```
+
+## Production Stages
+
+Every assignment progresses through:
+
+```
+Ingest → Understand → Map → Judge → Build → Draft → Refine
+```
+
+Represented as `ProductionStage` enum in `src/lib/types.ts`.
 
 ## Core Entities
 
@@ -19,22 +35,11 @@ User {
 }
 ```
 
-### Workspace
-```
-Workspace {
-  id: string
-  ownerId: string
-  name: string
-  description: string
-}
-```
-A workspace is a top-level container. Each user has at least one personal workspace.
-
 ### Module
 ```
 Module {
   id: string
-  workspaceId: string → Workspace
+  workspaceId: string
   title: string
   code: string
   academicYear: string
@@ -42,7 +47,7 @@ Module {
   description: string
   sourceCount: number
   noteCount: number
-  essayProjectCount: number
+  assignmentCount: number
   lastActivityAt: string
   color: string
 }
@@ -61,7 +66,7 @@ Folder {
   sourceCount: number
 }
 ```
-Default folders per module: Module Info, Readings, Lecture and Seminar Material, Source Notes, Essay Plans, Drafts and Feedback, Final Submission.
+Default folders per module: Module Info, Readings, Lectures, Source Notes, Assignments, Drafts, Submissions.
 
 ### SourceFile
 ```
@@ -111,22 +116,116 @@ SourceNote {
 ```
 User-created notes attached to a source.
 
-### AIConversation
+## Assignment Model
+
+### Assignment
 ```
-AIConversation {
+Assignment {
   id: string
   moduleId: string → Module
   title: string
-  scope: AIScope
-  mode: AIMode
-  messages: AIMessage[]
+  question: string
+  wordLimit: number
+  dueDate: string
+  rubric: RubricCriterion[]
+  selectedSourceIds: string[]
+  stage: ProductionStage
+  createdAt: string
+}
+```
+A piece of coursework with a question, rubric, and deadline. Replaces the old `EssayProject`.
+
+### Argument
+```
+Argument {
+  id: string
+  assignmentId: string → Assignment
+  claim: string
+  synthesis: string
+  evidenceLinks: EvidenceLink[]
+  counterarguments: string[]
+  sortOrder: number
+}
+```
+A structured claim within an assignment, linked to evidence from sources.
+
+### EvidenceLink
+```
+EvidenceLink {
+  id: string
+  argumentId: string → Argument
+  sourceId: string → SourceFile
+  sourceTitle: string
+  quote: string
+  pageRange: string
+  usage: string
+  strength: "strong" | "moderate" | "weak"
+}
+```
+Connects a source passage to an argument claim. Replaces the old `EvidenceItem`.
+
+### Draft
+```
+Draft {
+  id: string
+  assignmentId: string → Assignment
+  version: number
+  content: string
+  wordCount: number
+  createdAt: string
+  updatedAt: string
+}
+```
+A versioned piece of written work. Elevated from being a field on EssayProject to a first-class entity.
+
+### Review
+```
+Review {
+  id: string
+  draftId: string → Draft
+  strengths: string[]
+  weaknesses: string[]
+  missingEvidence: string[]
+  unsupportedClaims: string[]
+  revisionPriorities: string[]
+  rubricAlignment: string
+  overallFeedback: string
+}
+```
+Structured feedback on a draft. Replaces the old `DraftReview`.
+
+### Judgement
+```
+Judgement {
+  id: string
+  assignmentId: string → Assignment
+  type: "gap_analysis" | "evidence_sufficiency" | "counterargument_check" | "citation_safety"
+  findings: string[]
+  severity: "info" | "warning" | "critical"
+  createdAt: string
+}
+```
+AI-generated assessment of argument or evidence quality within an assignment.
+
+## CoThinker Model
+
+### CoThinker (replaces AIConversation)
+```
+CoThinker {
+  id: string
+  moduleId: string → Module
+  assignmentId: string | null → Assignment
+  title: string
+  scope: CoThinkerScope
+  stage: ProductionStage
+  messages: CoThinkerMessage[]
   createdAt: string
 }
 ```
 
-### AIMessage
+### CoThinkerMessage (replaces AIMessage)
 ```
-AIMessage {
+CoThinkerMessage {
   id: string
   role: MessageRole
   content: string
@@ -138,7 +237,28 @@ AIMessage {
 }
 ```
 
-### CitedChunk (embedded in AIMessage)
+### CoThinkerScope (replaces AIScope)
+```
+CoThinkerScope = "whole_module" | "current_folder" | "selected_sources" | "assignment"
+```
+
+## Supporting Types
+
+### ProductionStage
+```
+ProductionStage = "ingest" | "understand" | "map" | "judge" | "build" | "draft" | "refine"
+```
+
+### RubricCriterion
+```
+RubricCriterion {
+  name: string
+  description: string
+  weight: number
+}
+```
+
+### CitedChunk
 ```
 CitedChunk {
   chunkId: string
@@ -149,39 +269,11 @@ CitedChunk {
 }
 ```
 
-### EssayProject
+### MessageLabel
 ```
-EssayProject {
-  id: string
-  moduleId: string → Module
-  title: string
-  question: string
-  wordCount: number
-  dueDate: string
-  rubric: RubricCriterion[]
-  selectedSourceIds: string[]
-  thesis: string
-  status: EssayStatus
-  structure: EssaySection[]
-  evidenceBank: EvidenceItem[]
-  counterarguments: Counterargument[]
-  gaps: ResearchGap[]
-  draftContent: string
-}
-```
-
-### DraftReview
-```
-DraftReview {
-  id: string
-  draftId: string
-  strengths: string[]
-  weaknesses: string[]
-  missingEvidence: string[]
-  unsupportedClaims: string[]
-  revisionPriorities: string[]
-  estimatedBandRisk: string
-  overallFeedback: string
+MessageLabel {
+  type: "source_supported" | "interpretation" | "user_idea" | "general_context" | "unsupported"
+  text: string
 }
 ```
 
@@ -199,58 +291,36 @@ AIProviderConnection {
 }
 ```
 
-### UsageLog (Phase 3)
-```
-UsageLog {
-  id: string
-  userId: string → User
-  provider: string
-  model: string
-  type: "chat" | "embedding"
-  tokensIn: number
-  tokensOut: number
-  costEstimate: number
-  createdAt: string
-}
-```
-
-### SourceNote (Phase 3)
-```
-SourceNote {
-  id: string
-  userId: string → User
-  sourceId: string → Source
-  content: string
-  tags: string (comma-separated)
-  createdAt: string
-  updatedAt: string
-}
-```
-
 ## Relationships
 
 ```
 User 1→* Module
-User 1→* Source
-User 1→* Essay
-User 1→* Conversation
+User 1→* SourceFile
+User 1→* Assignment
+User 1→* CoThinker
 User 1→* AIProviderConnection
-User 1→* UsageLog
-User 1→* SourceNote
+
 Module 1→* Folder
-Module 1→* Source
-Module 1→* Essay
-Module 1→* Conversation
-Folder 1→* Source (optional grouping)
-Source 1→* SourceChunk
-Source 1→* SourceNote
-Essay 1→* EssaySection
-Essay 1→* EvidenceItem
-EssaySection 1→* EvidenceItem
-EvidenceItem *→1 Source (optional)
-EvidenceItem *→1 SourceChunk (optional)
-Conversation 1→* ConversationMessage
-AIProviderConnection *→1 User (unique per provider)
+Module 1→* SourceFile
+Module 1→* Assignment
+Module 1→* CoThinker
+
+Folder 1→* SourceFile (optional grouping)
+
+SourceFile 1→* SourceChunk
+SourceFile 1→* SourceNote
+
+Assignment 1→* Argument
+Assignment 1→* Draft
+Assignment 1→* Judgement
+Assignment 1→* CoThinker (optional scoping)
+
+Argument 1→* EvidenceLink
+
+Draft 1→* Review
+
+EvidenceLink *→1 SourceFile
+EvidenceLink *→1 SourceChunk (optional)
 ```
 
 ## Backend Implementation
@@ -258,4 +328,4 @@ AIProviderConnection *→1 User (unique per provider)
 - **Engine**: Convex
 - **Active schema**: `convex/schema.ts`
 - **Current scope**: foundational tables and minimal user/module/source functions
-- **Paused during migration**: auth, ingestion, retrieval, runtime AI providers, file processing, usage analytics
+- **Pending**: Assignment/Argument/Draft/Review entities, CoThinker, Judgement, full retrieval pipeline

@@ -72,7 +72,7 @@ export function ModuleWorkspace({
       case "essays":
         return <ModuleEssays essays={essays} />;
       case "submission":
-        return <EmptyState icon={CheckCircle} title="Final Submission" description="Assemble your final essay submission here." />;
+        return <EmptyState icon={CheckCircle} title="Submissions" description="Keep final submission materials here." />;
       default:
         return <ModuleInfo module={module} />;
     }
@@ -138,7 +138,7 @@ function ModuleInfo({ module }: { module: ModuleWorkspaceProps["module"] }) {
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8 flex flex-col items-center justify-center text-center">
         <Info className="h-8 w-8 text-muted-foreground mb-4" />
         <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-          Use the left sidebar to navigate between your readings, notes, and essay plans for this module workspace.
+          Use the left sidebar to navigate between your readings, notes, assignments, and drafts for this module workspace.
         </p>
       </div>
     </div>
@@ -251,9 +251,9 @@ function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
-        <h2 className="text-xl font-semibold">Essay Plans</h2>
+        <h2 className="text-xl font-semibold">Assignments</h2>
         <button className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity shadow-sm">
-          New Essay
+          New Assignment
         </button>
       </div>
 
@@ -279,7 +279,7 @@ function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
           ))}
         </div>
       ) : (
-        <EmptyState icon={FileText} title="No Essay Plans" description="Create an essay plan to start drafting and outlining your arguments." />
+        <EmptyState icon={FileText} title="No Assignments" description="Add an assignment brief to start mapping arguments and evidence." />
       )}
     </div>
   );
