@@ -1,0 +1,196 @@
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { getAuthIdentifier } from "./lib/auth";
+
+export const list = query({
+  args: { assignmentId: v.id("assignments") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+      return [];
+    }
+
+    return await ctx.db
+      .query("drafts")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .take(50);
+  },
+});
+
+export const get = query({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) return null;
+    return draft;
+  },
+});
+
+export const getLatest = query({
+  args: { assignmentId: v.id("assignments") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+      return null;
+    }
+
+    const drafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .first();
+    return drafts ?? null;
+  },
+});
+
+export const create = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    content: v.optional(v.string()),
+    wordCount: v.optional(v.number()),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const existing = await ctx.db
+      .query("drafts")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .first();
+    const version = existing ? existing.version + 1 : 1;
+
+    const now = Date.now();
+    return await ctx.db.insert("drafts", {
+      ...args,
+      tokenIdentifier,
+      version,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const update = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    content: v.optional(v.string()),
+    wordCount: v.optional(v.number()),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const { draftId, ...updates } = args;
+    const draft = await ctx.db.get(draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(draftId, { ...updates, updatedAt: Date.now() });
+    return draftId;
+  },
+});
+
+export const remove = mutation({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.delete(args.draftId);
+    return args.draftId;
+  },
+});
+
+export const listBlocks = query({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("draftBlocks")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .order("asc")
+      .take(200);
+  },
+});
+
+export const createBlock = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    blockType: v.string(),
+    content: v.optional(v.string()),
+    argumentId: v.optional(v.id("arguments")),
+    sortOrder: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const now = Date.now();
+    return await ctx.db.insert("draftBlocks", {
+      ...args,
+      tokenIdentifier,
+      sortOrder: args.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateBlock = mutation({
+  args: {
+    blockId: v.id("draftBlocks"),
+    blockType: v.optional(v.string()),
+    content: v.optional(v.string()),
+    argumentId: v.optional(v.id("arguments")),
+    sortOrder: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const { blockId, ...updates } = args;
+    const block = await ctx.db.get(blockId);
+    if (!block || block.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(blockId, { ...updates, updatedAt: Date.now() });
+    return blockId;
+  },
+});
+
+export const removeBlock = mutation({
+  args: { blockId: v.id("draftBlocks") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const block = await ctx.db.get(args.blockId);
+    if (!block || block.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.delete(args.blockId);
+    return args.blockId;
+  },
+});
