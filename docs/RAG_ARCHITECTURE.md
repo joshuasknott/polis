@@ -1,8 +1,12 @@
-# SocialSciencr — RAG Architecture
+# Polis — RAG Architecture
+
+## Migration Note
+
+The previous PostgreSQL/pgvector implementation has been removed while Polis migrates to Convex. This document describes the intended product architecture, not the current runtime implementation. Retrieval, embeddings, ingestion, and AI chat will be rebuilt after the Convex data foundation is established.
 
 ## Overview
 
-Retrieval-Augmented Generation (RAG) is the core technique that enables SocialSciencr to provide source-grounded answers with citations.
+Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations.
 
 ## Pipeline
 

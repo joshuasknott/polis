@@ -1,4 +1,8 @@
-# SocialSciencr — AI Provider Strategy
+# Polis — AI Provider Strategy
+
+## Migration Note
+
+Runtime AI provider integrations from the old backend have been removed during the Convex migration. Development-time Copilot/Codex access is not a runtime integration target. Provider work will resume after the Convex foundation is stable, likely starting with z.ai/Zhipu.
 
 ## Approach: BYO API Key (Per-User) + App-Level Fallback
 

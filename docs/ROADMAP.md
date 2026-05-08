@@ -1,4 +1,24 @@
-# SocialSciencr — Roadmap
+# Polis — Roadmap
+
+## Current: Convex Foundation Migration
+
+**Status**: In progress
+**Goal**: Replace the pre-existing Prisma/PostgreSQL/Auth.js/backend service foundation with a clean Convex backend for future feature-by-feature migration.
+
+### Foundation Delivered
+- [x] Removed Prisma/PostgreSQL package scripts and backend files
+- [x] Removed old Next API routes for the previous backend behavior
+- [x] Installed Convex and added foundational schema/functions
+- [x] Kept frontend components and mock data as placeholders during migration
+
+### Next Migration Steps
+- [ ] Configure a real Convex deployment with `npx convex dev`
+- [ ] Rebuild authentication/user identity on the Convex foundation
+- [ ] Move modules and sources from mock data to Convex queries/mutations
+- [ ] Reintroduce file ingestion/storage through Convex patterns
+- [ ] Rebuild runtime AI provider support later, likely starting with z.ai/Zhipu
+
+---
 
 ## Done: Phase 0 — Static Prototype
 

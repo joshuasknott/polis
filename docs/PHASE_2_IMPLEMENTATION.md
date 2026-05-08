@@ -1,4 +1,4 @@
-# Phase 2 Implementation — SocialSciencr Intelligence Layer
+# Phase 2 Implementation — Polis Intelligence Layer
 
 ## What Was Built
 
@@ -153,7 +153,7 @@ Multi-turn conversations now maintain context:
 
 ```bash
 # 1. Install pgvector extension (run SQL against your database)
-psql -d socialsciencr -f scripts/enable-pgvector.sql
+psql -d polis -f scripts/enable-pgvector.sql
 # Or manually: CREATE EXTENSION IF NOT EXISTS vector;
 
 # 2. Push schema changes (adds embedding column to source_chunks)
@@ -187,7 +187,7 @@ npm run db:embed
 npm install
 
 # 2. Enable pgvector in PostgreSQL
-psql -d socialsciencr -c "CREATE EXTENSION IF NOT EXISTS vector;"
+psql -d polis -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
 # 3. Push schema
 npm run db:push

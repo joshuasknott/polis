@@ -1,4 +1,4 @@
-# SocialSciencr — MVP Scope
+# Polis — MVP Scope
 
 ## Phase 0: Static Prototype (Current)
 

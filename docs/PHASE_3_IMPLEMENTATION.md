@@ -7,7 +7,7 @@
 
 ## Overview
 
-Phase 3 upgrades SocialSciencr from a single-user intelligence workspace to a production-ready platform with per-user AI configuration, background processing, cloud file storage, OAuth authentication, usage analytics, and enhanced academic workflows.
+Phase 3 upgrades Polis from a single-user intelligence workspace to a production-ready platform with per-user AI configuration, background processing, cloud file storage, OAuth authentication, usage analytics, and enhanced academic workflows.
 
 ## What Was Built
 
@@ -147,7 +147,7 @@ GOOGLE_AI_API_KEY=""
 
 # Storage
 STORAGE_PROVIDER="local"
-S3_BUCKET="socialsciencr"
+S3_BUCKET="polis"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY=""
 S3_SECRET_KEY=""

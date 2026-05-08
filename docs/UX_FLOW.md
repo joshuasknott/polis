@@ -1,4 +1,4 @@
-# SocialSciencr — UX Flow
+# Polis — UX Flow
 
 ## Main User Journey
 

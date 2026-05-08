@@ -1,4 +1,4 @@
-# Phase 1 Implementation — SocialSciencr
+# Phase 1 Implementation — Polis
 
 ## What Is Now Real
 
@@ -94,7 +94,7 @@
 cp .env.example .env
 
 # 2. Edit .env with your DATABASE_URL
-# DATABASE_URL="postgresql://user:password@localhost:5432/socialsciencr"
+# DATABASE_URL="postgresql://user:password@localhost:5432/polis"
 
 # 3. Push schema to database (creates tables)
 npm run db:push

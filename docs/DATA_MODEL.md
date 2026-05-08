@@ -1,4 +1,8 @@
-# SocialSciencr — Data Model
+# Polis — Data Model
+
+## Current Backend Status
+
+Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active foundational schema now lives in `convex/schema.ts`; this document remains the product-level model reference and will be reconciled as Convex-backed features are rebuilt.
 
 ## Core Entities
 
@@ -249,11 +253,9 @@ Conversation 1→* ConversationMessage
 AIProviderConnection *→1 User (unique per provider)
 ```
 
-## Database Implementation
+## Backend Implementation
 
-- **Engine**: PostgreSQL via Prisma 7 with @prisma/adapter-pg
-- **Schema**: `prisma/schema.prisma` (17 models)
-- **Vector search**: pgvector extension with HNSW index
-- **File storage**: Local filesystem or S3-compatible (configurable)
-- **Auth**: Auth.js v5 with JWT sessions, credentials + OAuth
-- **Encryption**: AES-256-GCM for user API keys
+- **Engine**: Convex
+- **Active schema**: `convex/schema.ts`
+- **Current scope**: foundational tables and minimal user/module/source functions
+- **Paused during migration**: auth, ingestion, retrieval, runtime AI providers, file processing, usage analytics

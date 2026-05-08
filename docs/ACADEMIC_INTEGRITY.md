@@ -1,4 +1,4 @@
-# SocialSciencr — Academic Integrity Policy
+# Polis — Academic Integrity Policy
 
 ## Core Principles
 
@@ -65,7 +65,7 @@ The system WILL:
 
 Students are encouraged to:
 - Check their university's policy on AI-assisted tools
-- Use SocialSciencr as a learning aid, not a writing substitute
+- Use Polis as a learning aid, not a writing substitute
 - Cite all sources properly in final submissions
 - Verify all AI-generated summaries against original texts
 - Discuss their use of AI tools with tutors if required

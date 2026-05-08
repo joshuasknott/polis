@@ -1,8 +1,8 @@
-# SocialSciencr — Product Vision
+# Polis — Product Vision
 
 ## Product Thesis
 
-SocialSciencr is a coursework intelligence workspace for social science students. It helps students transform scattered readings, lecture notes, essay briefs, and drafts into organised, source-grounded academic work.
+Polis is a coursework intelligence workspace for social science students. It helps students transform scattered readings, lecture notes, essay briefs, and drafts into organised, source-grounded academic work.
 
 ## Target Users
 
@@ -26,7 +26,7 @@ Existing tools either fail to handle academic workflows (generic note-taking app
 
 ## The Solution
 
-SocialSciencr provides a structured workspace that mirrors actual coursework workflows:
+Polis provides a structured workspace that mirrors actual coursework workflows:
 
 **Collect** → **Understand** → **Connect** → **Argue** → **Draft** → **Review**
 
@@ -34,14 +34,14 @@ Each step is supported by source-grounded AI that references actual uploaded mat
 
 ## Differentiation
 
-SocialSciencr is NOT:
+Polis is NOT:
 
 - A generic "chat with PDFs" tool
 - An essay mill or cheating aid
 - A ChatGPT wrapper with a different skin
 - An enterprise knowledge management platform
 
-SocialSciencr IS:
+Polis IS:
 
 - A coursework workflow system designed around how students actually work
 - A source-grounded assistant that preserves citation integrity
