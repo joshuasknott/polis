@@ -1,5 +1,4 @@
 import { query } from "./_generated/server";
-import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
 
 export const listEvents = query({
