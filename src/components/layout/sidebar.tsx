@@ -12,10 +12,8 @@ import {
   Wrench,
   X,
   Info,
-  FileText,
   StickyNote,
   PenTool,
-  CheckCircle,
   ArrowLeft,
 } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
