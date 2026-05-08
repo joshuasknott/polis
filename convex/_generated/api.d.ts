@@ -9,11 +9,16 @@
  */
 
 import type * as ai from "../ai.js";
-import type * as conversations from "../conversations.js";
-import type * as essays from "../essays.js";
+import type * as arguments from "../arguments.js";
+import type * as assignments from "../assignments.js";
+import type * as cothinker from "../cothinker.js";
+import type * as drafts from "../drafts.js";
+import type * as evidence from "../evidence.js";
 import type * as files from "../files.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
+import type * as reviews from "../reviews.js";
 import type * as sources from "../sources.js";
 import type * as usage from "../usage.js";
 import type * as users from "../users.js";
@@ -26,11 +31,16 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
-  conversations: typeof conversations;
-  essays: typeof essays;
+  arguments: typeof arguments;
+  assignments: typeof assignments;
+  cothinker: typeof cothinker;
+  drafts: typeof drafts;
+  evidence: typeof evidence;
   files: typeof files;
+  "lib/auth": typeof lib_auth;
   modules: typeof modules;
   notes: typeof notes;
+  reviews: typeof reviews;
   sources: typeof sources;
   usage: typeof usage;
   users: typeof users;
