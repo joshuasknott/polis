@@ -6,8 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Sidebar } from "./sidebar";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
+import type { ModuleContext } from "./shell";
 
-export function TopBar({ moduleContext }: { moduleContext?: { title: string; code: string } }) {
+export function TopBar({ moduleContext }: { moduleContext?: ModuleContext }) {
   const { isSignedIn, isLoaded } = useUser();
 
   return (
@@ -38,7 +39,7 @@ export function TopBar({ moduleContext }: { moduleContext?: { title: string; cod
   );
 }
 
-export function MobileNav({ moduleContext }: { moduleContext?: any }) {
+export function MobileNav({ moduleContext }: { moduleContext?: ModuleContext }) {
   const [open, setOpen] = useState(false);
 
   return (

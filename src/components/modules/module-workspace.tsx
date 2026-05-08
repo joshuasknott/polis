@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
   FileText,
@@ -104,7 +105,7 @@ export function ModuleWorkspace({
   );
 }
 
-function EmptyState({ icon: Icon, title, description }: { icon: any, title: string, description: string }) {
+function EmptyState({ icon: Icon, title, description }: { icon: LucideIcon, title: string, description: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 py-24 text-center">
       <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -118,7 +119,7 @@ function EmptyState({ icon: Icon, title, description }: { icon: any, title: stri
   );
 }
 
-function ModuleInfo({ module }: { module: any }) {
+function ModuleInfo({ module }: { module: ModuleWorkspaceProps["module"] }) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
@@ -144,7 +145,7 @@ function ModuleInfo({ module }: { module: any }) {
   );
 }
 
-function ModuleReadings({ folders, sources }: { module: any, folders: any[], sources: any[] }) {
+function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["module"], folders: ModuleWorkspaceProps["folders"], sources: ModuleWorkspaceProps["sources"] }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,7 +239,7 @@ function ModuleReadings({ folders, sources }: { module: any, folders: any[], sou
           <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
           <p className="mt-4 text-sm font-medium">No readings yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Upload your first source to start building this module's library.
+            Upload your first source to start building this module&apos;s library.
           </p>
         </div>
       )}
@@ -246,7 +247,7 @@ function ModuleReadings({ folders, sources }: { module: any, folders: any[], sou
   );
 }
 
-function ModuleEssays({ essays }: { essays: any[] }) {
+function ModuleEssays({ essays }: { essays: ModuleWorkspaceProps["essays"] }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">

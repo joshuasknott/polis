@@ -49,7 +49,7 @@ interface EssayWorkspaceContentProps {
   };
 }
 
-type Tab = "overview" | "structure" | "evidence" | "draft" | "tools";
+
 
 export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
   const [activeTab, setActiveTab] = useState<"draft" | "overview" | "structure">("draft");
@@ -100,7 +100,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
             {mainTabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
                   activeTab === tab.id

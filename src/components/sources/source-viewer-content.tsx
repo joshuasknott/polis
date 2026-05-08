@@ -10,7 +10,6 @@ import {
   Lightbulb,
   ExternalLink,
   Copy,
-  Tag,
   RefreshCw,
   Loader2,
   Sparkles,
@@ -66,7 +65,6 @@ export function SourceViewerContent({
   moduleCode,
   chunks,
 }: SourceViewerContentProps) {
-  const [showChunks, setShowChunks] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [currentSummary, setCurrentSummary] = useState(source.summary);
   const [currentArgument, setCurrentArgument] = useState(source.mainArgument);
