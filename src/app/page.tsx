@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   GraduationCap,
   BookOpen,
@@ -16,11 +17,17 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-accent" />
-            <span className="text-lg font-semibold tracking-tight">Polis</span>
-          </div>
+        <div className="mx-auto flex py-4 min-h-[5rem] max-w-6xl items-center justify-between px-6">
+          <Link href="/" className="flex items-center gap-2 mix-blend-multiply dark:mix-blend-screen">
+            <Image 
+              src="/brand/polis-logo.png" 
+              alt="Polis" 
+              width={210} 
+              height={60} 
+              className="h-10 sm:h-12 w-auto object-contain" 
+              priority
+            />
+          </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#workflow" className="hover:text-foreground transition-colors">Workflow</a>
@@ -39,7 +46,13 @@ export default function LandingPage() {
       <section className="mx-auto max-w-6xl px-6 pt-24 pb-20">
         <div className="max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-accent-muted px-3 py-1 text-xs font-medium text-accent">
-            <GraduationCap className="h-3.5 w-3.5" />
+            <Image 
+              src="/brand/polis-icon.png" 
+              alt="Polis Icon" 
+              width={14} 
+              height={14} 
+              className="h-3.5 w-3.5 object-contain" 
+            />
             Built for social science coursework
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl leading-[1.1]">
@@ -188,8 +201,8 @@ export default function LandingPage() {
       <section id="integrity" className="mx-auto max-w-6xl px-6 py-20">
         <div className="rounded-2xl border border-border bg-card p-8 md:p-12">
           <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
-              <Shield className="h-5 w-5 text-green-700" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10">
+              <Shield className="h-5 w-5 text-success" />
             </div>
             <div>
               <h2 className="text-xl font-bold tracking-tight">
@@ -211,7 +224,7 @@ export default function LandingPage() {
                   "Draft feedback, not draft writing",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5 shrink-0" />
                     <span className="text-sm text-muted-foreground">{item}</span>
                   </div>
                 ))}
@@ -242,7 +255,13 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="mx-auto max-w-6xl px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <GraduationCap className="h-4 w-4" />
+            <Image 
+              src="/brand/polis-icon.png" 
+              alt="Polis Icon" 
+              width={16} 
+              height={16} 
+              className="h-4 w-4 object-contain" 
+            />
             <span>Polis — Phase 0 Prototype</span>
           </div>
           <div className="text-xs text-muted-foreground">

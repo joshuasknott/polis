@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
-  GraduationCap,
   LayoutDashboard,
   Library,
 
@@ -34,11 +34,19 @@ export function Sidebar({
 
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-card">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <GraduationCap className="h-6 w-6 text-accent" />
-        <span className="text-base font-semibold tracking-tight">Polis</span>
+      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+        <Link href="/" className="flex items-center">
+          <Image 
+            src="/brand/polis-logo.png" 
+            alt="Polis" 
+            width={120} 
+            height={28} 
+            className="object-contain" 
+            priority
+          />
+        </Link>
         {onClose && (
-          <button onClick={onClose} className="ml-auto lg:hidden rounded p-1 hover:bg-muted">
+          <button onClick={onClose} className="rounded p-1 hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         )}

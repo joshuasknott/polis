@@ -166,7 +166,7 @@ export function ToolsContent() {
         <div className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-sm font-semibold mb-3">Tool Result</h2>
           {toolResult.error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
               {toolResult.error}
             </div>
           ) : toolResult.result ? (
@@ -176,7 +176,7 @@ export function ToolsContent() {
                 : JSON.stringify(toolResult.result, null, 2)}
             </div>
           ) : (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800">
+            <div className="rounded-lg border border-success/20 bg-success/5 p-3 text-xs text-success">
               Check completed successfully. See results above.
             </div>
           )}

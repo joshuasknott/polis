@@ -49,12 +49,12 @@ export function getSourceTypeLabel(type: string): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    processed: "bg-green-100 text-green-800",
-    processing: "bg-blue-100 text-blue-800",
-    needs_review: "bg-amber-100 text-amber-800",
-    failed: "bg-red-100 text-red-800",
+    processed: "bg-success/10 text-success",
+    processing: "bg-accent/10 text-accent",
+    needs_review: "bg-warning/10 text-warning",
+    failed: "bg-danger/10 text-danger",
   };
-  return colors[status] || "bg-stone-100 text-stone-800";
+  return colors[status] || "bg-muted text-muted-foreground";
 }
 
 export function getStatusLabel(status: string): string {
@@ -80,13 +80,13 @@ export function getEssayStatusLabel(status: string): string {
 
 export function getEssayStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    planning: "bg-blue-100 text-blue-800",
-    drafting: "bg-amber-100 text-amber-800",
-    reviewing: "bg-purple-100 text-purple-800",
-    revising: "bg-orange-100 text-orange-800",
-    submitted: "bg-green-100 text-green-800",
+    planning: "bg-accent/10 text-accent",
+    drafting: "bg-warning/10 text-warning",
+    reviewing: "bg-interpretation/10 text-interpretation",
+    revising: "bg-warning/20 text-warning",
+    submitted: "bg-success/10 text-success",
   };
-  return colors[status] || "bg-stone-100 text-stone-800";
+  return colors[status] || "bg-muted text-muted-foreground";
 }
 
 export function daysUntil(dateString: string): number {

@@ -18,6 +18,17 @@ export const metadata: Metadata = {
   title: "Polis — Coursework Intelligence Workspace",
   description:
     "Turn scattered readings into structured arguments. Source-grounded AI for social science students.",
+  icons: {
+    icon: "/brand/polis-icon.png",
+    apple: "/brand/polis-icon.png",
+  },
+  openGraph: {
+    images: [
+      {
+        url: "/brand/polis-logo.png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

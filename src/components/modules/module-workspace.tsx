@@ -226,7 +226,7 @@ export function ModuleWorkspace({
                         </p>
                         <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{source.summary}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          <span className="inline-flex items-center rounded-full bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
                             {getSourceTypeLabel(source.type)}
                           </span>
                           <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getStatusColor(source.status))}>

@@ -232,7 +232,7 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             Save Profile
           </button>
           {message && (
-            <span className={`text-xs ${message.type === "success" ? "text-green-600" : "text-red-600"}`}>
+            <span className={`text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}>
               {message.text}
             </span>
           )}
@@ -252,7 +252,7 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
           ].map((account) => (
             <div key={account.id} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
               <span className="text-sm">{account.name}</span>
-              <span className={`text-xs ${account.linked ? "text-green-600" : "text-muted-foreground"}`}>
+              <span className={`text-xs ${account.linked ? "text-success" : "text-muted-foreground"}`}>
                 {account.linked ? "Connected" : "Not linked"}
               </span>
             </div>
@@ -303,7 +303,7 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
               Change Password
             </button>
             {passwordMessage && (
-              <p className={`text-xs ${passwordMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+              <p className={`text-xs ${passwordMessage.type === "success" ? "text-success" : "text-danger"}`}>
                 {passwordMessage.text}
               </p>
             )}
@@ -420,20 +420,20 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
                   <div className="flex items-center gap-2">
                     {isConnected ? (
                       <>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                           <CheckCircle className="h-3 w-3" />
                           Connected
                         </span>
                         <button
                           onClick={() => removeKey(pc.id)}
-                          className="rounded p-1 text-muted-foreground hover:text-red-600 transition-colors"
+                          className="rounded p-1 text-muted-foreground hover:text-danger transition-colors"
                           title="Remove key"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
                         <XCircle className="h-3 w-3" />
                         Disconnected
                       </span>
@@ -476,7 +476,7 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
                 )}
 
                 {message?.provider === pc.id && (
-                  <p className={`mt-2 text-xs ${message.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                  <p className={`mt-2 text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}>
                     {message.text}
                   </p>
                 )}
@@ -522,12 +522,12 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
           </div>
           <div className="flex items-center gap-2">
             {aiConfigured ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                 <CheckCircle className="h-3 w-3" />
                 Connected
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
                 <XCircle className="h-3 w-3" />
                 Not Connected
               </span>
@@ -550,8 +550,8 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
               hasEmbeddings
-                ? "bg-green-100 text-green-700"
-                : "bg-stone-100 text-stone-600"
+                ? "bg-success/10 text-success"
+                : "bg-muted text-muted-foreground"
             }`}
           >
             {hasEmbeddings ? "Active" : "Inactive"}
@@ -650,9 +650,9 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             { label: "Draft Editor", enabled: true },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-sm">
-              <CheckCircle className={`h-4 w-4 ${item.enabled ? "text-green-600" : "text-muted-foreground"}`} />
+              <CheckCircle className={`h-4 w-4 ${item.enabled ? "text-success" : "text-muted-foreground"}`} />
               <span className={item.enabled ? "" : "text-muted-foreground"}>{item.label}</span>
-              <span className={`text-xs ${item.enabled ? "text-green-700" : "text-muted-foreground"}`}>
+              <span className={`text-xs ${item.enabled ? "text-success" : "text-muted-foreground"}`}>
                 {item.enabled ? "Active" : "Paused"}
               </span>
             </div>

@@ -103,7 +103,7 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                <span className="inline-flex items-center rounded-full bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
                   {getSourceTypeLabel(source.type)}
                 </span>
                 <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", getStatusColor(source.status))}>

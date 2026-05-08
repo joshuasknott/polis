@@ -21,21 +21,30 @@
 }
 
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --muted: #f5f5f4;
-  --muted-foreground: #78716c;
-  --border: #e7e5e4;
-  --card: #ffffff;
-  --card-hover: #fafaf9;
-  --accent: #1e3a5f;
-  --accent-foreground: #ffffff;
-  --accent-muted: #e8eef5;
-  --success: #15803d;
-  --warning: #a16207;
-  --danger: #dc2626;
-  --source: #2563eb;
-  --interpretation: #9333ea;
+  /* Base App Colors - Parchment & Deep Navy */
+  --background: #FCFBF9;
+  --foreground: #162A4A;
+  
+  /* Surfaces & Borders - Derived from Sand */
+  --card: #FFFFFF;
+  --card-hover: #F9F8F5;
+  --muted: #F5F2EB;
+  --border: #E8E1D5;
+  
+  /* Text & Accents - Slate Blue & Navy */
+  --muted-foreground: #4B6685;
+  --accent: #162A4A;
+  --accent-foreground: #FFFFFF;
+  --accent-muted: #EBD9BB;
+  
+  /* Semantic States */
+  --success: #2F6B4A;
+  --warning: #A9854B;
+  --danger: #9B2C2C;
+  
+  /* Polis-Specific - Objective vs. Subjective */
+  --source: #4B6685;
+  --interpretation: #A9854B;
 }
 
 * {

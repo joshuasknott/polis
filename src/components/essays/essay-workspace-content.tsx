@@ -196,13 +196,13 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-                    <span className="text-xs font-medium text-blue-700">{evidence.sourceTitle}</span>
+                    <BookOpen className="h-3.5 w-3.5 text-source" />
+                    <span className="text-xs font-medium text-source">{evidence.sourceTitle}</span>
                     <span className="text-xs text-muted-foreground">{evidence.pageRange}</span>
                   </div>
                   <p className="text-sm font-medium mb-1">{evidence.claim}</p>
                   {evidence.quote && (
-                    <blockquote className="text-sm italic text-muted-foreground border-l-2 border-blue-200 pl-3">
+                    <blockquote className="text-sm italic text-muted-foreground border-l-2 border-source/20 pl-3">
                       &ldquo;{evidence.quote}&rdquo;
                     </blockquote>
                   )}
@@ -237,7 +237,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck className="h-5 w-5 text-green-600" />
+                <ShieldCheck className="h-5 w-5 text-success" />
                 <h3 className="text-sm font-semibold">Citation Safety Check</h3>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
@@ -252,7 +252,7 @@ export function EssayWorkspaceContent({ essay }: EssayWorkspaceContentProps) {
             </div>
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="flex items-center gap-2 mb-3">
-                <MessageSquareText className="h-5 w-5 text-purple-600" />
+                <MessageSquareText className="h-5 w-5 text-interpretation" />
                 <h3 className="text-sm font-semibold">Draft Review</h3>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
@@ -307,12 +307,12 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
   return (
     <div className="space-y-4">
       {(essay.question || essay.thesis) && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
+        <div className="rounded-lg border border-source/20 bg-source/10 p-3 text-sm">
           {essay.question && (
-            <p><span className="font-medium text-blue-800">Question:</span> <span className="text-blue-700 italic">&ldquo;{essay.question}&rdquo;</span></p>
+            <p><span className="font-medium text-source">Question:</span> <span className="text-source/80 italic">&ldquo;{essay.question}&rdquo;</span></p>
           )}
           {essay.thesis && (
-            <p className="mt-1"><span className="font-medium text-blue-800">Thesis:</span> <span className="text-blue-700">{essay.thesis}</span></p>
+            <p className="mt-1"><span className="font-medium text-source">Thesis:</span> <span className="text-source/80">{essay.thesis}</span></p>
           )}
         </div>
       )}
@@ -322,7 +322,7 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span>{words} words</span>
             <span>Target: {essay.wordCount}</span>
-            {saving && <span className="text-blue-600">Saving...</span>}
+            {saving && <span className="text-source">Saving...</span>}
             {lastSaved && !saving && <span>Saved at {lastSaved}</span>}
           </div>
           <div className="flex items-center gap-2">
@@ -367,16 +367,16 @@ function DraftEditor({ essay }: { essay: EssayWorkspaceContentProps["essay"] }) 
       </p>
 
       {citationResult && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-          <h3 className="text-sm font-semibold text-green-800 mb-2">Citation Check Results</h3>
-          <div className="text-sm text-green-900 whitespace-pre-wrap">{citationResult}</div>
+        <div className="rounded-xl border border-success/20 bg-success/10 p-4">
+          <h3 className="text-sm font-semibold text-success mb-2">Citation Check Results</h3>
+          <div className="text-sm text-success whitespace-pre-wrap">{citationResult}</div>
         </div>
       )}
 
       {reviewResult && (
-        <div className="rounded-xl border border-purple-200 bg-purple-50 p-4">
-          <h3 className="text-sm font-semibold text-purple-800 mb-2">Draft Review Results</h3>
-          <div className="text-sm text-purple-900 whitespace-pre-wrap">{reviewResult}</div>
+        <div className="rounded-xl border border-interpretation/20 bg-interpretation/10 p-4">
+          <h3 className="text-sm font-semibold text-interpretation mb-2">Draft Review Results</h3>
+          <div className="text-sm text-interpretation whitespace-pre-wrap">{reviewResult}</div>
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { Menu, GraduationCap } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Sidebar } from "./sidebar";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 
@@ -38,8 +39,14 @@ export function MobileNav() {
     <div className="lg:hidden">
       <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-accent" />
-          <span className="font-semibold text-sm">Polis</span>
+          <Image 
+            src="/brand/polis-wordmark.png" 
+            alt="Polis" 
+            width={90} 
+            height={24} 
+            className="h-6 w-auto object-contain" 
+            priority
+          />
         </Link>
         <button
           onClick={() => setOpen(!open)}

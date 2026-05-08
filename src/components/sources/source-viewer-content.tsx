@@ -97,7 +97,7 @@ export function SourceViewerContent({
 
       <div className="rounded-xl border border-border bg-card p-6">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+          <span className="inline-flex items-center rounded-full bg-source/10 px-2.5 py-0.5 text-xs font-medium text-source">
             {getSourceTypeLabel(source.type)}
           </span>
           <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
@@ -123,7 +123,7 @@ export function SourceViewerContent({
         </div>
 
         {source.errorMessage && (
-          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+          <div className="mt-4 rounded-lg border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
             <strong>Error:</strong> {source.errorMessage}
           </div>
         )}
@@ -357,7 +357,7 @@ function SourceNotesSection({ sourceId }: { sourceId: string }) {
               <p className="text-sm text-muted-foreground flex-1 whitespace-pre-wrap">{note.content}</p>
               <button
                 onClick={() => deleteNote(note.id)}
-                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-600"
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
