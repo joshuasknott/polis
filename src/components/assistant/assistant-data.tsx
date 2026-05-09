@@ -3,12 +3,18 @@
 import { Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 import { AssistantContent } from "./assistant-content";
 
 export function AssistantData() {
-  const modules = useQuery(api.modules.list);
-  const sources = useQuery(api.sources.list, {});
-  const sessions = useQuery(api.cothinker.listSessionsWithCounts, {});
+  const { isLoaded, isSignedIn } = useAuth();
+  const queryArgs = isLoaded && isSignedIn ? {} : "skip";
+  const modules = useQuery(
+    api.modules.list,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
+  const sources = useQuery(api.sources.list, queryArgs as Parameters<typeof useQuery>[1]);
+  const sessions = useQuery(api.cothinker.listSessionsWithCounts, queryArgs as Parameters<typeof useQuery>[1]);
 
   if (modules === undefined || sources === undefined || sessions === undefined) {
     return (

@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useAuth } from "@clerk/nextjs";
 import type { ProductionStage } from "@/lib/types";
 import { AssignmentWorkspaceShell } from "./assignment-workspace-shell";
 import {
@@ -27,10 +28,13 @@ export function AssignmentWorkspaceData({
   assignmentId,
   activeStage,
 }: AssignmentWorkspaceDataProps) {
-  const bundle = useQuery(api.assignments.getWorkspaceBundle, {
-    moduleId: moduleId as Id<"modules">,
-    assignmentId: assignmentId as Id<"assignments">,
-  });
+  const { isLoaded, isSignedIn } = useAuth();
+  const bundle = useQuery(
+    api.assignments.getWorkspaceBundle,
+    isLoaded && isSignedIn
+      ? { moduleId: moduleId as Id<"modules">, assignmentId: assignmentId as Id<"assignments"> }
+      : "skip",
+  );
 
   if (bundle === undefined) {
     return (

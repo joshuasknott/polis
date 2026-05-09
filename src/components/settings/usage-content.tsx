@@ -2,12 +2,18 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowLeft, BarChart3, DollarSign, Zap, Activity, Loader2 } from "lucide-react";
 
 export function UsageContent() {
-  const dashboard = useQuery(api.usage.getDashboardStats);
-  const rateLimitStatus = useQuery(api.rateLimits.getRateLimitStatus, {});
+  const { isLoaded, isSignedIn } = useAuth();
+  const queryArgs = isLoaded && isSignedIn ? {} : "skip";
+  const dashboard = useQuery(
+    api.usage.getDashboardStats,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
+  const rateLimitStatus = useQuery(api.rateLimits.getRateLimitStatus, queryArgs as Parameters<typeof useQuery>[1]);
 
   if (dashboard === undefined) {
     return (

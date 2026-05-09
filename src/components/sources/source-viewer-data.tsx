@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useAuth } from "@clerk/nextjs";
 import { mapSource } from "@/lib/convex-ui-mappers";
 import { SourceViewerContent } from "./source-viewer-content";
 
@@ -12,18 +13,26 @@ interface SourceViewerDataProps {
 }
 
 export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
-  const source = useQuery(api.sources.get, {
-    sourceId: sourceId as Id<"sources">,
-  });
-  const chunks = useQuery(api.sources.listChunks, {
-    sourceId: sourceId as Id<"sources">,
-  });
-  const notes = useQuery(api.notes.listForSource, {
-    sourceId: sourceId as Id<"sources">,
-  });
-  const analysesData = useQuery(api.sourceAnalyses.getForSource, {
-    sourceId: sourceId as Id<"sources">,
-  });
+  const { isLoaded, isSignedIn } = useAuth();
+  const queryArgs = isLoaded && isSignedIn
+    ? { sourceId: sourceId as Id<"sources"> }
+    : "skip";
+  const source = useQuery(
+    api.sources.get,
+    queryArgs as Parameters<typeof useQuery>[1],
+  );
+  const chunks = useQuery(
+    api.sources.listChunks,
+    queryArgs as Parameters<typeof useQuery>[1],
+  );
+  const notes = useQuery(
+    api.notes.listForSource,
+    queryArgs as Parameters<typeof useQuery>[1],
+  );
+  const analysesData = useQuery(
+    api.sourceAnalyses.getForSource,
+    queryArgs as Parameters<typeof useQuery>[1],
+  );
   const moduleInfo = useQuery(
     api.modules.get,
     source ? { moduleId: source.moduleId } : "skip",

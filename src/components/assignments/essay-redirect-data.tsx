@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { useAuth } from "@clerk/nextjs";
 
 interface EssayRedirectDataProps {
   essayId: string;
@@ -13,9 +14,13 @@ interface EssayRedirectDataProps {
 
 export function EssayRedirectData({ essayId }: EssayRedirectDataProps) {
   const router = useRouter();
-  const assignment = useQuery(api.assignments.get, {
-    assignmentId: essayId as Id<"assignments">,
-  });
+  const { isLoaded, isSignedIn } = useAuth();
+  const assignment = useQuery(
+    api.assignments.get,
+    isLoaded && isSignedIn
+      ? { assignmentId: essayId as Id<"assignments"> }
+      : "skip",
+  );
 
   useEffect(() => {
     if (assignment === undefined) return;

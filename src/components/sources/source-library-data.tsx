@@ -2,13 +2,19 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 import { SourceLibraryContent } from "./source-library-content";
 import { mapSource } from "@/lib/convex-ui-mappers";
 import { Loader2 } from "lucide-react";
 
 export function SourceLibraryData() {
-  const sources = useQuery(api.sources.list, {});
-  const modules = useQuery(api.modules.list);
+  const { isLoaded, isSignedIn } = useAuth();
+  const queryArgs = isLoaded && isSignedIn ? {} : "skip";
+  const sources = useQuery(api.sources.list, queryArgs as Parameters<typeof useQuery>[1]);
+  const modules = useQuery(
+    api.modules.list,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
 
   if (sources === undefined || modules === undefined) {
     return (

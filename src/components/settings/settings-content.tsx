@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 import {
   User,
   Key,
@@ -447,7 +448,11 @@ const PROVIDER_CONFIG = [
 ];
 
 function ConnectionsSection() {
-  const connections = useQuery(api.ai_keys.listConnections, {});
+  const { isLoaded, isSignedIn } = useAuth();
+  const connections = useQuery(
+    api.ai_keys.listConnections,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
   const validateAndSave = useAction(api.ai.validateAndSaveKey);
   const removeKey = useAction(api.ai.removeProviderKey);
 
@@ -653,7 +658,11 @@ function ConnectionsSection() {
 }
 
 function AILayerSection() {
-  const providerStatus = useQuery(api.ai.getProviderStatus, {});
+  const { isLoaded, isSignedIn } = useAuth();
+  const providerStatus = useQuery(
+    api.ai.getProviderStatus,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
 
   const aiConfigured = providerStatus?.configured ?? false;
   const providerName = providerStatus?.provider

@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id, Doc } from "../../../convex/_generated/dataModel";
+import { useAuth } from "@clerk/nextjs";
 import { ModuleWorkspace } from "./module-workspace";
 import { mapFolder, mapSource } from "@/lib/convex-ui-mappers";
 import { Loader2 } from "lucide-react";
@@ -13,9 +14,11 @@ interface ModuleWorkspaceDataProps {
 }
 
 export function ModuleWorkspaceData({ moduleId, activeTab }: ModuleWorkspaceDataProps) {
-  const bundle = useQuery(api.modules.getWorkspaceBundle, {
-    moduleId: moduleId as Id<"modules">,
-  });
+  const { isLoaded, isSignedIn } = useAuth();
+  const bundle = useQuery(
+    api.modules.getWorkspaceBundle,
+    isLoaded && isSignedIn ? { moduleId: moduleId as Id<"modules"> } : "skip",
+  );
 
   const assignmentsWithCounts = useQuery(
     api.assignments.listWithSourceCounts,
