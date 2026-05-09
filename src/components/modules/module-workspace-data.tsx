@@ -2,9 +2,9 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Id, Doc } from "../../../convex/_generated/dataModel";
 import { ModuleWorkspace } from "./module-workspace";
-import { mapFolder, mapSource, mapAssignment } from "@/lib/convex-ui-mappers";
+import { mapFolder, mapSource } from "@/lib/convex-ui-mappers";
 import { Loader2 } from "lucide-react";
 
 interface ModuleWorkspaceDataProps {
@@ -16,6 +16,13 @@ export function ModuleWorkspaceData({ moduleId, activeTab }: ModuleWorkspaceData
   const bundle = useQuery(api.modules.getWorkspaceBundle, {
     moduleId: moduleId as Id<"modules">,
   });
+
+  const assignmentsWithCounts = useQuery(
+    api.assignments.listWithSourceCounts,
+    bundle !== null && bundle !== undefined
+      ? { moduleId: moduleId as Id<"modules"> }
+      : "skip",
+  );
 
   if (bundle === undefined) {
     return (
@@ -35,7 +42,7 @@ export function ModuleWorkspaceData({ moduleId, activeTab }: ModuleWorkspaceData
     );
   }
 
-  const { module: mod, folders, sources, assignments } = bundle;
+  const { module: mod, folders, sources } = bundle;
 
   const folderSourceCounts: Record<string, number> = {};
   for (const source of sources) {
@@ -48,16 +55,26 @@ export function ModuleWorkspaceData({ moduleId, activeTab }: ModuleWorkspaceData
     title: mod.title,
     code: mod.code,
     description: mod.description ?? "",
+    academicYear: mod.academicYear ?? "",
+    semester: mod.semester ?? "",
     colour: mod.colour ?? "var(--color-border)",
     activeTab,
   };
+
+  const mappedAssignments = (assignmentsWithCounts ?? bundle.assignments).map((a: Doc<"assignments"> & { selectedSourceCount?: number }) => ({
+    id: a._id,
+    title: a.title,
+    stage: (a.stage ?? "ingest") as import("@/lib/types").ProductionStage,
+    dueDate: a.dueDate ?? "",
+    selectedSourceCount: a.selectedSourceCount ?? 0,
+  }));
 
   return (
     <ModuleWorkspace
       module={modContext}
       folders={folders.map((f) => mapFolder(f, folderSourceCounts[f._id] ?? 0))}
       sources={sources.map(mapSource)}
-      assignments={assignments.map(mapAssignment)}
+      assignments={mappedAssignments}
     />
   );
 }

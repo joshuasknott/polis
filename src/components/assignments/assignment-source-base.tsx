@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -16,6 +16,7 @@ import {
   Circle,
   AlertCircle,
   Tag,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SourceFile, SourceType } from "@/lib/types";
@@ -65,61 +66,71 @@ interface SourceCardProps {
   isSelected: boolean;
   relevance: RelevanceLevel;
   onToggle: (id: string) => void;
+  mutationError: string | null;
 }
 
-function SourceCard({ source, isSelected, relevance, onToggle }: SourceCardProps) {
+function SourceCard({ source, isSelected, relevance, onToggle, mutationError }: SourceCardProps) {
   const meta = SOURCE_TYPE_META[source.type] ?? SOURCE_TYPE_META["journal_article"];
   const Icon = meta.icon;
   const rel = RELEVANCE_META[relevance];
 
   return (
-    <button
-      id={`source-card-${source.id}`}
-      onClick={() => onToggle(source.id)}
-      className={cn(
-        "w-full text-left rounded-xl border p-4 transition-all duration-150 group",
-        isSelected
-          ? "border-accent bg-accent/5 shadow-sm"
-          : "border-border bg-card hover:border-foreground/30 hover:bg-card-hover"
+    <div className="relative">
+      <button
+        id={`source-card-${source.id}`}
+        onClick={() => onToggle(source.id)}
+        className={cn(
+          "w-full text-left rounded-xl border p-4 transition-all duration-150 group",
+          isSelected
+            ? "border-accent bg-accent/5 shadow-sm"
+            : "border-border bg-card hover:border-foreground/30 hover:bg-card-hover",
+          mutationError && "border-danger/50"
+        )}
+        aria-pressed={isSelected}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
+              isSelected ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{source.title}</p>
+              {isSelected ? (
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-accent mt-0.5" />
+              ) : (
+                <Circle className="h-4 w-4 flex-shrink-0 text-border mt-0.5 group-hover:text-muted-foreground" />
+              )}
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-1">
+              {source.author} · {source.year}
+            </p>
+
+            <div className="flex items-center gap-3 mt-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                <Tag className="h-2.5 w-2.5" />
+                {meta.label}
+              </span>
+              {isSelected && (
+                <span className={cn("text-xs font-medium", rel.colour)}>{rel.label}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </button>
+      {mutationError && (
+        <div className="mt-1 flex items-center gap-1.5 px-2 text-[11px] text-danger">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {mutationError}
+        </div>
       )}
-      aria-pressed={isSelected}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            "mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
-            isSelected ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"
-          )}
-        >
-          <Icon className="h-4 w-4" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium text-foreground leading-snug line-clamp-2">{source.title}</p>
-            {isSelected ? (
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-accent mt-0.5" />
-            ) : (
-              <Circle className="h-4 w-4 flex-shrink-0 text-border mt-0.5 group-hover:text-muted-foreground" />
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground mt-1">
-            {source.author} · {source.year}
-          </p>
-
-          <div className="flex items-center gap-3 mt-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              <Tag className="h-2.5 w-2.5" />
-              {meta.label}
-            </span>
-            {isSelected && (
-              <span className={cn("text-xs font-medium", rel.colour)}>{rel.label}</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </button>
+    </div>
   );
 }
 
@@ -146,34 +157,46 @@ export function AssignmentSourceBase({
 }: AssignmentSourceBaseProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
   const [filter, setFilter] = useState("");
+  const [sourceErrors, setSourceErrors] = useState<Record<string, string>>({});
 
   const addSource = useMutation(api.assignments.addSource);
   const removeSource = useMutation(api.assignments.removeSource);
 
-  const toggle = (id: string) => {
-    if (readOnly) return;
+  const toggle = useCallback((id: string) => {
+    if (readOnly || !assignmentId) return;
     const isSelected = selectedIds.includes(id);
-    setSelectedIds((prev) =>
-      isSelected ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-    if (assignmentId) {
-      if (isSelected) {
-        removeSource({
-          assignmentId: assignmentId as Id<"assignments">,
-          sourceId: id as Id<"sources">,
-        }).catch(() => {
-          setSelectedIds((prev) => [...prev, id]);
+    const optimisticUpdate = isSelected
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+
+    setSelectedIds(optimisticUpdate);
+    setSourceErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
+    const mutation = isSelected ? removeSource : addSource;
+    mutation({
+      assignmentId: assignmentId as Id<"assignments">,
+      sourceId: id as Id<"sources">,
+    }).catch((err) => {
+      setSelectedIds((prev) =>
+        isSelected ? [...prev, id] : prev.filter((x) => x !== id)
+      );
+      setSourceErrors((prev) => ({
+        ...prev,
+        [id]: err instanceof Error ? err.message : "Failed to update source selection",
+      }));
+      setTimeout(() => {
+        setSourceErrors((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
         });
-      } else {
-        addSource({
-          assignmentId: assignmentId as Id<"assignments">,
-          sourceId: id as Id<"sources">,
-        }).catch(() => {
-          setSelectedIds((prev) => prev.filter((x) => x !== id));
-        });
-      }
-    }
-  };
+      }, 5000);
+    });
+  }, [selectedIds, readOnly, assignmentId, addSource, removeSource]);
 
   const filtered = allModuleSources.filter(
     (s) =>
@@ -194,10 +217,10 @@ export function AssignmentSourceBase({
 
   const selectedCount = selectedIds.length;
   const selectedSources = allModuleSources.filter((s) => selectedIds.includes(s.id));
+  const hasErrors = Object.keys(sourceErrors).length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Summary strip */}
       <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-foreground">
@@ -206,19 +229,24 @@ export function AssignmentSourceBase({
           <p className="text-xs text-muted-foreground mt-0.5">
             {selectedSources.filter((s) => s.type === "assignment_brief" || s.type === "marking_rubric").length > 0
               ? "Brief and rubric included"
-              : "⚠ No brief or rubric selected — add them for the best guidance"}
+              : "No brief or rubric selected — add them for the best guidance"}
           </p>
         </div>
 
-        {selectedCount === 0 && (
+        {selectedCount === 0 && !hasErrors && (
           <div className="flex items-center gap-1.5 text-xs text-warning">
             <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>Select at least one source to proceed</span>
           </div>
         )}
+        {hasErrors && (
+          <div className="flex items-center gap-1.5 text-xs text-danger">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <span>Some changes failed to save</span>
+          </div>
+        )}
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <input
@@ -231,7 +259,6 @@ export function AssignmentSourceBase({
         />
       </div>
 
-      {/* Grouped source lists */}
       {groups.map((group) => {
         const sources = groupedSources[group];
         if (sources.length === 0 && filter) return null;
@@ -251,6 +278,7 @@ export function AssignmentSourceBase({
                     isSelected={selectedIds.includes(source.id)}
                     relevance={inferRelevance(source, selectedIds)}
                     onToggle={toggle}
+                    mutationError={sourceErrors[source.id] ?? null}
                   />
                 ))}
               </div>
@@ -258,6 +286,15 @@ export function AssignmentSourceBase({
           </div>
         );
       })}
+
+      {allModuleSources.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 py-12 text-center">
+          <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
+            No sources in this module yet. Upload sources from the Readings tab.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

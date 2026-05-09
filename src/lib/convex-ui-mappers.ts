@@ -9,8 +9,8 @@ export function mapModule(
     workspaceId: "",
     title: mod.title,
     code: mod.code,
-    academicYear: "",
-    semester: "",
+    academicYear: mod.academicYear ?? "",
+    semester: mod.semester ?? "",
     description: mod.description ?? "",
     color: mod.colour ?? "var(--color-border)",
     sourceCount: mod.sourceCount ?? 0,
@@ -68,11 +68,19 @@ export function mapFullAssignment(
   };
 }
 
-export function mapAssignment(assignment: Doc<"assignments">) {
+export function mapAssignment(assignment: Doc<"assignments"> & { selectedSourceCount?: number }) {
   return {
     id: assignment._id,
+    moduleId: assignment.moduleId,
     title: assignment.title,
-    status: assignment.stage,
+    question: assignment.question ?? "",
+    wordLimit: assignment.wordLimit ?? 0,
+    dueDate: assignment.dueDate ?? "",
+    rubric: (assignment.rubric ?? []) as Array<{ name: string; description: string; weight: number }>,
+    selectedSourceIds: [],
+    selectedSourceCount: assignment.selectedSourceCount ?? 0,
+    stage: (assignment.stage ?? "ingest") as ProductionStage,
+    createdAt: new Date(assignment.createdAt).toISOString(),
   };
 }
 
