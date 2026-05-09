@@ -21,6 +21,9 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
   const notes = useQuery(api.notes.listForSource, {
     sourceId: sourceId as Id<"sources">,
   });
+  const analysesData = useQuery(api.sourceAnalyses.getForSource, {
+    sourceId: sourceId as Id<"sources">,
+  });
   const moduleInfo = useQuery(
     api.modules.get,
     source ? { moduleId: source.moduleId } : "skip",
@@ -30,6 +33,7 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
     source === undefined ||
     chunks === undefined ||
     notes === undefined ||
+    analysesData === undefined ||
     (source !== null && moduleInfo === undefined)
   ) {
     return (
@@ -51,12 +55,27 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
 
   const mappedSource = mapSource(source);
 
+  const analyses = analysesData?.analyses ?? [];
+  const summaryAnalysis = analyses.find(
+    (a) => a.analysisType === "summary",
+  );
+  const argumentAnalysis = analyses.find(
+    (a) => a.analysisType === "main_argument",
+  );
+
+  const conceptsList = analysesData?.concepts ?? [];
+  const conceptNames = conceptsList.map((c) => c.concept);
+
   return (
     <SourceViewerContent
       source={{
         ...mappedSource,
         extractedText: "",
         errorMessage: "",
+        summary: summaryAnalysis?.content ?? mappedSource.summary,
+        mainArgument: argumentAnalysis?.content ?? "",
+        keyConcepts:
+          conceptNames.length > 0 ? conceptNames : mappedSource.keyConcepts,
       }}
       moduleTitle={moduleInfo?.title ?? ""}
       moduleCode={moduleInfo?.code ?? ""}
@@ -72,6 +91,22 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
         content: note.content,
         tags: note.tags ?? [],
         createdAt: new Date(note.createdAt).toISOString(),
+      }))}
+      analyses={analyses.map((a) => ({
+        id: a._id,
+        analysisType: a.analysisType,
+        content: a.content,
+      }))}
+      claims={(analysesData?.claims ?? []).map((c) => ({
+        id: c._id,
+        claim: c.claim,
+        pageRange: c.pageRange ?? null,
+        strength: c.strength ?? "moderate",
+      }))}
+      concepts={conceptsList.map((c) => ({
+        id: c._id,
+        concept: c.concept,
+        definition: c.definition ?? null,
       }))}
     />
   );

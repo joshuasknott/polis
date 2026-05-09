@@ -20,6 +20,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
 import type * as reviews from "../reviews.js";
+import type * as sourceAnalyses from "../sourceAnalyses.js";
 import type * as sources from "../sources.js";
 import type * as usage from "../usage.js";
 import type * as users from "../users.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   modules: typeof modules;
   notes: typeof notes;
   reviews: typeof reviews;
+  sourceAnalyses: typeof sourceAnalyses;
   sources: typeof sources;
   usage: typeof usage;
   users: typeof users;
