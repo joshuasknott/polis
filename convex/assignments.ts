@@ -12,12 +12,11 @@ export const list = query({
     if (args.moduleId) {
       return await ctx.db
         .query("assignments")
-        .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId!))
+        .withIndex("by_tokenIdentifier_and_module", (q) =>
+          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+        )
         .order("desc")
-        .take(100)
-        .then((items) =>
-          items.filter((a) => a.tokenIdentifier === tokenIdentifier),
-        );
+        .take(100);
     }
 
     return await ctx.db
@@ -62,6 +61,10 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const now = Date.now();
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
 
     return await ctx.db.insert("assignments", {
       ...args,

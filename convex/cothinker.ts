@@ -13,25 +13,23 @@ export const listSessions = query({
     if (args.assignmentId) {
       return await ctx.db
         .query("coThinkerSessions")
-        .withIndex("by_assignment", (q) =>
-          q.eq("assignmentId", args.assignmentId!),
+        .withIndex("by_tokenIdentifier_and_assignment", (q) =>
+          q
+            .eq("tokenIdentifier", tokenIdentifier)
+            .eq("assignmentId", args.assignmentId!),
         )
         .order("desc")
-        .take(50)
-        .then((items) =>
-          items.filter((s) => s.tokenIdentifier === tokenIdentifier),
-        );
+        .take(50);
     }
 
     if (args.moduleId) {
       return await ctx.db
         .query("coThinkerSessions")
-        .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId!))
+        .withIndex("by_tokenIdentifier_and_module", (q) =>
+          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+        )
         .order("desc")
-        .take(50)
-        .then((items) =>
-          items.filter((s) => s.tokenIdentifier === tokenIdentifier),
-        );
+        .take(50);
     }
 
     return await ctx.db
@@ -66,6 +64,32 @@ export const createSession = mutation({
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const now = Date.now();
+    if (args.moduleId) {
+      const mod = await ctx.db.get(args.moduleId);
+      if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
+        throw new Error("Not found");
+      }
+    }
+
+    if (args.assignmentId) {
+      const assignment = await ctx.db.get(args.assignmentId);
+      if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+        throw new Error("Not found");
+      }
+      if (args.moduleId && assignment.moduleId !== args.moduleId) {
+        throw new Error("Assignment does not belong to module");
+      }
+    }
+
+    if (args.sourceId) {
+      const source = await ctx.db.get(args.sourceId);
+      if (!source || source.tokenIdentifier !== tokenIdentifier) {
+        throw new Error("Not found");
+      }
+      if (args.moduleId && source.moduleId !== args.moduleId) {
+        throw new Error("Source does not belong to module");
+      }
+    }
 
     return await ctx.db.insert("coThinkerSessions", {
       ...args,

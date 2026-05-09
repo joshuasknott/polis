@@ -134,15 +134,21 @@ export const listFindings = query({
     const run = await ctx.db.get(args.reviewRunId);
     if (!run || run.tokenIdentifier !== tokenIdentifier) return [];
 
-    const findings = await ctx.db
+    if (args.category) {
+      return await ctx.db
+        .query("reviewFindings")
+        .withIndex("by_reviewRun_and_category", (q) =>
+          q.eq("reviewRunId", args.reviewRunId).eq("category", args.category!),
+        )
+        .take(100);
+    }
+
+    return await ctx.db
       .query("reviewFindings")
       .withIndex("by_reviewRun", (q) =>
         q.eq("reviewRunId", args.reviewRunId),
       )
       .take(100);
-
-    if (!args.category) return findings;
-    return findings.filter((f) => f.category === args.category);
   },
 });
 

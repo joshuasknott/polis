@@ -61,6 +61,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
     .index("by_module", ["moduleId"])
     .index("by_folder", ["folderId"]),
 
@@ -106,6 +107,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
     .index("by_module", ["moduleId"])
     .index("by_module_and_stage", ["moduleId", "stage"]),
 
@@ -257,7 +259,9 @@ export default defineSchema({
     resolved: v.optional(v.boolean()),
     resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_reviewRun", ["reviewRunId"]),
+  })
+    .index("by_reviewRun", ["reviewRunId"])
+    .index("by_reviewRun_and_category", ["reviewRunId", "category"]),
 
   coThinkerSessions: defineTable({
     tokenIdentifier: v.string(),
@@ -271,6 +275,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_tokenIdentifier_and_assignment", ["tokenIdentifier", "assignmentId"])
     .index("by_module", ["moduleId"])
     .index("by_assignment", ["assignmentId"]),
 
