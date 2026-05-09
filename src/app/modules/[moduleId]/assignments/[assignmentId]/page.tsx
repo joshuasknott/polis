@@ -6,6 +6,8 @@ import {
   getAssignmentsForModule,
   getSourcesForModule,
   getArgumentsForAssignment,
+  getLatestDraftForAssignment,
+  mockReviews,
   mockJudgements,
   mockEssayProject,
 } from "@/lib/data/mock-data";
@@ -30,8 +32,11 @@ export default async function AssignmentPage({
 
   const allModuleSources = getSourcesForModule(moduleId);
   const assignmentArguments = getArgumentsForAssignment(assignmentId);
+  const draft = getLatestDraftForAssignment(assignmentId);
+  const review = mockReviews.find((r) => r.draftId === draft?.id);
   const judgements = mockJudgements.filter((j) => j.assignmentId === assignmentId);
   const workingThesis = assignmentId === mockEssayProject.id ? mockEssayProject.thesis : undefined;
+  const assignmentSources = allModuleSources.filter((source) => assignment.selectedSourceIds.includes(source.id));
 
   const modContext = {
     id: mod.id,
@@ -50,8 +55,11 @@ export default async function AssignmentPage({
         activeStage={stage}
         allModuleSources={allModuleSources}
         assignmentArguments={assignmentArguments}
+        draft={draft}
+        review={review}
         judgements={judgements}
         workingThesis={workingThesis}
+        assignmentSources={assignmentSources}
       />
     </AppShell>
   );

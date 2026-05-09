@@ -1,13 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Layers, GitMerge, FileText, CheckCircle, Scale, Beaker } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpen,
+  Layers,
+  GitMerge,
+  FileText,
+  CheckCircle,
+  Scale,
+  Beaker,
+  PanelRightOpen,
+  PanelRightClose,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Module, Assignment, SourceFile, Argument, Judgement } from "@/lib/types";
+import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review } from "@/lib/types";
 import { IngestStage } from "./ingest-stage";
 import { EvidenceMap } from "@/components/evidence/evidence-map";
 import { JudgeStage } from "@/components/arguments/judge-stage";
 import { ArgumentBuilder } from "@/components/arguments/argument-builder";
+import { DraftStudio } from "@/components/drafts/draft-studio";
+import { RefineWorkspace } from "@/components/refine/refine-workspace";
+import { CoThinkerPanel } from "@/components/cothinker/cothinker-panel";
 
 const WORKFLOW_STAGES = [
   { id: "ingest", label: "Ingest", icon: BookOpen, description: "Collect raw material" },
@@ -25,18 +40,23 @@ interface AssignmentWorkspaceShellProps {
   activeStage: string;
   allModuleSources?: SourceFile[];
   assignmentArguments?: Argument[];
+  draft?: Draft;
+  review?: Review;
   judgements?: Judgement[];
   workingThesis?: string;
+  assignmentSources?: SourceFile[];
 }
 
 function StagePlaceholder({ label, description, icon: Icon }: { label: string; description: string; icon: React.ElementType }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 py-24 text-center mt-6">
-      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
+    <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 py-24 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <Icon className="h-6 w-6 text-muted-foreground" />
       </div>
       <h3 className="text-lg font-medium">{label}</h3>
-      <p className="mt-2 text-sm text-muted-foreground max-w-sm">{description}. This area will be implemented in future phases.</p>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        {description}. This area will be implemented in future phases.
+      </p>
     </div>
   );
 }
@@ -47,16 +67,22 @@ export function AssignmentWorkspaceShell({
   activeStage,
   allModuleSources = [],
   assignmentArguments = [],
+  draft,
+  review,
   judgements = [],
   workingThesis,
+  assignmentSources = [],
 }: AssignmentWorkspaceShellProps) {
-  const currentStageIndex = WORKFLOW_STAGES.findIndex((s) => s.id === activeStage);
-  const activeStageConfig = WORKFLOW_STAGES.find((s) => s.id === activeStage) ?? WORKFLOW_STAGES[0];
+  const [coThinkerOpen, setCoThinkerOpen] = useState(true);
+
+  const currentStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === activeStage);
+  const activeStageConfig = WORKFLOW_STAGES.find((stage) => stage.id === activeStage) ?? WORKFLOW_STAGES[0];
   const ActiveIcon = activeStageConfig.icon;
+  const hasFullBleedStageContent = (activeStage === "draft" && Boolean(draft)) || (activeStage === "refine" && Boolean(draft && review));
 
   const evidenceGaps = judgements
-    .filter((j) => j.type === "evidence_sufficiency" || j.type === "gap_analysis")
-    .flatMap((j) => j.findings);
+    .filter((judgement) => judgement.type === "evidence_sufficiency" || judgement.type === "gap_analysis")
+    .flatMap((judgement) => judgement.findings);
 
   const renderStageContent = () => {
     switch (activeStage) {
@@ -72,34 +98,29 @@ export function AssignmentWorkspaceShell({
         return (
           <StagePlaceholder
             label="Understand"
-            description="Comprehend individual sources — summaries and key concept extraction"
+            description="Comprehend individual sources: summaries and key concept extraction"
             icon={Layers}
           />
         );
       case "map":
-        return (
-          <EvidenceMap
-            arguments={assignmentArguments}
-            evidenceGaps={evidenceGaps}
-          />
-        );
+        return <EvidenceMap arguments={assignmentArguments} evidenceGaps={evidenceGaps} />;
       case "judge":
-        return (
-          <JudgeStage
-            assignment={assignment}
-            arguments={assignmentArguments}
-            judgements={judgements}
-          />
-        );
+        return <JudgeStage assignment={assignment} arguments={assignmentArguments} judgements={judgements} />;
       case "build":
-        return (
-          <ArgumentBuilder
-            assignment={assignment}
-            arguments={assignmentArguments}
-            workingThesis={workingThesis}
-          />
-        );
+        return <ArgumentBuilder assignment={assignment} arguments={assignmentArguments} workingThesis={workingThesis} />;
       case "draft":
+        if (draft) {
+          return (
+            <DraftStudio
+              module={module}
+              assignment={assignment}
+              draft={draft}
+              arguments={assignmentArguments}
+              sources={assignmentSources}
+            />
+          );
+        }
+
         return (
           <StagePlaceholder
             label="Draft Studio"
@@ -108,6 +129,10 @@ export function AssignmentWorkspaceShell({
           />
         );
       case "refine":
+        if (draft && review) {
+          return <RefineWorkspace module={module} assignment={assignment} draft={draft} review={review} />;
+        }
+
         return (
           <StagePlaceholder
             label="Refine"
@@ -127,96 +152,130 @@ export function AssignmentWorkspaceShell({
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-12 flex flex-col min-h-[calc(100vh-8rem)]">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-          <Link
-            href={`/modules/${module.id}?tab=assignments`}
-            className="hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            <ArrowLeft className="h-3 w-3" /> Assignments
-          </Link>
-          <span>/</span>
-          <span>{assignment.title}</span>
-        </div>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground">{assignment.title}</h1>
-            <div className="flex items-center gap-4 mt-3">
-              <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium uppercase tracking-wider bg-accent/10 text-accent">
-                {assignment.stage.replace("-", " ")}
-              </span>
-              {assignment.dueDate && (
-                <span className="text-sm text-muted-foreground">
-                  Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                </span>
-              )}
+    <div className="flex min-h-[calc(100vh-8rem)]">
+      <div className="min-w-0 flex-1 pb-12">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-8">
+            <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <Link
+                href={`/modules/${module.id}?tab=assignments`}
+                className="flex items-center gap-1 transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> Assignments
+              </Link>
+              <span>/</span>
+              <span>{assignment.title}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h1 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl">{assignment.title}</h1>
+                <div className="mt-3 flex items-center gap-4">
+                  <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-accent">
+                    {assignment.stage.replace("-", " ")}
+                  </span>
+                  {assignment.dueDate && (
+                    <span className="text-sm text-muted-foreground">
+                      Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCoThinkerOpen((open) => !open)}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                title={coThinkerOpen ? "Hide CoThinker" : "Show CoThinker"}
+              >
+                {coThinkerOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                <span className="hidden sm:inline">CoThinker</span>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Stage Rail */}
-      <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
-        <div className="flex items-center min-w-[700px]">
-          {WORKFLOW_STAGES.map((stage, index) => {
-            const isActive = stage.id === activeStage;
-            const isPast = index < currentStageIndex;
+          <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
+            <div className="flex min-w-[700px] items-center">
+              {WORKFLOW_STAGES.map((stage, index) => {
+                const isActive = stage.id === activeStage;
+                const isPast = index < currentStageIndex;
 
-            return (
-              <div key={stage.id} className="flex-1 relative flex flex-col items-center group">
-                {index > 0 && (
-                  <div
-                    className={cn(
-                      "absolute top-5 left-[-50%] w-full h-[2px] transition-colors",
-                      isPast || isActive ? "bg-accent" : "bg-border"
+                return (
+                  <div key={stage.id} className="group relative flex flex-1 flex-col items-center">
+                    {index > 0 && (
+                      <div
+                        className={cn(
+                          "absolute left-[-50%] top-5 h-[2px] w-full transition-colors",
+                          isPast || isActive ? "bg-accent" : "bg-border"
+                        )}
+                      />
                     )}
-                  />
-                )}
 
-                <Link
-                  href={`/modules/${module.id}/assignments/${assignment.id}?stage=${stage.id}`}
-                  className={cn(
-                    "relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-                    isActive
-                      ? "border-accent bg-accent text-accent-foreground"
-                      : isPast
-                      ? "border-accent bg-background text-accent hover:bg-accent/10"
-                      : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
-                  )}
-                  title={stage.description}
-                >
-                  <stage.icon className="h-4 w-4" />
-                </Link>
+                    <Link
+                      href={`/modules/${module.id}/assignments/${assignment.id}?stage=${stage.id}`}
+                      className={cn(
+                        "relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
+                        isActive
+                          ? "border-accent bg-accent text-accent-foreground"
+                          : isPast
+                            ? "border-accent bg-background text-accent hover:bg-accent/10"
+                            : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
+                      )}
+                      title={stage.description}
+                    >
+                      <stage.icon className="h-4 w-4" />
+                    </Link>
 
-                <span
-                  className={cn(
-                    "mt-3 text-xs font-medium uppercase tracking-wider transition-colors",
-                    isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
-                  )}
-                >
-                  {stage.label}
-                </span>
+                    <span
+                      className={cn(
+                        "mt-3 text-xs font-medium uppercase tracking-wider transition-colors",
+                        isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
+                      )}
+                    >
+                      {stage.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              "flex-1 rounded-2xl border border-border p-6 md:p-8",
+              hasFullBleedStageContent ? "border-none bg-transparent p-0 md:p-0" : "bg-card"
+            )}
+          >
+            {!hasFullBleedStageContent && (
+              <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
+                <div>
+                  <h2 className="flex items-center gap-2 text-xl font-semibold">
+                    <ActiveIcon className="h-5 w-5 text-accent" />
+                    {activeStageConfig.label}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{activeStageConfig.description}</p>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
+            )}
 
-      {/* Stage Content */}
-      <div className="flex-1 bg-card rounded-2xl border border-border p-6 md:p-8">
-        <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
-          <div>
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <ActiveIcon className="h-5 w-5 text-accent" />
-              {activeStageConfig.label}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{activeStageConfig.description}</p>
+            {renderStageContent()}
           </div>
         </div>
+      </div>
 
-        {renderStageContent()}
+      <div
+        className={cn(
+          "shrink-0 overflow-hidden border-l border-border bg-card/50 transition-all duration-200",
+          coThinkerOpen ? "w-80" : "w-0"
+        )}
+      >
+        {coThinkerOpen && (
+          <CoThinkerPanel
+            stage={activeStage as import("@/lib/types").ProductionStage}
+            assignment={assignment}
+            arguments={assignmentArguments}
+            review={review}
+            judgements={judgements}
+          />
+        )}
       </div>
     </div>
   );
