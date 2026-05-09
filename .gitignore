@@ -39,6 +39,9 @@ yarn-error.log*
 # uploads
 /uploads/
 
+# local agent worktrees
+/.worktrees/
+
 # vercel
 .vercel
 
