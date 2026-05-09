@@ -19,6 +19,8 @@ import type * as folders from "../folders.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
+import type * as observability from "../observability.js";
+import type * as rateLimits from "../rateLimits.js";
 import type * as reviews from "../reviews.js";
 import type * as sources from "../sources.js";
 import type * as usage from "../usage.js";
@@ -42,6 +44,8 @@ declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
   modules: typeof modules;
   notes: typeof notes;
+  observability: typeof observability;
+  rateLimits: typeof rateLimits;
   reviews: typeof reviews;
   sources: typeof sources;
   usage: typeof usage;

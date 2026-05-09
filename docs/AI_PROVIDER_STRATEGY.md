@@ -102,3 +102,38 @@ chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
 - `src/lib/services/apikey-service.ts` — Encrypted API key CRUD operations
 - `src/lib/services/usage-service.ts` — Usage tracking and cost estimation
 - `src/lib/services/rate-limit-service.ts` — In-memory rate limiting
+
+## Convex Usage Analytics & Rate Limiting
+
+### Usage Events (`convex/usage.ts`)
+
+All AI interactions are tracked via `usageEvents` table. Event types: `chat`, `embedding`, `retrieval`, `source_analysis`, `draft_review`, `citation_check`, `ingestion`.
+
+**Writes**: `usage.recordEvent` (public mutation), `usage.recordEventInternal` (internal mutation for server-side use).
+
+**Queries**: `usage.getDashboardStats` (single aggregated query for the Usage UI), `usage.getStatsAllTime`, `usage.getStatsThisMonth`, `usage.getStatsByType`, `usage.getStatsByModel`, `usage.getStatsByProvider`, `usage.getRetrievalBreakdown`, `usage.getRecentEvents`.
+
+### Rate Limiting (`convex/rateLimits.ts`)
+
+Server-side per-user rate limiting enforced in Convex, not client-side.
+
+- **Window**: 60-second sliding window per provider.
+- **Default**: 30 requests/min, 100k tokens/min.
+- **Provider overrides**: OpenAI (30/150k), Anthropic (20/100k), Google (30/120k).
+- **Check**: `rateLimits.checkRateLimit` mutation — atomically increments counters and returns `allowed`/`denied` with reset time.
+- **Status**: `rateLimits.getRateLimitStatus` query — returns remaining limits for UI display.
+- **Cleanup**: `rateLimits.cleanupOldWindows` internal mutation for stale window documents.
+
+### Observability (`convex/observability.ts`)
+
+Error tracking and processing job monitoring.
+
+- **Error writes**: `observability.recordError` (public), `observability.recordErrorInternal` (internal).
+- **Error queries**: `observability.listRecentErrors`, `observability.getErrorCounts` (24h aggregated by source/type).
+- **Processing status**: `observability.getProcessingStatus` (24h job summary with pending/failed counts).
+
+### Database Tables
+
+- `usageEvents` — indexed by `tokenIdentifier`, `type`, `tokenIdentifier_and_type`, `tokenIdentifier_and_provider`, `tokenIdentifier_and_model`.
+- `rateLimits` — indexed by `tokenIdentifier`, `tokenIdentifier_and_provider`.
+- `errorEvents` — indexed by `tokenIdentifier`, `source`.

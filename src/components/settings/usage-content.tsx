@@ -1,35 +1,36 @@
 "use client";
 
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
-import { ArrowLeft, BarChart3, DollarSign, Zap, Activity } from "lucide-react";
-
-interface UsageStats {
-  allTime: { tokensIn: number; tokensOut: number; costEstimate: number; count: number };
-  thisMonth: { tokensIn: number; tokensOut: number; costEstimate: number; count: number };
-  byType: Array<{ type: string; tokensIn: number; tokensOut: number; costEstimate: number; count: number }>;
-  byModel: Array<{ model: string; tokensIn: number; tokensOut: number; costEstimate: number; count: number }>;
-  retrievalBreakdown: Array<{ mode: string; count: number }>;
-  recentLogs: Array<{
-    id: string;
-    provider: string;
-    model: string;
-    type: string;
-    tokensIn: number;
-    tokensOut: number;
-    costEstimate: number;
-    createdAt: string;
-  }>;
-}
+import { ArrowLeft, BarChart3, DollarSign, Zap, Activity, Loader2 } from "lucide-react";
 
 export function UsageContent() {
-  const stats: UsageStats = {
-    allTime: { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 },
-    thisMonth: { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 },
-    byType: [],
-    byModel: [],
-    retrievalBreakdown: [],
-    recentLogs: [],
-  };
+  const dashboard = useQuery(api.usage.getDashboardStats);
+  const rateLimitStatus = useQuery(api.rateLimits.getRateLimitStatus, {});
+
+  if (dashboard === undefined) {
+    return (
+      <div className="max-w-3xl space-y-6">
+        <div>
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Settings
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">Usage Analytics</h1>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  const stats = dashboard;
+  const isEmpty = stats.allTime.count === 0;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -46,6 +47,16 @@ export function UsageContent() {
           Track your AI API usage, token consumption, and estimated costs.
         </p>
       </div>
+
+      {isEmpty && (
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <Activity className="h-8 w-8 mx-auto text-muted-foreground" />
+          <h2 className="mt-3 text-sm font-semibold">No usage data yet</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Usage events will appear here once you start using AI features like CoThinker, source analysis, or draft review.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-border bg-card p-5">
@@ -78,6 +89,31 @@ export function UsageContent() {
         </div>
       </div>
 
+      {rateLimitStatus && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Zap className="h-4 w-4" />
+            Rate Limit
+          </div>
+          <div className="mt-3 flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{rateLimitStatus.requestsRemaining} requests remaining</span>
+                <span>{rateLimitStatus.limit} per minute</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-accent transition-all"
+                  style={{
+                    width: `${Math.min(100, (rateLimitStatus.requestsRemaining / rateLimitStatus.limit) * 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <BarChart3 className="h-4 w-4 text-accent" />
@@ -99,9 +135,29 @@ export function UsageContent() {
         </div>
       </section>
 
+      {stats.byType.length > 0 && (
+        <section className="rounded-xl border border-border bg-card p-6">
+          <h2 className="text-sm font-semibold">Usage by Type</h2>
+          <div className="mt-4 space-y-2">
+            {stats.byType.map((item) => (
+              <div key={item.type} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium capitalize">{item.type.replace(/_/g, " ")}</p>
+                  <p className="text-xs text-muted-foreground">{item.count} calls</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{((item.tokensIn + item.tokensOut) / 1000).toFixed(1)}k tokens</p>
+                  <p className="text-xs text-muted-foreground">${item.costEstimate.toFixed(4)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {stats.byModel.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-sm font-semibold">Usage by Model (This Month)</h2>
+          <h2 className="text-sm font-semibold">Usage by Model</h2>
           <div className="mt-4 space-y-2">
             {stats.byModel.map((m) => (
               <div key={m.model} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
@@ -137,15 +193,16 @@ export function UsageContent() {
         <section className="rounded-xl border border-border bg-card p-6">
           <h2 className="text-sm font-semibold">Recent Activity</h2>
           <div className="mt-4 space-y-2">
-            {stats.recentLogs.slice(0, 20).map((log) => (
+            {stats.recentLogs.map((log) => (
               <div key={log.id} className="flex items-center justify-between text-sm border-b border-border pb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-muted capitalize">{log.type}</span>
-                  <span className="text-muted-foreground">{log.model}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-muted capitalize">{log.type.replace(/_/g, " ")}</span>
+                  <span className="text-muted-foreground">{log.model || "—"}</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>{log.tokensIn + log.tokensOut} tokens</span>
                   <span>${log.costEstimate.toFixed(4)}</span>
+                  <span>{new Date(log.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}
