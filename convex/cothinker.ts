@@ -190,3 +190,24 @@ export const addIntervention = mutation({
     });
   },
 });
+
+export const updateIntervention = mutation({
+  args: {
+    interventionId: v.id("coThinkerInterventions"),
+    resolved: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const { interventionId, ...updates } = args;
+    const intervention = await ctx.db.get(interventionId);
+    if (!intervention || intervention.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(interventionId, {
+      ...updates,
+      ...(args.resolved ? { resolvedAt: Date.now() } : {}),
+    });
+    return interventionId;
+  },
+});

@@ -101,3 +101,58 @@ export const remove = mutation({
     return args.sourceId;
   },
 });
+
+export const attachStorage = mutation({
+  args: {
+    sourceId: v.id("sources"),
+    storageId: v.id("_storage"),
+    fileName: v.optional(v.string()),
+    fileType: v.optional(v.string()),
+    fileSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      storageId: args.storageId,
+      fileName: args.fileName,
+      fileType: args.fileType,
+      fileSize: args.fileSize,
+      status: "processing",
+      updatedAt: Date.now(),
+    });
+    return args.sourceId;
+  },
+});
+
+export const listAnalyses = query({
+  args: {
+    sourceId: v.id("sources"),
+    analysisType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) return [];
+
+    if (args.analysisType) {
+      return await ctx.db
+        .query("sourceAnalyses")
+        .withIndex("by_source_and_type", (q) =>
+          q
+            .eq("sourceId", args.sourceId)
+            .eq("analysisType", args.analysisType!),
+        )
+        .take(50);
+    }
+
+    return await ctx.db
+      .query("sourceAnalyses")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(100);
+  },
+});

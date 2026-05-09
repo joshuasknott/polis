@@ -189,7 +189,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_argument", ["argumentId"])
-    .index("by_source", ["sourceId"]),
+    .index("by_source", ["sourceId"])
+    .index("by_argumentNodeId", ["argumentNodeId"]),
 
   drafts: defineTable({
     tokenIdentifier: v.string(),
@@ -253,6 +254,8 @@ export default defineSchema({
     category: v.string(),
     content: v.string(),
     severity: v.optional(v.string()),
+    resolved: v.optional(v.boolean()),
+    resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_reviewRun", ["reviewRunId"]),
 
@@ -288,6 +291,8 @@ export default defineSchema({
     sessionId: v.id("coThinkerSessions"),
     type: v.string(),
     content: v.string(),
+    resolved: v.optional(v.boolean()),
+    resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_session", ["sessionId"]),
 

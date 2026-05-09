@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { AssignmentWorkspaceShell } from "@/components/assignments/assignment-workspace-shell";
-import { getModuleById, getAssignmentsForModule } from "@/lib/data/mock-data";
+import {
+  getModuleById,
+  getAssignmentsForModule,
+  getSourcesForModule,
+  getArgumentsForAssignment,
+  mockJudgements,
+  mockEssayProject,
+} from "@/lib/data/mock-data";
 
 export default async function AssignmentPage({
   params,
@@ -18,8 +25,13 @@ export default async function AssignmentPage({
   if (!mod) notFound();
 
   const assignments = getAssignmentsForModule(moduleId);
-  const assignment = assignments.find(a => a.id === assignmentId);
+  const assignment = assignments.find((a) => a.id === assignmentId);
   if (!assignment) notFound();
+
+  const allModuleSources = getSourcesForModule(moduleId);
+  const assignmentArguments = getArgumentsForAssignment(assignmentId);
+  const judgements = mockJudgements.filter((j) => j.assignmentId === assignmentId);
+  const workingThesis = assignmentId === mockEssayProject.id ? mockEssayProject.thesis : undefined;
 
   const modContext = {
     id: mod.id,
@@ -27,15 +39,19 @@ export default async function AssignmentPage({
     code: mod.code,
     description: mod.description,
     colour: mod.color,
-    activeTab: "assignments", // Keeps the sidebar focused on assignments
+    activeTab: "assignments",
   };
 
   return (
     <AppShell moduleContext={modContext}>
-      <AssignmentWorkspaceShell 
-        module={mod} 
-        assignment={assignment} 
-        activeStage={stage} 
+      <AssignmentWorkspaceShell
+        module={mod}
+        assignment={assignment}
+        activeStage={stage}
+        allModuleSources={allModuleSources}
+        assignmentArguments={assignmentArguments}
+        judgements={judgements}
+        workingThesis={workingThesis}
       />
     </AppShell>
   );
