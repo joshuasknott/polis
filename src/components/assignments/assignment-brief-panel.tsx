@@ -113,9 +113,9 @@ function StageReadinessBlock({
 }
 
 export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBriefPanelProps) {
-  const dueDate = new Date(assignment.dueDate);
+  const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
   const now = new Date();
-  const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : Infinity;
   const isOverdue = daysUntilDue < 0;
   const isUrgent = daysUntilDue >= 0 && daysUntilDue <= 7;
 
@@ -144,7 +144,7 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
             <span className="text-xs font-medium uppercase tracking-wider">Word limit</span>
           </div>
           <span className="text-lg font-semibold text-foreground">
-            {assignment.wordLimit.toLocaleString()}
+            {(assignment.wordLimit ?? 0).toLocaleString()}
           </span>
         </div>
 
@@ -154,7 +154,7 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
             <span className="text-xs font-medium uppercase tracking-wider">Due date</span>
           </div>
           <span className={cn("text-sm font-semibold", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-foreground")}>
-            {dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            {dueDate ? dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "No due date"}
           </span>
           <p className={cn("text-xs mt-0.5", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-muted-foreground")}>
             {isOverdue

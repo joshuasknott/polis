@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import { draftBlockType } from "./lib/validators";
 
 export const list = query({
   args: { assignmentId: v.id("assignments") },
@@ -13,7 +14,7 @@ export const list = query({
 
     return await ctx.db
       .query("drafts")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_version", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
@@ -42,7 +43,7 @@ export const getLatest = query({
 
     const drafts = await ctx.db
       .query("drafts")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_version", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
@@ -67,7 +68,7 @@ export const create = mutation({
 
     const existing = await ctx.db
       .query("drafts")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_version", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
@@ -128,7 +129,9 @@ export const listBlocks = query({
 
     return await ctx.db
       .query("draftBlocks")
-      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .withIndex("by_draft_and_sortOrder", (q) =>
+        q.eq("draftId", args.draftId),
+      )
       .order("asc")
       .take(200);
   },
@@ -137,7 +140,7 @@ export const listBlocks = query({
 export const createBlock = mutation({
   args: {
     draftId: v.id("drafts"),
-    blockType: v.string(),
+    blockType: draftBlockType,
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.optional(v.number()),
@@ -147,6 +150,17 @@ export const createBlock = mutation({
     const draft = await ctx.db.get(args.draftId);
     if (!draft || draft.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.argumentId) {
+      const argument = await ctx.db.get(args.argumentId);
+      if (
+        !argument ||
+        argument.tokenIdentifier !== tokenIdentifier ||
+        argument.assignmentId !== draft.assignmentId
+      ) {
+        throw new Error("Argument must belong to the draft's assignment");
+      }
     }
 
     const now = Date.now();
@@ -163,7 +177,7 @@ export const createBlock = mutation({
 export const updateBlock = mutation({
   args: {
     blockId: v.id("draftBlocks"),
-    blockType: v.optional(v.string()),
+    blockType: v.optional(draftBlockType),
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.optional(v.number()),
@@ -174,6 +188,19 @@ export const updateBlock = mutation({
     const block = await ctx.db.get(blockId);
     if (!block || block.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.argumentId) {
+      const draft = await ctx.db.get(block.draftId);
+      const argument = await ctx.db.get(args.argumentId);
+      if (
+        !argument ||
+        argument.tokenIdentifier !== tokenIdentifier ||
+        !draft ||
+        argument.assignmentId !== draft.assignmentId
+      ) {
+        throw new Error("Argument must belong to the draft's assignment");
+      }
     }
 
     await ctx.db.patch(blockId, { ...updates, updatedAt: Date.now() });

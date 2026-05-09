@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import { sourceType, sourceStatus } from "./lib/validators";
 
 export const list = query({
   args: {
@@ -13,7 +14,9 @@ export const list = query({
       return await ctx.db
         .query("sources")
         .withIndex("by_tokenIdentifier_and_module", (q) =>
-          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+          q
+            .eq("tokenIdentifier", tokenIdentifier)
+            .eq("moduleId", args.moduleId!),
         )
         .order("desc")
         .take(200);
@@ -25,6 +28,25 @@ export const list = query({
         q.eq("tokenIdentifier", tokenIdentifier),
       )
       .order("desc")
+      .take(200);
+  },
+});
+
+export const listByStatus = query({
+  args: {
+    moduleId: v.id("modules"),
+    status: sourceStatus,
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("sources")
+      .withIndex("by_module_and_status", (q) =>
+        q.eq("moduleId", args.moduleId).eq("status", args.status),
+      )
       .take(200);
   },
 });
@@ -46,7 +68,7 @@ export const createPlaceholder = mutation({
     title: v.string(),
     authors: v.optional(v.string()),
     year: v.optional(v.number()),
-    type: v.optional(v.string()),
+    type: v.optional(sourceType),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -58,7 +80,11 @@ export const createPlaceholder = mutation({
 
     if (args.folderId) {
       const folder = await ctx.db.get(args.folderId);
-      if (!folder || folder.tokenIdentifier !== tokenIdentifier || folder.moduleId !== args.moduleId) {
+      if (
+        !folder ||
+        folder.tokenIdentifier !== tokenIdentifier ||
+        folder.moduleId !== args.moduleId
+      ) {
         throw new Error("Not found");
       }
     }
@@ -80,8 +106,8 @@ export const update = mutation({
     title: v.optional(v.string()),
     authors: v.optional(v.string()),
     year: v.optional(v.number()),
-    type: v.optional(v.string()),
-    status: v.optional(v.string()),
+    type: v.optional(sourceType),
+    status: v.optional(sourceStatus),
     citation: v.optional(v.string()),
     summary: v.optional(v.string()),
   },
@@ -153,9 +179,7 @@ export const listAnalyses = query({
       return await ctx.db
         .query("sourceAnalyses")
         .withIndex("by_source_and_type", (q) =>
-          q
-            .eq("sourceId", args.sourceId)
-            .eq("analysisType", args.analysisType!),
+          q.eq("sourceId", args.sourceId).eq("analysisType", args.analysisType!),
         )
         .take(50);
     }
@@ -176,7 +200,9 @@ export const listChunks = query({
 
     return await ctx.db
       .query("sourceChunks")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .withIndex("by_source_and_chunkIndex", (q) =>
+        q.eq("sourceId", args.sourceId),
+      )
       .order("asc")
       .take(500);
   },

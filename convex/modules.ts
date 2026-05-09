@@ -34,6 +34,9 @@ export const create = mutation({
     academicYear: v.optional(v.string()),
     semester: v.optional(v.string()),
     colour: v.optional(v.string()),
+    themes: v.optional(v.array(v.string())),
+    concepts: v.optional(v.array(v.string())),
+    learningOutcomes: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -42,18 +45,40 @@ export const create = mutation({
     const moduleId = await ctx.db.insert("modules", {
       ...args,
       tokenIdentifier,
+      contextVersion: 1,
+      contextUpdatedAt: now,
       createdAt: now,
       updatedAt: now,
     });
 
     const defaultFolders = [
-      { name: "Module Info", type: "module_info", sortOrder: 0 },
-      { name: "Readings", type: "readings", sortOrder: 1 },
-      { name: "Lecture and Seminar Material", type: "lecture_material", sortOrder: 2 },
-      { name: "Source Notes", type: "source_notes", sortOrder: 3 },
-      { name: "Assignments", type: "assignments", sortOrder: 4 },
-      { name: "Drafts and Reviews", type: "drafts_reviews", sortOrder: 5 },
-      { name: "Submissions", type: "submissions", sortOrder: 6 },
+      { name: "Module Info", type: "module_info" as const, sortOrder: 0 },
+      { name: "Readings", type: "readings" as const, sortOrder: 1 },
+      {
+        name: "Lecture and Seminar Material",
+        type: "lecture_material" as const,
+        sortOrder: 2,
+      },
+      {
+        name: "Source Notes",
+        type: "source_notes" as const,
+        sortOrder: 3,
+      },
+      {
+        name: "Assignments",
+        type: "assignments" as const,
+        sortOrder: 4,
+      },
+      {
+        name: "Drafts and Reviews",
+        type: "drafts_reviews" as const,
+        sortOrder: 5,
+      },
+      {
+        name: "Submissions",
+        type: "submissions" as const,
+        sortOrder: 6,
+      },
     ];
 
     for (const f of defaultFolders) {
@@ -81,6 +106,9 @@ export const update = mutation({
     academicYear: v.optional(v.string()),
     semester: v.optional(v.string()),
     colour: v.optional(v.string()),
+    themes: v.optional(v.array(v.string())),
+    concepts: v.optional(v.array(v.string())),
+    learningOutcomes: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -90,7 +118,21 @@ export const update = mutation({
       throw new Error("Not found");
     }
 
-    await ctx.db.patch(moduleId, { ...updates, updatedAt: Date.now() });
+    const contextFields = ["themes", "concepts", "learningOutcomes"] as const;
+    const hasContextUpdate = contextFields.some(
+      (f) => updates[f] !== undefined,
+    );
+
+    await ctx.db.patch(moduleId, {
+      ...updates,
+      ...(hasContextUpdate
+        ? {
+            contextVersion: (mod.contextVersion ?? 0) + 1,
+            contextUpdatedAt: Date.now(),
+          }
+        : {}),
+      updatedAt: Date.now(),
+    });
     return moduleId;
   },
 });
@@ -156,7 +198,9 @@ export const getWorkspaceBundle = query({
 
     const folders = await ctx.db
       .query("folders")
-      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .withIndex("by_module_and_sortOrder", (q) =>
+        q.eq("moduleId", args.moduleId),
+      )
       .order("asc")
       .take(100);
 

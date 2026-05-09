@@ -14,10 +14,10 @@ import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/ut
 interface SourceItem {
   id: string;
   moduleId: string;
-  folderId: string;
+  folderId: string | null;
   title: string;
   author: string;
-  year: number;
+  year: number | null;
   type: string;
   status: string;
   tags: string[];

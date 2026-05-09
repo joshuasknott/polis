@@ -244,7 +244,8 @@ function buildReadinessChecklist(
   draft: Draft,
   assignment: Assignment
 ) {
-  const wordRatio = draft.wordCount / assignment.wordLimit;
+  const wordLimit = assignment.wordLimit ?? 2000;
+  const wordRatio = draft.wordCount / wordLimit;
   const withinLimit = wordRatio >= 0.9 && wordRatio <= 1.1;
 
   return [

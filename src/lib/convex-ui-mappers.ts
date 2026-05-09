@@ -1,5 +1,14 @@
 import type { Doc } from "../../convex/_generated/dataModel";
-import type { Assignment, Argument, EvidenceLink, Draft, Review, EvidenceStrength, ProductionStage } from "./types";
+import type {
+  Assignment,
+  Argument,
+  EvidenceLink,
+  Draft,
+  Review,
+  EvidenceStrength,
+  ProductionStage,
+  EvidenceRole,
+} from "./types";
 
 export function mapModule(
   mod: Doc<"modules"> & { sourceCount?: number; assignmentCount?: number },
@@ -9,20 +18,26 @@ export function mapModule(
     workspaceId: "",
     title: mod.title,
     code: mod.code,
-    academicYear: "",
-    semester: "",
+    academicYear: mod.academicYear ?? "",
+    semester: mod.semester ?? "",
     description: mod.description ?? "",
     color: mod.colour ?? "var(--color-border)",
     sourceCount: mod.sourceCount ?? 0,
     noteCount: 0,
     assignmentCount: mod.assignmentCount ?? 0,
     lastActivityAt: new Date(mod.updatedAt).toISOString(),
+    themes: mod.themes ?? [],
+    concepts: mod.concepts ?? [],
+    learningOutcomes: mod.learningOutcomes ?? [],
+    contextVersion: mod.contextVersion,
   };
 }
 
 export function mapFolder(folder: Doc<"folders">, sourceCount: number) {
   return {
     id: folder._id,
+    moduleId: folder.moduleId,
+    parentFolderId: folder.parentFolderId ?? null,
     name: folder.name,
     type: folder.type,
     sortOrder: folder.sortOrder,
@@ -34,12 +49,12 @@ export function mapSource(source: Doc<"sources">) {
   return {
     id: source._id,
     moduleId: source.moduleId,
-    folderId: source.folderId ?? "",
+    folderId: source.folderId ?? null,
     title: source.title,
-    author: source.authors ?? "Author unknown",
-    year: source.year ?? 0,
-    type: source.type as import("./types").SourceType,
-    status: source.status as import("./types").ProcessingStatus,
+    author: source.authors ?? "",
+    year: source.year ?? null,
+    type: source.type,
+    status: source.status,
     tags: [] as string[],
     citation: source.citation ?? "",
     pageCount: 0,
@@ -59,11 +74,16 @@ export function mapFullAssignment(
     moduleId: assignment.moduleId,
     title: assignment.title,
     question: assignment.question ?? "",
-    wordLimit: assignment.wordLimit ?? 2000,
-    dueDate: assignment.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    rubric: (assignment.rubric ?? []) as Array<{ name: string; description: string; weight: number }>,
+    wordLimit: assignment.wordLimit ?? null,
+    dueDate: assignment.dueDate ?? null,
+    rubric: (assignment.rubric ?? []) as Array<{
+      name: string;
+      description: string;
+      weight: number;
+    }>,
     selectedSourceIds,
-    stage: (assignment.stage ?? "ingest") as ProductionStage,
+    stage: assignment.stage as ProductionStage,
+    contextVersion: assignment.contextVersion ?? null,
     createdAt: new Date(assignment.createdAt).toISOString(),
   };
 }
@@ -87,8 +107,8 @@ export function mapEvidenceLink(
     sourceTitle,
     quote: link.quote ?? "",
     pageRange: link.pageRange ?? "",
-    usage: link.usage ?? "",
-    strength: (link.strength as EvidenceStrength) ?? "moderate",
+    usage: (link.usage as EvidenceRole) ?? "",
+    strength: link.strength as EvidenceStrength,
   };
 }
 

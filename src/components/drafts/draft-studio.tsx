@@ -251,7 +251,7 @@ export function DraftStudio({
   sources,
 }: DraftStudioProps) {
   const initialSections = useMemo(
-    () => buildInitialSections(draft, args, assignment.wordLimit),
+    () => buildInitialSections(draft, args, assignment.wordLimit ?? 2000),
     [draft, args, assignment.wordLimit]
   );
 
@@ -266,7 +266,8 @@ export function DraftStudio({
     [sections]
   );
 
-  const totalRatio = assignment.wordLimit > 0 ? totalWords / assignment.wordLimit : 0;
+  const wordLimit = assignment.wordLimit ?? 2000;
+  const totalRatio = wordLimit > 0 ? totalWords / wordLimit : 0;
 
   const handleSectionChange = useCallback(
     (sectionId: string, content: string) => {
@@ -317,7 +318,7 @@ export function DraftStudio({
                 {totalWords.toLocaleString()}
               </span>
               <span className="text-sm text-muted-foreground">
-                / {assignment.wordLimit.toLocaleString()}
+                / {wordLimit.toLocaleString()}
               </span>
             </div>
             <div className="w-32 h-2 rounded-full bg-muted mt-1.5 overflow-hidden">

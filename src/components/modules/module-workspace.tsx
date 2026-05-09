@@ -34,10 +34,10 @@ interface ModuleWorkspaceProps {
   }>;
   sources: Array<{
     id: string;
-    folderId: string;
+    folderId: string | null;
     title: string;
     author: string;
-    year: number;
+    year: number | null;
     type: string;
     status: string;
     tags: string[];
