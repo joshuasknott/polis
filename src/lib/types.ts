@@ -276,3 +276,50 @@ export interface QuickAction {
 }
 
 export type AnswerStyle = "concise" | "detailed" | "critical" | "assignment_focused";
+
+export type RetrievalScope =
+  | "whole_module"
+  | "current_folder"
+  | "selected_sources"
+  | "assignment"
+  | "source";
+
+export interface RetrievalResult {
+  chunkId: string;
+  sourceId: string;
+  sourceTitle: string;
+  authors: string | null;
+  year: number | null;
+  pageStart: number | null;
+  pageEnd: number | null;
+  quote: string;
+  citationLabel: string;
+  score: number;
+  scope: RetrievalScope;
+  warnings: string[];
+}
+
+export interface CitationValidation {
+  valid: boolean;
+  chunkId: string;
+  sourceId: string;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface RetrievedChunkSetValidation {
+  allValid: boolean;
+  validations: CitationValidation[];
+  warnings: string[];
+}
+
+export interface InsufficientEvidenceWarning {
+  type:
+    | "no_chunks_found"
+    | "low_score"
+    | "too_few_sources"
+    | "no_selected_sources"
+    | "missing_page_provenance";
+  message: string;
+  severity: "info" | "warning" | "critical";
+}

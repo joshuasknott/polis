@@ -73,7 +73,12 @@ export default defineSchema({
     pageEnd: v.optional(v.number()),
     tokenEstimate: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_source", ["sourceId"]),
+  })
+    .index("by_source", ["sourceId"])
+    .searchIndex("search_text", {
+      searchField: "text",
+      filterFields: ["sourceId"],
+    }),
 
   sourceNotes: defineTable({
     tokenIdentifier: v.string(),
@@ -182,6 +187,7 @@ export default defineSchema({
     argumentId: v.id("arguments"),
     argumentNodeId: v.optional(v.id("argumentNodes")),
     sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
@@ -192,7 +198,8 @@ export default defineSchema({
   })
     .index("by_argument", ["argumentId"])
     .index("by_source", ["sourceId"])
-    .index("by_argumentNodeId", ["argumentNodeId"]),
+    .index("by_argumentNodeId", ["argumentNodeId"])
+    .index("by_sourceChunk", ["sourceChunkId"]),
 
   drafts: defineTable({
     tokenIdentifier: v.string(),

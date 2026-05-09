@@ -1,200 +1,191 @@
 # Polis — RAG Architecture
 
-## Migration Note
-
-The previous PostgreSQL/pgvector implementation has been removed while Polis migrates to Convex. This document describes the intended product architecture, not the current runtime implementation. Retrieval, embeddings, ingestion, and AI chat will be rebuilt after the Convex data foundation is established.
-
 ## Overview
 
-Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations.
+Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations. This document describes the Convex-based retrieval pipeline with scoped keyword retrieval and citation provenance.
 
 ## Pipeline
 
 ```
-Upload → Store File → Extract Text → Split into Chunks → Generate Embeddings → Store with Vectors
-                                                                                  ↓
-User Query → Embed Query → Hybrid Retrieval → Construct Prompt → LLM Generate → Parse Citations → Display
-                                         ↓ (fallback)
-                                    Keyword Retrieval → Template Response → Display
+Upload → Store File → Extract Text → Split into Chunks → Store Chunks (Convex)
+                                                                        ↓
+User Query → Resolve Scope → Keyword Retrieval → Rank & Score → Construct Prompt → LLM Generate → Validate Citations → Display
 ```
 
-## 1. File Ingestion
+## 1. Retrieval Scopes
 
-### Upload
-- Accept: PDF, DOCX, TXT, MD
-- Maximum file size: 50MB
-- Store original file in local uploads directory
-- Create Source record with metadata
+Retrieval is always scoped to control which sources are searched:
 
-### Text Extraction
-- **PDF**: Extract text using pdf-parse
-- **DOCX**: Extract using mammoth.js
-- **TXT/MD**: Direct text input
-- Preserve page boundaries where possible
+| Scope | Description | Sources |
+|-------|-------------|---------|
+| `whole_module` | All sources in a module | All sources owned by user in module |
+| `current_folder` | Sources in a specific folder | Sources in folder, owned by user |
+| `selected_sources` | Explicitly chosen sources | Only the listed source IDs |
+| `assignment` | Sources selected for an assignment | Via `assignmentSources` table |
+| `source` | Single source | One specific source |
 
-### AI Analysis (Phase 2)
-- After text extraction and chunking, an AI analysis step generates:
-  - Summary (2-3 paragraphs)
-  - Key Arguments (1-2 sentences)
-  - Concepts (comma-separated list)
-- Non-blocking: runs in background, source is marked ready before analysis completes
-- Endpoint: `POST /api/sources/[sourceId]/analyse` for manual regeneration
+Assignment scope defaults to selected sources only. This prevents accidental retrieval from unrelated module materials.
 
-## 2. Chunking
+## 2. Keyword Retrieval
 
-### Strategy
-- Split extracted text into semantically meaningful chunks
-- Target chunk size: 1000 words with 150 word overlap
-- Preserve metadata: source ID, chunk index
+### Algorithm
 
-### Chunk Structure
+1. **Tokenise** the query into words (>2 characters)
+2. **Resolve** source IDs based on scope, module ownership, and user identity
+3. **Fetch** all chunks for the resolved sources
+4. **Score** each chunk:
+   - Count keyword occurrences in chunk text
+   - Boost title matches by 3x
+   - Boost author matches by 2x
+   - Normalise by `sqrt(text_length)` to prevent long chunks dominating
+5. **Sort** by descending score
+6. **Bound** results (default 20 max)
+
+### Convex Search Index
+
+The `sourceChunks` table has a `search_text` search index on the `text` field, filtered by `sourceId`. This enables Convex full-text search as an alternative retrieval path for large source collections.
+
+### Result Shape
+
+Each retrieval result contains:
+
 ```typescript
 {
-  id: string
-  sourceId: string
-  text: string
-  charCount: number
-  tokenEstimate: number
-  pageNumber: number | null
-  embedding: number[] | null  // 1536-dimensional vector (Phase 2)
+  chunkId: string         // sourceChunks document ID
+  sourceId: string        // sources document ID
+  sourceTitle: string     // source title
+  authors: string | null  // author string
+  year: number | null     // publication year
+  pageStart: number | null
+  pageEnd: number | null
+  quote: string           // excerpt (max 300 chars)
+  citationLabel: string   // Harvard format label
+  score: number           // normalised keyword score
+  scope: RetrievalScope   // which scope produced this result
+  warnings: string[]      // e.g. "missing_page_provenance"
 }
 ```
 
-## 3. Embeddings (Phase 2)
+## 3. Harvard Citation Format
 
-### Model
-- OpenAI text-embedding-3-small (1536 dimensions)
-- Cost: ~$0.02 per 1M tokens
+The citation helper generates Harvard-style in-text citations:
 
-### Generation
-- Generated automatically after chunking during file upload
-- Batch embedding for efficiency (20 chunks per API call)
-- Non-fatal: chunks without embeddings are still searchable by keyword
+| Scenario | Format |
+|----------|--------|
+| Author + year + page | `Author (Year, p. X)` |
+| Author + year + page range | `Author (Year, pp. X–Y)` |
+| Author + year, no page | `Author (Year)` |
+| Author, no year | `Author (n.d.)` |
+| No author, has year | `(Year)` |
+| Neither | `(Unknown)` |
 
-### Storage
-- pgvector extension in PostgreSQL
-- Column: `embedding Unsupported("vector(1536)")` on `source_chunks` table
-- Cosine similarity via `<=>` operator
+**Rules:**
+- Never invent page numbers; only use `pageStart`/`pageEnd` from the chunk
+- Warn when author or year is missing
+- Use first author surname only (before first comma)
 
-### Batch Processing
-- `npm run db:embed` embeds all chunks missing embeddings
-- Suitable for initial setup or after adding API key
+## 4. Citation Validation
 
-## 4. Retrieval (Phase 2)
+### Single Citation Validation
 
-### Hybrid Retrieval (default)
-Combines semantic search and keyword search:
+For each cited chunk, the system validates:
 
-1. **Semantic search** (weight: 0.7)
-   - Embed query using text-embedding-3-small
-   - Cosine similarity search via pgvector `<=>` operator
-   - Returns chunks sorted by vector similarity
+1. **Chunk exists** — the `sourceChunks` document exists
+2. **Chunk belongs to source** — `chunk.sourceId` matches the claimed source
+3. **Source belongs to user** — `source.tokenIdentifier` matches authenticated identity
+4. **Source belongs to module** — `source.moduleId` matches the expected module
 
-2. **Keyword search** (weight: 0.3)
-   - Tokenise query into words (>2 chars)
-   - Count keyword matches in chunk text
-   - Title-boosted scoring (+3 for title matches)
-   - Length-normalised scores
+### Assignment-Scoped Validation
 
-3. **Score combination**
-   - Normalise both scores to 0-1 range
-   - Combine: 0.7 × semantic + 0.3 × keyword
-   - Return top-K sorted by combined score
+For citations within an assignment context:
 
-### Fallback
-- When embeddings unavailable (no API key or no vector data): keyword-only retrieval
-- When no AI provider configured: template-based responses
+1. All base validations above
+2. **Source is in assignment scope** — the source is linked via `assignmentSources`
+3. If not in scope, a warning is generated (not an error) — the citation is valid but outside the assignment's selected sources
 
-### Retrieval Modes
-- `hybrid` (default): semantic + keyword combined
-- `semantic`: vector similarity only
-- `keyword`: keyword matching only
+### Chunk Set Validation
 
-### Scope Filtering
-- **Whole module**: Search all chunks in the module
-- **Selected source**: Search chunks from a specific source
-- **Essay project**: Search chunks from sources linked to the essay evidence
+For validating an entire AI output's cited chunks:
 
-## 5. Answer Generation (Phase 2)
+1. Validate each chunk individually
+2. Verify at least one valid source citation exists
+3. Return aggregated warnings
 
-### LLM Integration
-- **Primary**: OpenAI (gpt-4o-mini default)
-- **Secondary**: Anthropic (claude-sonnet-4-20250514)
-- Configurable via `AI_PROVIDER` and `AI_MODEL` environment variables
+## 5. Evidence Integration
 
-### Prompt Construction
-```
-System: Academic research assistant + integrity rules + citation format requirement
-System: [Source 1]: chunk text from "Title" by Author (Year)
-        [Source 2]: chunk text from "Title" by Author (Year)
-        ...
-User: [conversation history]
-User: the actual query
-```
+Evidence links (`evidenceLinks` table) can optionally reference a `sourceChunkId`:
 
-### Citation Format
-- LLM instructed to use `[Source N]` in-line citations
-- Example: "Lijphart argues that consensus democracies outperform majoritarian ones [Source 1]."
+- When `sourceChunkId` is provided, the system validates the chunk belongs to the claimed source
+- Quote and page range can be auto-populated from the chunk via the `enrichEvidence` query
+- The `listForChunk` query finds all evidence links referencing a specific chunk
 
-### Response Processing
-1. Parse `[Source N]` citations from LLM output
-2. Validate each citation against the retrieved chunk set
-3. Extract quoted text for each cited chunk
-4. Label response as source_supported, interpretation, or general
-5. Generate warnings for:
-   - No citations when sources were available
-   - LLM indicating insufficient evidence
-   - Limited source material (<3 chunks)
-6. Generate follow-up suggestions
+## 6. Insufficient Evidence Warnings
 
-### Conversation Memory
-- Last 10 messages from the current conversation included as context
-- Maintains multi-turn coherence
-- Scoped to the selected module/sources
+The retrieval engine generates warnings when evidence quality is low:
 
-## 6. Citation Display
+| Warning | Trigger | Severity |
+|---------|---------|----------|
+| `no_chunks_found` | Zero results returned | Critical |
+| `no_selected_sources` | Assignment has no sources selected | Critical |
+| `low_score` | Best score < 0.15 threshold | Warning |
+| `too_few_sources` | Results from < 2 distinct sources | Info |
+| `missing_page_provenance` | Any chunk lacks page numbers | Info |
 
-### UI Requirements
-- Source citations appear as expandable cards below responses
-- Each cited chunk shows: source title, author/year, quoted text
-- "Add to Evidence Bank" button on each cited chunk
-- Warning badges for unsupported claims
-- AI mode indicator: "AI Connected" vs "Template Mode"
+## 7. Vector Readiness
 
-## 7. Failure States
+The architecture is designed for future vector search:
+
+- The `sourceChunks` table has a `search_text` Convex search index for full-text search
+- Embedding fields can be added to `sourceChunks` when Convex vector search is available
+- The retrieval pipeline in `convex/lib/retrieval.ts` is structured so vector scoring can be added alongside keyword scoring
+- A hybrid scoring layer (0.7 semantic + 0.3 keyword) can be added without changing the result shape
+
+### Convex Vector Search
+
+Convex supports vector search via `vectorIndex` on tables. When embeddings are available:
+1. Add a `vectorIndex` to `sourceChunks` with the embedding field
+2. Query with `.withVectorIndex()` for similarity search
+3. Combine vector scores with keyword scores in the ranking step
+
+## 8. API Functions
+
+### Retrieval (`convex/retrieval.ts`)
+
+| Function | Scope | Description |
+|----------|-------|-------------|
+| `searchKeyword` | Any | Generic scoped keyword search |
+| `searchModule` | `whole_module` | Search all sources in a module |
+| `searchFolder` | `current_folder` | Search sources in a folder |
+| `searchSources` | `selected_sources` | Search explicitly listed sources |
+| `searchAssignment` | `assignment` | Search assignment's selected sources |
+| `searchSource` | `source` | Search within one source |
+
+### Citation (`convex/citation.ts`)
+
+| Function | Description |
+|----------|-------------|
+| `validateCitation` | Validate chunk ownership (chunk → source → user) |
+| `validateCitationInModule` | Validate chunk is in a module |
+| `validateAssignmentCitation` | Validate chunk in assignment scope |
+| `validateCitedChunkSet` | Validate an entire set of cited chunks |
+| `formatCitation` | Generate Harvard citation for a source/chunk |
+| `enrichEvidence` | Get quote, page range, and citation from a chunk |
+
+## 9. Failure States
 
 | Scenario | Response |
 |----------|----------|
-| No relevant chunks found | "I couldn't find relevant information in your uploaded sources." |
-| Low confidence retrieval | Warning: "Limited source material found." |
-| Provider unavailable | Falls back to template-based keyword response |
-| No API key configured | Template mode: keyword retrieval + template responses |
-| Embedding failure | Falls back to keyword-only retrieval |
-| LLM indicates insufficient evidence | Warning: "The AI indicated insufficient evidence." |
-| No citations in LLM response | Warning: "Response does not cite specific sources." |
+| No relevant chunks found | Warning: "No relevant chunks found" |
+| Low confidence retrieval | Warning: "Limited source material found" |
+| No sources in scope | Critical: "No sources found in scope" |
+| Missing page provenance | Info: "Some chunks lack page information" |
+| Too few distinct sources | Info: "Consider broadening scope" |
+| Citation validation failure | Error with specific validation message |
 
-## 8. Workbench Actions (Phase 2)
+## 10. Academic Integrity Guarantees
 
-### Citation Safety Check
-- Input: draft text
-- Process: retrieve relevant chunks → LLM analyses each claim → categorise as supported/weakly/unsupported
-- Output: structured JSON with claim categories
-- Endpoint: `POST /api/tools/citation-check`
-
-### Draft Review
-- Input: draft text, optional question, rubric
-- Process: retrieve relevant chunks → LLM provides structured feedback
-- Output: strengths, weaknesses, missing evidence, revision priorities, estimated band
-- Constraint: NEVER rewrites — only analyses and suggests
-- Endpoint: `POST /api/tools/draft-review`
-
-## Future Improvements
-
-- Reranking retrieved chunks with a cross-encoder model
-- Multi-query retrieval (reformulating the user's question for better results)
-- pgvector index (IVFFlat or HNSW) for large-scale search (>10K chunks)
-- Source deduplication (avoiding redundant chunks from the same source)
-- Adaptive chunk size based on document type
-- Per-user BYO API key management with encrypted storage
-- Google Gemini provider support
-- Rate limiting on AI API calls
+1. **No fabricated citations** — every citation validates against actual stored chunks
+2. **No invented page numbers** — page data comes exclusively from chunk metadata
+3. **User ownership enforced** — all queries verify `tokenIdentifier` ownership
+4. **Scope boundaries respected** — assignment scope only searches selected sources
+5. **Warnings, not silence** — insufficient evidence always produces explicit warnings

@@ -35,6 +35,7 @@ export const create = mutation({
     argumentId: v.id("arguments"),
     sourceId: v.id("sources"),
     argumentNodeId: v.optional(v.id("argumentNodes")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
@@ -50,6 +51,13 @@ export const create = mutation({
     const source = await ctx.db.get(args.sourceId);
     if (!source || source.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.sourceChunkId) {
+      const chunk = await ctx.db.get(args.sourceChunkId);
+      if (!chunk || chunk.sourceId !== args.sourceId) {
+        throw new Error("Chunk does not belong to source");
+      }
     }
 
     const now = Date.now();
@@ -134,6 +142,25 @@ export const listForNode = query({
       .query("evidenceLinks")
       .withIndex("by_argumentNodeId", (q) =>
         q.eq("argumentNodeId", args.argumentNodeId),
+      )
+      .take(100);
+  },
+});
+
+export const listForChunk = query({
+  args: { sourceChunkId: v.id("sourceChunks") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const chunk = await ctx.db.get(args.sourceChunkId);
+    if (!chunk) return [];
+
+    const source = await ctx.db.get(chunk.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("evidenceLinks")
+      .withIndex("by_sourceChunk", (q) =>
+        q.eq("sourceChunkId", args.sourceChunkId),
       )
       .take(100);
   },
