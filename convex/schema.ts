@@ -117,7 +117,11 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_source", ["sourceId"])
-    .index("by_source_and_chunkIndex", ["sourceId", "chunkIndex"]),
+    .index("by_source_and_chunkIndex", ["sourceId", "chunkIndex"])
+    .searchIndex("search_text", {
+      searchField: "text",
+      filterFields: ["sourceId"],
+    }),
 
   sourceNotes: defineTable({
     tokenIdentifier: v.string(),

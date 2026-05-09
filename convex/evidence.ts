@@ -170,3 +170,22 @@ export const listForNode = query({
       .take(100);
   },
 });
+
+export const listForChunk = query({
+  args: { sourceChunkId: v.id("sourceChunks") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const chunk = await ctx.db.get(args.sourceChunkId);
+    if (!chunk) return [];
+
+    const source = await ctx.db.get(chunk.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("evidenceLinks")
+      .withIndex("by_sourceChunk", (q) =>
+        q.eq("sourceChunkId", args.sourceChunkId),
+      )
+      .take(100);
+  },
+});
