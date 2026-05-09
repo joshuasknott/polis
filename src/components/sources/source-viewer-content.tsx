@@ -232,8 +232,8 @@ export function SourceViewerContent({
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="w-1/2 border-r border-border overflow-y-auto scrollbar-thin bg-background p-8">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
+        <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border lg:overflow-y-auto scrollbar-thin bg-background p-4 sm:p-8">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6 font-sans">
             Source Text
           </h2>
@@ -242,9 +242,9 @@ export function SourceViewerContent({
               {chunks.map((chunk) => (
                 <div
                   key={chunk.id}
-                  className="group relative pl-4 border-l-2 border-transparent hover:border-source transition-colors"
+                  className="group relative pl-6 sm:pl-8 border-l-2 border-transparent hover:border-source transition-colors"
                 >
-                  <div className="absolute -left-6 top-1 flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute left-2 top-1.5 flex flex-col items-center gap-0.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                     <span className="text-[10px] text-muted-foreground">
                       {chunk.chunkIndex + 1}
                     </span>
@@ -282,7 +282,7 @@ export function SourceViewerContent({
           )}
         </div>
 
-        <div className="w-1/2 overflow-y-auto scrollbar-thin bg-muted/20 p-8 space-y-6">
+        <div className="w-full lg:w-1/2 lg:overflow-y-auto scrollbar-thin bg-muted/20 p-4 sm:p-8 space-y-6">
           <div className="grid grid-cols-1 gap-6">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">

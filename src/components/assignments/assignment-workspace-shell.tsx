@@ -399,22 +399,43 @@ export function AssignmentWorkspaceShell({
         </div>
       </div>
 
+      {coThinkerOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm xl:hidden"
+          onClick={() => setCoThinkerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <div
         className={cn(
-          "shrink-0 overflow-hidden border-border bg-card/50 transition-all duration-200 xl:border-l",
-          coThinkerOpen ? "w-full xl:w-80" : "hidden xl:block xl:w-0"
+          "fixed inset-y-0 right-0 z-50 shrink-0 border-l border-border bg-card shadow-2xl transition-transform duration-300 xl:static xl:z-auto xl:shadow-none xl:bg-card/50",
+          coThinkerOpen ? "translate-x-0 w-80" : "translate-x-full w-80 xl:w-0 xl:translate-x-0 xl:hidden"
         )}
       >
         {coThinkerOpen && (
-          <CoThinkerPanel
-            stage={activeStage}
-            assignment={assignment}
-            arguments={assignmentArguments}
-            review={review}
-            judgements={judgements}
-            assignmentConvexId={assignmentConvexId}
-            moduleConvexId={moduleConvexId}
-          />
+          <div className="h-full w-full flex flex-col">
+            <div className="flex justify-between items-center p-2 border-b border-border xl:hidden">
+              <span className="text-sm font-medium px-2">CoThinker</span>
+              <button
+                onClick={() => setCoThinkerOpen(false)}
+                className="p-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close CoThinker panel"
+              >
+                <PanelRightClose className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <CoThinkerPanel
+                stage={activeStage}
+                assignment={assignment}
+                arguments={assignmentArguments}
+                review={review}
+                judgements={judgements}
+                assignmentConvexId={assignmentConvexId}
+                moduleConvexId={moduleConvexId}
+              />
+            </div>
+          </div>
         )}
       </div>
     </div>
