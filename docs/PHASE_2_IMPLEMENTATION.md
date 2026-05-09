@@ -1,5 +1,7 @@
 # Phase 2 Implementation — Polis Intelligence Layer
 
+Historical note: this document describes the pre-Convex AI implementation. Runtime AI provider selection and retrieval are not complete in the current Convex workflow rebuild.
+
 ## What Was Built
 
 ### Priority A: Real AI Provider Integration
@@ -132,7 +134,7 @@ Multi-turn conversations now maintain context:
 - **Assistant**: AI Connected/Template Mode badge, provider name display, "Add to Evidence Bank" button on cited chunks, "New Conversation" button, additional modes (brainstorm, draft feedback, citation safety).
 - **Settings**: Updated Phase 2 feature status, AI provider connection status, vector embedding status, model info.
 - **Source Viewer**: AI-generated label, "Regenerate Summary" button.
-- **Tools**: Tool cards now have inline text input and run buttons for reading summary, concept extractor, essay plan builder, citation safety check, draft review, research gap finder.
+- **Tools**: Tool cards now have inline text input and run buttons for reading summary, concept extractor, assignment planning, citation safety check, draft review, research gap finder.
 - **Essay Workspace**: New "AI Tools" tab with citation check and draft review cards.
 
 ## What Remains from Phase 2 Scope

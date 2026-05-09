@@ -1,5 +1,7 @@
 # Phase 1 Implementation — Polis
 
+Historical note: this document describes the pre-Convex Prisma/Auth.js implementation. The active product workflow is Module → Assignment → Argument → Draft and the active backend foundation is Convex.
+
 ## What Is Now Real
 
 ### Database (PostgreSQL + Prisma)
@@ -52,7 +54,7 @@
 - Shows cited chunks with source title, quote, and citation label
 - Warns when no relevant sources found
 - Warns when limited source material available
-- Modes: source-grounded, reading summary, essay planning
+- Modes: source-grounded, reading summary, assignment planning
 - Does not fabricate citations
 - Encourages user synthesis, not submission
 

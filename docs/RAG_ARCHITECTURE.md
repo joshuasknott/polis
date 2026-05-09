@@ -173,7 +173,7 @@ User: the actual query
 | LLM indicates insufficient evidence | Warning: "The AI indicated insufficient evidence." |
 | No citations in LLM response | Warning: "Response does not cite specific sources." |
 
-## 8. Academic Tools (Phase 2)
+## 8. Workbench Actions (Phase 2)
 
 ### Citation Safety Check
 - Input: draft text

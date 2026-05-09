@@ -1,5 +1,7 @@
 # Phase 3: Production Platform Features
 
+Historical note: this document describes the pre-Convex production-platform implementation. Do not treat these runtime AI, upload, or provider details as complete for the current Convex workflow rebuild.
+
 **Status**: Implemented
 **Date**: April 2026
 **Build**: Clean (0 errors, 9 pre-existing warnings)

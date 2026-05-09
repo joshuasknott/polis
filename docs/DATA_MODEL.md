@@ -133,7 +133,7 @@ Assignment {
   createdAt: string
 }
 ```
-A piece of coursework with a question, rubric, and deadline. Replaces the old `EssayProject`.
+A piece of coursework with a question, rubric, and deadline. Replaces the prior essay-centric prototype entity.
 
 ### Argument
 ```
@@ -162,7 +162,7 @@ EvidenceLink {
   strength: "strong" | "moderate" | "weak"
 }
 ```
-Connects a source passage to an argument claim. Replaces the old `EvidenceItem`.
+Connects a source passage to an argument claim.
 
 ### Draft
 ```
@@ -176,7 +176,7 @@ Draft {
   updatedAt: string
 }
 ```
-A versioned piece of written work. Elevated from being a field on EssayProject to a first-class entity.
+A versioned piece of written work for an assignment.
 
 ### Review
 ```
@@ -327,5 +327,5 @@ EvidenceLink *→1 SourceChunk (optional)
 
 - **Engine**: Convex
 - **Active schema**: `convex/schema.ts`
-- **Current scope**: foundational tables and minimal user/module/source functions
-- **Pending**: Assignment/Argument/Draft/Review entities, CoThinker, Judgement, full retrieval pipeline
+- **Current scope**: foundational tables plus assignment, argument, evidence, draft, review, judgement, and CoThinker functions
+- **Pending**: live UI wiring to Convex data, full retrieval pipeline, and runtime AI provider selection on the Convex backend

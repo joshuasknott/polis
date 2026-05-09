@@ -2,8 +2,8 @@
 
 ## Current: Phase 4 — Product Model Refactor
 
-**Status**: In progress
-**Goal**: Replace the EssayProject-centric model with Module → Assignment → Argument → Draft and the 7-stage production workflow.
+**Status**: Integrated on `feat/workflow-product-model`
+**Goal**: Replace the prior essay-centric prototype with Module → Assignment → Argument → Draft and the 7-stage production workflow.
 
 ### Contract Delivered
 - [x] Updated product documentation with new model and terminology
@@ -11,14 +11,18 @@
 - [x] Updated mock data to demonstrate the new workflow
 - [x] Renamed user-facing concepts (CoThinker, Workbench, Assignments)
 
-### Next Steps
-- [ ] Implement Convex schema for Assignment, Argument, Draft, Review, Judgement
-- [ ] Build Assignment workspace UI with production stage tracking
-- [ ] Build Argument construction UI with evidence linking
-- [ ] Implement versioned Drafts with diff/history
-- [ ] Build stage-aware CoThinker behaviour
-- [ ] Build Workbench with stage-appropriate tool surfacing
-- [ ] Implement Judgement system (gap analysis, evidence sufficiency, counterargument checks)
+### Integrated
+- [x] Implemented Convex schema/functions for assignments, arguments, evidence links, drafts, reviews, judgements, and CoThinker sessions
+- [x] Built assignment workspace UI with production stage tracking
+- [x] Built argument construction, evidence map, judgement, draft, refine, and CoThinker surfaces
+- [x] Preserved staged draft support without one-click essay generation
+- [x] Isolated the legacy `/essays` route behind redirects to assignment workspaces
+
+### Remaining Product Work
+- [ ] Connect assignment workspace UI to live Convex data
+- [ ] Rebuild runtime AI provider selection and retrieval against Convex
+- [ ] Implement draft diff/history beyond the current staged draft surface
+- [ ] Surface Workbench actions contextually inside assignment stages
 
 ---
 

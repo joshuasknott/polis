@@ -70,7 +70,7 @@
 **Goal**: Implement the full Module → Assignment → Argument → Draft product model with the 7-stage production workflow.
 
 **Includes**:
-- Assignment entity replacing EssayProject
+- Assignment entity replacing the prior essay-centric prototype model
 - Argument construction with evidence linking
 - Versioned drafts with review history
 - Judgement system for evidence quality assessment
