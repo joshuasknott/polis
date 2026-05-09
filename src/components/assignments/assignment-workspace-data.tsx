@@ -112,6 +112,7 @@ export function AssignmentWorkspaceData({
       judgements={[]}
       assignmentSources={assignmentSources}
       assignmentConvexId={assignmentId}
+      moduleConvexId={moduleId}
     />
   );
 }

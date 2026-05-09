@@ -122,16 +122,39 @@
 ## CoThinker Journey
 
 ### Asking Questions
-1. Open CoThinker panel (right side of module workspace)
-2. Select scope: whole module / current folder / selected sources / assignment
+1. Open CoThinker panel (right side of assignment workspace) or the global CoThinker page
+2. Select scope: module / assignment (with live Convex data)
 3. CoThinker adapts to the current production stage
-4. Type question
-5. Receive answer with:
+4. Create or resume a persisted conversation
+5. Type question
+6. Receive answer with:
    - Source citations where applicable
    - "Supported by sources" badges
    - "Interpretation" labels where applicable
    - Warnings if evidence is insufficient
    - Follow-up suggestions
+
+### Persistent Sessions
+- Conversations are persisted in Convex and can be resumed
+- Session list shows message count, stage, and scope
+- Assignment-scoped sessions appear in the CoThinker panel
+- Global sessions appear on the /assistant page
+
+### Stage-Aware Directive Cards
+- Ingest: coverage and brief/rubric questions
+- Understand: source summary and concept prompts
+- Map: theme and evidence link prompts
+- Judge: gap and counterargument prompts
+- Build: structure and thesis prompts
+- Draft: writing feedback and citation reminders
+- Refine: unsupported claims, rubric alignment, citation safety
+
+### Integrity
+- If no evidence, CoThinker says so explicitly
+- No fabricated citations
+- Labels for source-supported, interpretation, unsupported, general context
+- Warnings for insufficient evidence
+- No essay generation
 
 ### Example Interaction
 ```

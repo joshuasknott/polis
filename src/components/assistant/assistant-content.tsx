@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useMutation, useQuery, useAction } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   Send,
   BookOpen,
@@ -11,36 +14,30 @@ import {
   Zap,
   FileText,
   FolderOpen,
+  Plus,
+  MessageSquare,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface ConversationSummary {
+  id: string;
+  title: string;
+  mode: string;
+  messageCount: number;
+  createdAt: string;
+  moduleId?: string;
+  assignmentId?: string;
+  scope: string;
+  stage?: string;
+}
 
 interface AssistantContentProps {
   modules: Array<{ id: string; title: string }>;
   sources: Array<{ id: string; title: string; moduleId: string }>;
-  conversations: Array<{
-    id: string;
-    title: string;
-    mode: string;
-    messageCount: number;
-    createdAt: string;
-  }>;
+  conversations: ConversationSummary[];
   aiConfigured: boolean;
   providerName: string;
-}
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  citedChunks: Array<{
-    chunkId: string;
-    sourceId: string;
-    sourceTitle: string;
-    quote: string;
-    pageRange: string;
-  }>;
-  warnings: string[];
-  labels: Array<{ type: string; text: string }>;
-  followUpSuggestions: string[];
 }
 
 export function AssistantContent({
@@ -51,73 +48,92 @@ export function AssistantContent({
   providerName,
 }: AssistantContentProps) {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedModule, setSelectedModule] = useState(modules[0]?.id || "");
+  const [selectedModule, selectedModuleRaw] = useState(modules[0]?.id || "");
   const [selectedMode, setSelectedMode] = useState("understand");
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [showNewSession, setShowNewSession] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const createSession = useMutation(api.cothinker.createSession);
+  const removeSession = useMutation(api.cothinker.removeSession);
+  const askAction = useAction(api.cothinkerAsk.ask);
+
+  const messages = useQuery(
+    api.cothinker.listMessages,
+    activeSessionId ? { sessionId: activeSessionId as Id<"coThinkerSessions"> } : "skip",
+  );
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const filteredSources = selectedModule
+    ? sources.filter((s) => s.moduleId === selectedModule)
+    : sources;
+
+  async function handleCreateSession(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    const sessionArgs: {
+      title: string;
+      scope: string;
+      stage: string;
+      moduleId?: Id<"modules">;
+    } = {
+      title: newTitle.trim(),
+      scope: selectedModule ? "module" : "global",
+      stage: selectedMode,
+    };
+    if (selectedModule) sessionArgs.moduleId = selectedModule as Id<"modules">;
+
+    const id = await createSession(sessionArgs);
+    setActiveSessionId(id);
+    setNewTitle("");
+    setShowNewSession(false);
+  }
+
+  function handleSelectConversation(conv: ConversationSummary) {
+    setActiveSessionId(conv.id);
+  }
+
+  async function handleDeleteSession(convId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    await removeSession({ sessionId: convId as Id<"coThinkerSessions"> });
+    if (activeSessionId === convId) {
+      setActiveSessionId(null);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !activeSessionId) return;
 
     const query = input.trim();
     setInput("");
-
-    const userMsg: ChatMessage = {
-      role: "user",
-      content: query,
-      citedChunks: [],
-      warnings: [],
-      labels: [],
-      followUpSuggestions: [],
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      setConversationId(conversationId || "convex-migration-placeholder");
-      const assistantMsg: ChatMessage = {
-        role: "assistant",
-        content: "The old CoThinker API has been removed while Polis migrates to Convex. Runtime AI will be rebuilt later with the new backend foundation.",
-        citedChunks: [],
-        warnings: ["Convex migration placeholder"],
-        labels: [],
-        followUpSuggestions: ["Create Convex-backed conversations", "Add source retrieval", "Wire the future AI provider"],
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
+      await askAction({
+        sessionId: activeSessionId as Id<"coThinkerSessions">,
+        query,
+      });
     } catch {
-      const errorMsg: ChatMessage = {
-        role: "assistant",
-        content: "Failed to get a response. Please try again.",
-        citedChunks: [],
-        warnings: ["Request failed"],
-        labels: [],
-        followUpSuggestions: [],
-      };
-      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleAddToEvidence(chunk: ChatMessage["citedChunks"][0]) {
-    void chunk;
-  }
-
-  function startNewConversation() {
-    setMessages([]);
-    setConversationId(null);
-  }
+  const activeConv = conversations.find((c) => c.id === activeSessionId);
 
   return (
     <div className="max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">CoThinker</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Module, assignment, and source context is live. Runtime AI responses are paused.
+          Source-grounded academic reasoning. Ask questions about your readings and assignments.
         </p>
       </div>
 
@@ -126,7 +142,7 @@ export function AssistantContent({
           <label className="text-xs font-medium text-muted-foreground">Module</label>
           <select
             value={selectedModule}
-            onChange={(e) => setSelectedModule(e.target.value)}
+            onChange={(e) => selectedModuleRaw(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
           >
             <option value="">All modules</option>
@@ -144,13 +160,13 @@ export function AssistantContent({
             onChange={(e) => setSelectedMode(e.target.value)}
             className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
           >
-              <option value="ingest">Ingest</option>
-              <option value="understand">Understand</option>
-              <option value="map">Map</option>
-              <option value="judge">Judge</option>
-              <option value="build">Build</option>
-              <option value="draft">Draft</option>
-              <option value="refine">Refine</option>
+            <option value="ingest">Ingest</option>
+            <option value="understand">Understand</option>
+            <option value="map">Map</option>
+            <option value="judge">Judge</option>
+            <option value="build">Build</option>
+            <option value="draft">Draft</option>
+            <option value="refine">Refine</option>
           </select>
         </div>
         <div className="space-y-1.5 self-end">
@@ -174,42 +190,122 @@ export function AssistantContent({
             <div>
               <h2 className="text-sm font-semibold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                {messages.length > 0 ? "Current Analysis" : "New Query"}
+                {activeConv ? activeConv.title : "Select or start a conversation"}
               </h2>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
                 <FolderOpen className="h-3 w-3" />
-                Scope: {modules.find(m => m.id === selectedModule)?.title || "All Modules"}
+                {selectedModule
+                  ? modules.find((m) => m.id === selectedModule)?.title ?? "Module"
+                  : "All Modules"}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm">
                 <Lightbulb className="h-3 w-3" />
-                Mode: {selectedMode.replace(/_/g, " ")}
+                Mode: {selectedMode}
               </span>
-              {messages.length > 0 && (
+              {!showNewSession && (
                 <button
-                  onClick={startNewConversation}
-                  className="text-xs text-accent hover:underline ml-2 font-medium"
+                  onClick={() => {
+                    setShowNewSession(true);
+                    setActiveSessionId(null);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:opacity-90 transition-opacity"
                 >
-                  New Query
+                  <Plus className="h-3 w-3" />
+                  New
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        <div className="max-h-[500px] overflow-y-auto p-4 space-y-4 scrollbar-thin">
-              {messages.length === 0 && (
-            <div className="text-center py-8">
-              <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Runtime AI is paused while the Convex backend foundation is completed.
-              </p>
-              <div className="mt-4 space-y-2">
+        {showNewSession && (
+          <div className="border-b border-border p-4">
+            <form onSubmit={handleCreateSession} className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Conversation title..."
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newTitle.trim()}
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowNewSession(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        )}
+
+        {!activeSessionId && !showNewSession && (
+          <div className="p-6 space-y-4">
+            {conversations.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Recent conversations
+                </h3>
+                <div className="space-y-2">
+                  {conversations.slice(0, 10).map((conv) => (
+                    <button
+                      key={conv.id}
+                      onClick={() => handleSelectConversation(conv)}
+                      className={cn(
+                        "w-full text-left rounded-lg border border-border bg-card p-3 hover:bg-muted transition-colors group",
+                        activeSessionId === conv.id && "border-accent bg-accent/5"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{conv.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {conv.messageCount} message{conv.messageCount !== 1 ? "s" : ""} &middot;{" "}
+                            {conv.mode} &middot;{" "}
+                            {new Date(conv.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => handleDeleteSession(conv.id, e)}
+                          className="ml-2 opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-danger transition-all"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {conversations.length === 0 && (
+              <div className="text-center py-8">
+                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No conversations yet. Start one to begin exploring your sources.
+                </p>
+              </div>
+            )}
+
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Try asking
+              </h3>
+              <div className="space-y-2">
                 {[
-                  "What are the main differences between consensus and majoritarian democracy?",
-                  "Summarise the key arguments about great power competition",
-                  "Help me map arguments for an electoral systems assignment",
+                  "What are the key themes across my readings?",
+                  "Help me understand the main arguments in my sources",
+                  "What evidence gaps do I have for my assignment?",
                 ].map((suggestion) => (
                   <button
                     key={suggestion}
@@ -221,126 +317,136 @@ export function AssistantContent({
                 ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {messages.map((message, i) => (
-            <div
-              key={i}
-              className="py-6 border-b border-border last:border-0"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  {message.role === "user" ? "Research Question" : "Analysis"}
-                </span>
-                {message.role === "assistant" && message.labels.length > 0 && (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
-                    <BookOpen className="h-3 w-3" />
-                    {message.labels[0].text}
-                  </span>
-                )}
-              </div>
-              <div className={cn(
-                "leading-relaxed whitespace-pre-line",
-                message.role === "user" ? "text-lg font-medium text-foreground" : "font-serif text-[15px] text-foreground/90"
-              )}>
-                {message.content}
-              </div>
-
-              {message.citedChunks.length > 0 && (
-                <div className="mt-6 space-y-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Source Evidence</p>
-                  {message.citedChunks.map((chunk, j) => (
-                    <div
-                      key={j}
-                      className="group relative pl-4 border-l-2 border-source/40 hover:border-source transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-medium text-source">{chunk.sourceTitle}</span>
-                        <span className="text-xs text-muted-foreground">{chunk.pageRange}</span>
-                      </div>
-                      <p className="font-serif text-[13px] text-muted-foreground leading-relaxed">
-                        &ldquo;{chunk.quote}&rdquo;
-                      </p>
-                      <button
-                        onClick={() => handleAddToEvidence(chunk)}
-                        className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm"
-                      >
-                        <FileText className="h-3 w-3" />
-                        Save to Evidence Bank
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {message.warnings.length > 0 && (
-                <div className="mt-3 space-y-1.5">
-                  {message.warnings.map((warning, j) => (
-                    <div
-                      key={j}
-                      className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 p-3"
-                    >
-                      <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                      <p className="text-xs text-warning">{warning}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {message.followUpSuggestions.length > 0 && (
-                <div className="mt-4 space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Lightbulb className="h-3 w-3" />
-                    Follow-up suggestions:
+        {activeSessionId && (
+          <>
+            <div className="max-h-[500px] overflow-y-auto p-4 space-y-4 scrollbar-thin">
+              {messages && messages.length === 0 && (
+                <div className="text-center py-8">
+                  <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    Ask a question about your sources to get started.
                   </p>
-                  {message.followUpSuggestions.map((suggestion, j) => (
-                    <button
-                      key={j}
-                      onClick={() => setInput(suggestion)}
-                      className="block w-full text-left rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted transition-colors"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+                  <div className="mt-4 space-y-2">
+                    {[
+                      "What are the main arguments in my readings?",
+                      "How do the sources relate to each other?",
+                      "What gaps exist in my evidence?",
+                    ].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => setInput(suggestion)}
+                        className="block w-full text-left rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted transition-colors"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          ))}
 
-          {loading && (
-            <div className="rounded-lg bg-muted/50 p-4 flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {aiConfigured ? "Generating response..." : "Preparing paused AI response..."}
-              </span>
-            </div>
-          )}
-        </div>
+              {messages &&
+                messages.map((message) => (
+                  <div
+                    key={message._id}
+                    className="py-6 border-b border-border last:border-0"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                        {message.role === "user" ? "Research Question" : "Analysis"}
+                      </span>
+                      {message.role === "assistant" && message.labels && message.labels.length > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-source/10 px-2 py-0.5 text-xs font-medium text-source">
+                          <BookOpen className="h-3 w-3" />
+                          {message.labels[0].replace(/_/g, " ")}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        "leading-relaxed whitespace-pre-line",
+                        message.role === "user"
+                          ? "text-lg font-medium text-foreground"
+                          : "font-serif text-[15px] text-foreground/90"
+                      )}
+                    >
+                      {message.content}
+                    </div>
 
-        <div className="border-t border-border p-4">
-          <form onSubmit={handleSubmit} className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Ask a question about your sources..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {aiConfigured
-              ? "AI responses should cite uploaded sources and warn when evidence is insufficient."
-              : "Runtime AI and retrieval are paused. Live module and source context is available for future wiring."}
-          </p>
-        </div>
+                    {message.warnings && message.warnings.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        {message.warnings.map((warning, j) => (
+                          <div
+                            key={j}
+                            className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 p-3"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                            <p className="text-xs text-warning">{warning}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {message.followUpSuggestions && message.followUpSuggestions.length > 0 && (
+                      <div className="mt-4 space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <Lightbulb className="h-3 w-3" />
+                          Follow-up suggestions:
+                        </p>
+                        {message.followUpSuggestions.map((suggestion, j) => (
+                          <button
+                            key={j}
+                            onClick={() => setInput(suggestion)}
+                            className="block w-full text-left rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+              {loading && (
+                <div className="rounded-lg bg-muted/50 p-4 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    {aiConfigured ? "Generating response..." : "Preparing response..."}
+                  </span>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="border-t border-border p-4">
+              <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask a question about your sources..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
+                  disabled={loading}
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {aiConfigured
+                  ? "AI responses cite uploaded sources and warn when evidence is insufficient."
+                  : "Connect an AI provider in Settings for powered responses. Source context is live."}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -350,7 +456,8 @@ export function AssistantContent({
             Citation Safety
           </h3>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Future AI responses must label claims as source-supported, interpretation, or general context, and must not fabricate citations.
+            AI responses label claims as source-supported, interpretation, or general context.
+            No fabricated citations are generated.
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
@@ -359,32 +466,12 @@ export function AssistantContent({
             Source Grounding
           </h3>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            {aiConfigured
-              ? "Source-grounded retrieval will be used for AI responses."
-              : "Source retrieval and runtime AI are paused during the Convex migration."}
-            {sources.length === 0 && " Add sources before future grounded responses can work."}
+            {filteredSources.length > 0
+              ? `${filteredSources.length} source${filteredSources.length !== 1 ? "s" : ""} available in current scope.`
+              : "No sources in this scope yet. Upload readings for grounded responses."}
           </p>
         </div>
       </div>
-
-      {conversations.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Previous Conversations</h2>
-          <div className="space-y-2">
-            {conversations.slice(0, 5).map((conv) => (
-              <div
-                key={conv.id}
-                className="rounded-lg border border-border bg-card p-3"
-              >
-                <p className="text-sm font-medium">{conv.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {conv.messageCount} messages &middot; {conv.mode.replace(/_/g, " ")}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
