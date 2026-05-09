@@ -96,3 +96,45 @@ export const remove = mutation({
     return args.evidenceLinkId;
   },
 });
+
+export const listForAssignment = query({
+  args: { assignmentId: v.id("assignments") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) return [];
+
+    const argumentDocs = await ctx.db
+      .query("arguments")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(100);
+
+    const allEvidence = [];
+    for (const arg of argumentDocs) {
+      const links = await ctx.db
+        .query("evidenceLinks")
+        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
+        .take(100);
+      allEvidence.push(...links);
+    }
+    return allEvidence;
+  },
+});
+
+export const listForNode = query({
+  args: { argumentNodeId: v.id("argumentNodes") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const node = await ctx.db.get(args.argumentNodeId);
+    if (!node || node.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("evidenceLinks")
+      .withIndex("by_argumentNodeId", (q) =>
+        q.eq("argumentNodeId", args.argumentNodeId),
+      )
+      .take(100);
+  },
+});
