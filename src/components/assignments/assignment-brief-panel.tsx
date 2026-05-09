@@ -113,17 +113,17 @@ function StageReadinessBlock({
 }
 
 export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBriefPanelProps) {
-  const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
+  const hasDueDate = !!assignment.dueDate && assignment.dueDate.length > 0;
+  const dueDate = hasDueDate ? new Date(assignment.dueDate) : null;
   const now = new Date();
-  const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : Infinity;
-  const isOverdue = daysUntilDue < 0;
-  const isUrgent = daysUntilDue >= 0 && daysUntilDue <= 7;
+  const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
+  const isUrgent = daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 7;
 
   const totalWeight = assignment.rubric.reduce((sum, c) => sum + c.weight, 0);
 
   return (
     <div className="space-y-6">
-      {/* Question block */}
       <div>
         <div className="flex items-center gap-2 mb-2">
           <FileText className="h-4 w-4 text-muted-foreground" />
@@ -131,12 +131,15 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
             Assignment Question
           </span>
         </div>
-        <blockquote className="border-l-4 border-accent pl-4 py-1">
-          <p className="text-base font-serif leading-relaxed text-foreground">{assignment.question}</p>
-        </blockquote>
+        {assignment.question ? (
+          <blockquote className="border-l-4 border-accent pl-4 py-1">
+            <p className="text-base font-serif leading-relaxed text-foreground">{assignment.question}</p>
+          </blockquote>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">No question set. Edit the assignment to add one.</p>
+        )}
       </div>
 
-      {/* Metadata strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
@@ -144,7 +147,7 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
             <span className="text-xs font-medium uppercase tracking-wider">Word limit</span>
           </div>
           <span className="text-lg font-semibold text-foreground">
-            {(assignment.wordLimit ?? 0).toLocaleString()}
+            {assignment.wordLimit && assignment.wordLimit > 0 ? assignment.wordLimit.toLocaleString() : "—"}
           </span>
         </div>
 
@@ -153,16 +156,22 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
             <CalendarDays className="h-3.5 w-3.5" />
             <span className="text-xs font-medium uppercase tracking-wider">Due date</span>
           </div>
-          <span className={cn("text-sm font-semibold", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-foreground")}>
-            {dueDate ? dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "No due date"}
-          </span>
-          <p className={cn("text-xs mt-0.5", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-muted-foreground")}>
-            {isOverdue
-              ? `${Math.abs(daysUntilDue)} days overdue`
-              : daysUntilDue === 0
-              ? "Due today"
-              : `${daysUntilDue} days remaining`}
-          </p>
+          {dueDate ? (
+            <>
+              <span className={cn("text-sm font-semibold", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-foreground")}>
+                {dueDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </span>
+              <p className={cn("text-xs mt-0.5", isOverdue ? "text-danger" : isUrgent ? "text-warning" : "text-muted-foreground")}>
+                {isOverdue
+                  ? `${Math.abs(daysUntilDue!)} days overdue`
+                  : daysUntilDue === 0
+                  ? "Due today"
+                  : `${daysUntilDue} days remaining`}
+              </p>
+            </>
+          ) : (
+            <span className="text-sm text-muted-foreground">No due date</span>
+          )}
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3">
@@ -175,29 +184,29 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
         </div>
       </div>
 
-      {/* Rubric */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Marking Rubric
-            </span>
-          </div>
-          {totalWeight !== 100 && (
-            <div className="flex items-center gap-1 text-xs text-warning">
-              <AlertTriangle className="h-3 w-3" />
-              <span>Weights sum to {totalWeight}%</span>
+      {assignment.rubric.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Marking Rubric
+              </span>
             </div>
-          )}
+            {totalWeight !== 100 && (
+              <div className="flex items-center gap-1 text-xs text-warning">
+                <AlertTriangle className="h-3 w-3" />
+                <span>Weights sum to {totalWeight}%</span>
+              </div>
+            )}
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 divide-y divide-border">
+            {assignment.rubric.map((criterion) => (
+              <RubricRow key={criterion.name} criterion={criterion} />
+            ))}
+          </div>
         </div>
-        <div className="rounded-xl border border-border bg-card p-4 divide-y divide-border">
-          {assignment.rubric.map((criterion) => (
-            <RubricRow key={criterion.name} criterion={criterion} />
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* Stage readiness */}
       <StageReadinessBlock assignment={assignment} activeStage={activeStage} />
     </div>
   );

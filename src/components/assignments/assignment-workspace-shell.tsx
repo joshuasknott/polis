@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   ArrowLeft,
   BookOpen,
@@ -13,6 +16,8 @@ import {
   Beaker,
   PanelRightOpen,
   PanelRightClose,
+  AlertTriangle,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage } from "@/lib/types";
@@ -38,6 +43,16 @@ const WORKFLOW_STAGES = [
   icon: React.ElementType;
   description: string;
 }>;
+
+const STAGE_PREREQUISITES: Record<ProductionStage, string[]> = {
+  ingest: [],
+  understand: ["At least one source selected in Ingest"],
+  map: ["Sources processed"],
+  judge: ["Evidence links started"],
+  build: ["Evidence map reviewed"],
+  draft: ["Argument builder complete"],
+  refine: ["Draft submitted for review"],
+};
 
 interface AssignmentWorkspaceShellProps {
   module: Module;
@@ -67,6 +82,80 @@ function StagePlaceholder({ label, description, icon: Icon }: { label: string; d
   );
 }
 
+function StageOverrideButton({
+  assignmentId,
+  targetStage,
+  currentStageIndex,
+  targetIndex,
+}: {
+  assignmentId: string;
+  targetStage: ProductionStage;
+  currentStageIndex: number;
+  targetIndex: number;
+}) {
+  const updateStage = useMutation(api.assignments.updateStage);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isAhead = targetIndex > currentStageIndex;
+
+  if (!isAhead) return null;
+
+  const prerequisites = STAGE_PREREQUISITES[targetStage];
+  if (prerequisites.length === 0) return null;
+
+  const handleOverride = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await updateStage({
+        assignmentId: assignmentId as Id<"assignments">,
+        stage: targetStage,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to advance stage");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-warning/40 bg-warning/5 p-4">
+      <div className="flex items-start gap-3">
+        <Lock className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-medium text-foreground">
+            Prerequisites for this stage:
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {prerequisites.map((req, i) => (
+              <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-border shrink-0" />
+                {req}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              onClick={handleOverride}
+              disabled={loading}
+              className="text-xs font-medium text-warning hover:text-warning/80 transition-colors disabled:opacity-50"
+            >
+              {loading ? "Advancing..." : "Advance anyway"}
+            </button>
+            <span className="text-[10px] text-muted-foreground">This is your decision — prerequisites may not be met</span>
+          </div>
+          {error && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-danger">
+              <AlertTriangle className="h-3 w-3" />
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AssignmentWorkspaceShell({
   module,
   assignment,
@@ -82,7 +171,8 @@ export function AssignmentWorkspaceShell({
 }: AssignmentWorkspaceShellProps) {
   const [coThinkerOpen, setCoThinkerOpen] = useState(true);
 
-  const currentStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === activeStage);
+  const currentStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === assignment.stage);
+  const activeStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === activeStage);
   const activeStageConfig = WORKFLOW_STAGES.find((stage) => stage.id === activeStage) ?? WORKFLOW_STAGES[0];
   const ActiveIcon = activeStageConfig.icon;
   const hasFullBleedStageContent = (activeStage === "draft" && Boolean(draft)) || (activeStage === "refine" && Boolean(draft && review));
@@ -90,6 +180,8 @@ export function AssignmentWorkspaceShell({
   const evidenceGaps = judgements
     .filter((judgement) => judgement.type === "evidence_sufficiency" || judgement.type === "gap_analysis")
     .flatMap((judgement) => judgement.findings);
+
+  const isViewingAhead = activeStageIndex > currentStageIndex;
 
   const renderStageContent = () => {
     switch (activeStage) {
@@ -172,15 +264,20 @@ export function AssignmentWorkspaceShell({
                 <ArrowLeft className="h-3 w-3" /> Assignments
               </Link>
               <span>/</span>
-              <span>{assignment.title}</span>
+              <span className="truncate">{assignment.title}</span>
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl">{assignment.title}</h1>
-                <div className="mt-3 flex items-center gap-4">
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-accent">
                     {assignment.stage.replace("-", " ")}
                   </span>
+                  {module.code && (
+                    <span className="text-sm text-muted-foreground">
+                      {module.code} &middot; {module.title}
+                    </span>
+                  )}
                   {assignment.dueDate && (
                     <span className="text-sm text-muted-foreground">
                       Due: {new Date(assignment.dueDate).toLocaleDateString()}
@@ -193,6 +290,7 @@ export function AssignmentWorkspaceShell({
                 onClick={() => setCoThinkerOpen((open) => !open)}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                 title={coThinkerOpen ? "Hide CoThinker" : "Show CoThinker"}
+                aria-label={coThinkerOpen ? "Hide CoThinker panel" : "Show CoThinker panel"}
               >
                 {coThinkerOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
                 <span className="hidden sm:inline">CoThinker</span>
@@ -200,11 +298,14 @@ export function AssignmentWorkspaceShell({
             </div>
           </div>
 
-          <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin">
-            <div className="flex min-w-[700px] items-center">
+          {/* Stage rail - mobile scrollable */}
+          <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
+            <nav aria-label="Production stages" className="flex min-w-[640px] sm:min-w-[700px] items-center">
               {WORKFLOW_STAGES.map((stage, index) => {
                 const isActive = stage.id === activeStage;
                 const isPast = index < currentStageIndex;
+                const isCurrent = index === currentStageIndex;
+                const isAhead = index > currentStageIndex;
 
                 return (
                   <div key={stage.id} className="group relative flex flex-1 flex-col items-center">
@@ -212,8 +313,9 @@ export function AssignmentWorkspaceShell({
                       <div
                         className={cn(
                           "absolute left-[-50%] top-5 h-[2px] w-full transition-colors",
-                          isPast || isActive ? "bg-accent" : "bg-border"
+                          index <= currentStageIndex ? "bg-accent" : "bg-border"
                         )}
+                        aria-hidden="true"
                       />
                     )}
 
@@ -225,16 +327,19 @@ export function AssignmentWorkspaceShell({
                           ? "border-accent bg-accent text-accent-foreground"
                           : isPast
                             ? "border-accent bg-background text-accent hover:bg-accent/10"
-                            : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
+                            : isCurrent
+                              ? "border-accent/60 bg-background text-accent"
+                              : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
                       )}
-                      title={stage.description}
+                      title={isAhead ? `${stage.label} — prerequisites not yet met` : stage.description}
+                      aria-label={`${stage.label} stage${isActive ? " (current)" : isPast ? " (completed)" : isAhead ? " (locked)" : ""}`}
                     >
                       <stage.icon className="h-4 w-4" />
                     </Link>
 
                     <span
                       className={cn(
-                        "mt-3 text-xs font-medium uppercase tracking-wider transition-colors",
+                        "mt-3 text-xs font-medium uppercase tracking-wider transition-colors text-center",
                         isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
                       )}
                     >
@@ -243,7 +348,7 @@ export function AssignmentWorkspaceShell({
                   </div>
                 );
               })}
-            </div>
+            </nav>
           </div>
 
           <div
@@ -262,6 +367,15 @@ export function AssignmentWorkspaceShell({
                   <p className="mt-1 text-sm text-muted-foreground">{activeStageConfig.description}</p>
                 </div>
               </div>
+            )}
+
+            {isViewingAhead && (
+              <StageOverrideButton
+                assignmentId={assignmentConvexId ?? assignment.id}
+                targetStage={activeStage}
+                currentStageIndex={currentStageIndex}
+                targetIndex={activeStageIndex}
+              />
             )}
 
             {renderStageContent()}

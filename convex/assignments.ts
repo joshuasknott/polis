@@ -230,6 +230,36 @@ export const removeSource = mutation({
   },
 });
 
+export const listWithSourceCounts = query({
+  args: { moduleId: v.id("modules") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) return [];
+
+    const assignments = await ctx.db
+      .query("assignments")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(100);
+
+    const results = [];
+    for (const assignment of assignments) {
+      const sourceLinks = await ctx.db
+        .query("assignmentSources")
+        .withIndex("by_assignment", (q) =>
+          q.eq("assignmentId", assignment._id),
+        )
+        .take(200);
+      results.push({
+        ...assignment,
+        selectedSourceCount: sourceLinks.length,
+      });
+    }
+    return results;
+  },
+});
+
 async function getModuleAndAssignment(
   ctx: QueryCtx,
   tokenIdentifier: string,

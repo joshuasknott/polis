@@ -26,7 +26,6 @@ export function IngestStage({ assignment, allModuleSources, activeStage, assignm
 
   return (
     <div className="space-y-6">
-      {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg bg-muted/50 border border-border w-fit">
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -41,6 +40,7 @@ export function IngestStage({ assignment, allModuleSources, activeStage, assignm
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
+              aria-pressed={activeTab === tab.id}
             >
               <Icon className="h-4 w-4" />
               {tab.label}
