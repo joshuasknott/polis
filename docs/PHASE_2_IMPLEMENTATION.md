@@ -238,7 +238,7 @@ npm run dev
 - `src/components/settings/settings-content.tsx` — Phase 2 status
 - `src/components/sources/source-viewer-content.tsx` — AI summary, regenerate
 - `src/components/tools/tools-content.tsx` — wired tool cards
-- `src/components/essays/essay-workspace-content.tsx` — AI tools tab
+- Legacy coursework workspace component — AI tools tab
 - `package.json` — new dependencies and scripts
 - `.env.example` — new environment variables
 

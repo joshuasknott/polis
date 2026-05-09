@@ -88,12 +88,12 @@ Phase 3 upgrades Polis from a single-user intelligence workspace to a production
 - Textarea-based draft editor with word count display
 - Manual save button for draft persistence
 - "Run Citation Check" and "Run Draft Review" buttons inline
-- Essay question and thesis shown for reference
+- Assignment question and working thesis shown for reference
 - Academic integrity notice (AI only analyses, never generates text)
-- `draftContent` field on Essay model
-- API route: `POST /api/essays` with action `updateDraft`
+- `draftContent` field on the legacy coursework model
+- API route for the legacy coursework draft update action
 
-**Files**: `src/components/essays/essay-workspace-content.tsx` (rewritten), `src/app/api/essays/route.ts` (updated), `src/app/essays/[essayId]/page.tsx` (updated)
+**Files**: legacy coursework workspace component, API route, and page were updated in this historical phase.
 
 ### Priority I: Source Notes ✅
 - `SourceNote` model: per-user notes on sources with optional tags
@@ -198,14 +198,14 @@ AI_RATE_LIMIT_TOKENS=500000
 - `src/lib/auth.ts` — OAuth providers, account linking
 - `src/lib/ai/providers.ts` — User-level key resolution, usage logging, Gemini
 - `src/lib/services/upload-service.ts` — Background processing, status tracking
-- `src/lib/services/data-service.ts` — updateEssay supports draftContent
-- `src/app/api/assistant/route.ts` — Rate limiting, userId passthrough
-- `src/app/api/essays/route.ts` — updateDraft action
+- `src/lib/services/data-service.ts` — legacy coursework draft updates
+- `src/app/api/assistant/route.ts` — Rate limiting for the prior assistant implementation
+- Legacy coursework API route — updateDraft action
 - `src/app/auth/signin/page.tsx` — OAuth buttons
 - `src/app/settings/page.tsx` — Full user data, connections
-- `src/app/essays/[essayId]/page.tsx` — Pass draftContent
+- Legacy coursework workspace page — Pass draftContent
 - `src/components/settings/settings-content.tsx` — Full rewrite with tabs
-- `src/components/essays/essay-workspace-content.tsx` — Draft editor tab
+- Legacy coursework workspace component — Draft editor tab
 - `src/components/sources/source-viewer-content.tsx` — Notes section
 - `src/components/layout/shell.tsx` — Responsive layout
 - `src/components/layout/sidebar.tsx` — Close handler for mobile

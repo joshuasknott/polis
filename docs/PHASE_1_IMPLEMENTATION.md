@@ -167,7 +167,7 @@ npm run dev
 - `src/app/api/auth/signout/route.ts` — Sign-out route
 - `src/app/api/sources/upload/route.ts` — File upload API
 - `src/app/api/assistant/route.ts` — Assistant API
-- `src/app/api/essays/route.ts` — Essay CRUD API
+- Legacy coursework API route for the prior essay prototype
 - `.env.example` — Environment variable template
 
 ### Modified Files
@@ -178,7 +178,7 @@ npm run dev
 - `src/app/sources/page.tsx` — Server component with real data
 - `src/app/sources/[sourceId]/page.tsx` — Server component with real data
 - `src/app/assistant/page.tsx` — Server component with real data
-- `src/app/essays/[essayId]/page.tsx` — Server component with real data
+- Legacy coursework workspace route for the prior essay prototype
 - `src/app/modules/[moduleId]/page.tsx` — Server component with real data
 - `src/app/settings/page.tsx` — Server component with auth
 - `src/app/tools/page.tsx` — Server component with auth
@@ -189,7 +189,7 @@ npm run dev
 - `src/components/sources/source-library-content.tsx` — Real data with upload UI
 - `src/components/sources/source-viewer-content.tsx` — Real data with chunks
 - `src/components/assistant/assistant-content.tsx` — Real retrieval integration
-- `src/components/essays/essay-workspace-content.tsx` — Real data
+- Legacy coursework workspace component for the prior essay prototype
 - `src/components/modules/module-workspace.tsx` — Real data with upload
 - `src/components/settings/settings-content.tsx` — Phase 1 status
 
@@ -200,7 +200,7 @@ npm run dev
 3. **No background processing**: File upload processes synchronously. Large files may timeout.
 4. **Local file storage only**: No S3/cloud storage. Not suitable for production deployment.
 5. **No OAuth**: Only credentials auth. Social login requires provider configuration.
-6. **No draft editing**: Essay workspace shows structure and evidence but no inline editing.
+6. **No draft editing**: The legacy coursework workspace shows structure and evidence but no inline editing.
 7. **No real-time updates**: Pages require refresh after data changes.
 8. **Middleware deprecation warning**: Next.js 16 deprecates middleware in favour of proxy. The middleware still works but should be migrated.
 
