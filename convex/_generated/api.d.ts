@@ -11,6 +11,7 @@
 import type * as ai from "../ai.js";
 import type * as arguments from "../arguments.js";
 import type * as assignments from "../assignments.js";
+import type * as citationSafety from "../citationSafety.js";
 import type * as cothinker from "../cothinker.js";
 import type * as drafts from "../drafts.js";
 import type * as evidence from "../evidence.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   ai: typeof ai;
   arguments: typeof arguments;
   assignments: typeof assignments;
+  citationSafety: typeof citationSafety;
   cothinker: typeof cothinker;
   drafts: typeof drafts;
   evidence: typeof evidence;

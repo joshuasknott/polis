@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+} from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   BookOpen,
@@ -13,6 +23,9 @@ import {
   ArrowRight,
   Sparkles,
   GripVertical,
+  Loader2,
+  Save,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -24,10 +37,13 @@ import type {
   SourceFile,
 } from "@/lib/types";
 
+type SaveStatus = "saved" | "saving" | "unsaved";
+
 interface DraftSection {
   id: string;
   heading: string;
   content: string;
+  blockType: string;
   argumentId: string | null;
   wordTarget: number;
 }
@@ -35,9 +51,10 @@ interface DraftSection {
 interface DraftStudioProps {
   module: Module;
   assignment: Assignment;
-  draft: Draft;
+  draft: Draft | undefined;
   arguments: Argument[];
   sources: SourceFile[];
+  assignmentConvexId: string;
 }
 
 function countWords(text: string): number {
@@ -47,9 +64,9 @@ function countWords(text: string): number {
 }
 
 function buildInitialSections(
-  draft: Draft,
+  draft: Draft | undefined,
   args: Argument[],
-  wordLimit: number
+  wordLimit: number,
 ): DraftSection[] {
   if (args.length === 0) {
     return [
@@ -57,13 +74,15 @@ function buildInitialSections(
         id: "sec_intro",
         heading: "Introduction",
         content: "",
+        blockType: "introduction",
         argumentId: null,
         wordTarget: Math.round(wordLimit * 0.15),
       },
       {
         id: "sec_body",
         heading: "Main Argument",
-        content: draft.content || "",
+        content: draft?.content ?? "",
+        blockType: "body",
         argumentId: null,
         wordTarget: Math.round(wordLimit * 0.7),
       },
@@ -71,6 +90,7 @@ function buildInitialSections(
         id: "sec_conclusion",
         heading: "Conclusion",
         content: "",
+        blockType: "conclusion",
         argumentId: null,
         wordTarget: Math.round(wordLimit * 0.15),
       },
@@ -82,15 +102,14 @@ function buildInitialSections(
   const bodyBudget = wordLimit - introTarget - conclusionTarget;
   const perArg = Math.round(bodyBudget / args.length);
 
-  const draftParagraphs = draft.content
-    ? draft.content.split(/\n\n+/)
-    : [];
+  const draftParagraphs = draft?.content ? draft.content.split(/\n\n+/) : [];
 
   const sections: DraftSection[] = [
     {
       id: "sec_intro",
       heading: "Introduction",
-      content: draftParagraphs[0] || "",
+      content: draftParagraphs[0] ?? "",
+      blockType: "introduction",
       argumentId: null,
       wordTarget: introTarget,
     },
@@ -99,8 +118,12 @@ function buildInitialSections(
   args.forEach((arg, i) => {
     sections.push({
       id: `sec_arg_${arg.id}`,
-      heading: arg.claim.length > 80 ? arg.claim.slice(0, 77) + "…" : arg.claim,
-      content: draftParagraphs[i + 1] || "",
+      heading:
+        arg.claim.length > 80
+          ? arg.claim.slice(0, 77) + "\u2026"
+          : arg.claim,
+      content: draftParagraphs[i + 1] ?? "",
+      blockType: "body",
       argumentId: arg.id,
       wordTarget: perArg,
     });
@@ -109,7 +132,8 @@ function buildInitialSections(
   sections.push({
     id: "sec_conclusion",
     heading: "Conclusion",
-    content: draftParagraphs[args.length + 1] || "",
+    content: draftParagraphs[args.length + 1] ?? "",
+    blockType: "conclusion",
     argumentId: null,
     wordTarget: conclusionTarget,
   });
@@ -142,7 +166,7 @@ function EvidenceCard({ evidence }: { evidence: EvidenceLink }) {
               ? "bg-success/10 text-success"
               : evidence.strength === "moderate"
                 ? "bg-warning/10 text-warning"
-                : "bg-danger/10 text-danger"
+                : "bg-danger/10 text-danger",
           )}
         >
           {evidence.strength}
@@ -157,13 +181,17 @@ function SectionEditor({
   isActive,
   onFocus,
   onChange,
+  onRemove,
   evidence,
+  showRemove,
 }: {
   section: DraftSection;
   isActive: boolean;
   onFocus: () => void;
   onChange: (content: string) => void;
+  onRemove: () => void;
   evidence: EvidenceLink[];
+  showRemove: boolean;
 }) {
   const words = countWords(section.content);
   const ratio = section.wordTarget > 0 ? words / section.wordTarget : 0;
@@ -176,7 +204,7 @@ function SectionEditor({
         "group rounded-xl border transition-all duration-200",
         isActive
           ? "border-accent/40 bg-card shadow-sm ring-1 ring-accent/10"
-          : "border-border bg-card/60 hover:border-border hover:bg-card"
+          : "border-border bg-card/60 hover:border-border hover:bg-card",
       )}
     >
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
@@ -192,7 +220,7 @@ function SectionEditor({
                 ? "text-danger"
                 : nearTarget
                   ? "text-success"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground",
             )}
           >
             {words} / {section.wordTarget}
@@ -205,18 +233,27 @@ function SectionEditor({
                   ? "bg-danger"
                   : nearTarget
                     ? "bg-success"
-                    : "bg-accent/50"
+                    : "bg-accent/50",
               )}
               style={{ width: `${Math.min(ratio * 100, 100)}%` }}
             />
           </div>
+          {showRemove && (
+            <button
+              onClick={onRemove}
+              className="text-muted-foreground/40 hover:text-danger transition-colors ml-1"
+              title="Remove section"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="p-4">
         <textarea
           className="w-full min-h-[120px] resize-none bg-transparent text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/50 focus:outline-none font-serif"
-          placeholder={`Write your ${section.heading.toLowerCase()} here. Build from your argument map and evidence…`}
+          placeholder={`Write your ${section.heading.toLowerCase()} here. Build from your argument map and evidence\u2026`}
           value={section.content}
           onChange={(e) => onChange(e.target.value)}
           onFocus={onFocus}
@@ -238,6 +275,18 @@ function SectionEditor({
             </div>
           </div>
         )}
+
+        {section.argumentId && evidence.length === 0 && (
+          <div className="mt-3 pt-3 border-t border-dashed border-border">
+            <div className="flex items-center gap-2 text-xs text-warning">
+              <AlertTriangle className="h-3 w-3" />
+              <span>
+                No evidence linked to this argument. Add evidence in the Build
+                stage.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -249,33 +298,46 @@ export function DraftStudio({
   draft,
   arguments: args,
   sources,
+  assignmentConvexId,
 }: DraftStudioProps) {
+  const router = useRouter();
+  const createDraft = useMutation(api.drafts.create);
+  const saveDraftMutation = useMutation(api.drafts.saveDraft);
+  const updateStage = useMutation(api.assignments.updateStage);
+  const [creatingDraft, setCreatingDraft] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const initialSections = useMemo(
-    () => buildInitialSections(draft, args, assignment.wordLimit),
-    [draft, args, assignment.wordLimit]
+    () =>
+      buildInitialSections(
+        draft,
+        args,
+        assignment.wordLimit ?? 2000,
+      ),
+    [draft, args, assignment.wordLimit],
   );
 
-  const [sections, setSections] = useState<DraftSection[]>(initialSections);
+  const [sections, setSections] =
+    useState<DraftSection[]>(initialSections);
+
+  const latestSectionsRef = useRef<DraftSection[]>(initialSections);
+  useEffect(() => {
+    latestSectionsRef.current = sections;
+  });
+
   const [activeSection, setActiveSection] = useState<string>(
-    initialSections[0]?.id || ""
+    initialSections[0]?.id ?? "",
   );
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const totalWords = useMemo(
     () => sections.reduce((sum, s) => sum + countWords(s.content), 0),
-    [sections]
+    [sections],
   );
 
-  const totalRatio = assignment.wordLimit > 0 ? totalWords / assignment.wordLimit : 0;
-
-  const handleSectionChange = useCallback(
-    (sectionId: string, content: string) => {
-      setSections((prev) =>
-        prev.map((s) => (s.id === sectionId ? { ...s, content } : s))
-      );
-    },
-    []
-  );
+  const totalRatio =
+    assignment.wordLimit > 0 ? totalWords / assignment.wordLimit : 0;
 
   const evidenceByArgument = useMemo(() => {
     const map = new Map<string, EvidenceLink[]>();
@@ -285,11 +347,203 @@ export function DraftStudio({
     return map;
   }, [args]);
 
+  const usedSourceIds = useMemo(() => {
+    const ids = new Set<string>();
+    args.forEach((arg) =>
+      arg.evidenceLinks.forEach((ev) => ids.add(ev.sourceId)),
+    );
+    return ids;
+  }, [args]);
 
+  const missingCitationSources = useMemo(
+    () =>
+      sources.filter(
+        (s) =>
+          assignment.selectedSourceIds.includes(s.id) &&
+          !usedSourceIds.has(s.id),
+      ),
+    [sources, assignment.selectedSourceIds, usedSourceIds],
+  );
+
+  const performSave = useCallback(
+    async (sectionsToSave: DraftSection[]) => {
+      if (!draft) return;
+      setSaveStatus("saving");
+
+      const content = sectionsToSave
+        .map((s) => s.content)
+        .join("\n\n");
+      const wordCount = sectionsToSave.reduce(
+        (sum, s) => sum + countWords(s.content),
+        0,
+      );
+
+      try {
+        await saveDraftMutation({
+          draftId: draft.id as Id<"drafts">,
+          content,
+          wordCount,
+          sections: sectionsToSave.map((s) => ({
+            blockType: s.blockType,
+            content: s.content,
+            argumentId: s.argumentId
+              ? (s.argumentId as Id<"arguments">)
+              : undefined,
+            sortOrder: sectionsToSave.indexOf(s),
+          })),
+        });
+        setSaveStatus("saved");
+      } catch {
+        setSaveStatus("unsaved");
+      }
+    },
+    [draft, saveDraftMutation],
+  );
+
+  const debouncedSave = useCallback(
+    (newSections: DraftSection[]) => {
+      setSaveStatus("unsaved");
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => {
+        performSave(newSections);
+      }, 3000);
+    },
+    [performSave],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSectionChange = useCallback(
+    (sectionId: string, content: string) => {
+      setSections((prev) => {
+        const updated = prev.map((s) =>
+          s.id === sectionId ? { ...s, content } : s,
+        );
+        debouncedSave(updated);
+        return updated;
+      });
+    },
+    [debouncedSave],
+  );
+
+  const handleAddSection = useCallback(() => {
+    setSections((prev) => {
+      const newSection: DraftSection = {
+        id: `sec_custom_${Date.now()}`,
+        heading: "New Section",
+        content: "",
+        blockType: "body",
+        argumentId: null,
+        wordTarget: Math.round((assignment.wordLimit ?? 2000) * 0.1),
+      };
+      const updated = [
+        ...prev.slice(0, prev.length - 1),
+        newSection,
+        prev[prev.length - 1],
+      ];
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [assignment.wordLimit, debouncedSave]);
+
+  const handleRemoveSection = useCallback(
+    (sectionId: string) => {
+      setSections((prev) => {
+        const updated = prev.filter((s) => s.id !== sectionId);
+        if (updated.length > 0) debouncedSave(updated);
+        return updated;
+      });
+    },
+    [debouncedSave],
+  );
+
+  const handleManualSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    performSave(latestSectionsRef.current);
+  }, [performSave]);
+
+  const handleNavigateToRefine = useCallback(async () => {
+    if (!draft) return;
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    await performSave(latestSectionsRef.current);
+    await updateStage({
+      assignmentId: assignmentConvexId as Id<"assignments">,
+      stage: "refine",
+    });
+    router.push(
+      `/modules/${module.id}/assignments/${assignment.id}?stage=refine`,
+    );
+  }, [
+    draft,
+    performSave,
+    updateStage,
+    assignmentConvexId,
+    router,
+    module.id,
+    assignment.id,
+  ]);
+
+  const handleCreateDraft = useCallback(async () => {
+    setCreatingDraft(true);
+    try {
+      await createDraft({
+        assignmentId: assignmentConvexId as Id<"assignments">,
+      });
+    } finally {
+      setCreatingDraft(false);
+    }
+  }, [createDraft, assignmentConvexId]);
+
+  if (!draft && !creatingDraft) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
+          <FileText className="h-6 w-6 text-accent" />
+        </div>
+        <h3 className="text-lg font-medium text-foreground">
+          Start your draft
+        </h3>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Create a versioned draft to begin writing. Your arguments and evidence
+          will be available as section guides.
+        </p>
+        <button
+          onClick={handleCreateDraft}
+          className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+        >
+          Create Draft
+        </button>
+      </div>
+    );
+  }
+
+  if (!draft) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
+          <p className="text-sm text-muted-foreground">
+            Creating draft\u2026
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Assignment context header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
@@ -302,6 +556,35 @@ export function DraftStudio({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleManualSave}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                saveStatus === "saving"
+                  ? "border-accent/30 bg-accent/5 text-accent"
+                  : saveStatus === "unsaved"
+                    ? "border-warning/30 bg-warning/5 text-warning"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {saveStatus === "saving" ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : saveStatus === "unsaved" ? (
+                <AlertTriangle className="h-3 w-3" />
+              ) : (
+                <Save className="h-3 w-3" />
+              )}
+              {saveStatus === "saving"
+                ? "Saving\u2026"
+                : saveStatus === "unsaved"
+                  ? "Unsaved"
+                  : "Saved"}
+            </button>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+              v{draft.version}
+            </span>
+          </div>
           <div className="text-right">
             <div className="flex items-center gap-1.5">
               <span
@@ -311,13 +594,13 @@ export function DraftStudio({
                     ? "text-danger"
                     : totalRatio > 0.9
                       ? "text-success"
-                      : "text-foreground"
+                      : "text-foreground",
                 )}
               >
                 {totalWords.toLocaleString()}
               </span>
               <span className="text-sm text-muted-foreground">
-                / {assignment.wordLimit.toLocaleString()}
+                / {(assignment.wordLimit ?? 2000).toLocaleString()}
               </span>
             </div>
             <div className="w-32 h-2 rounded-full bg-muted mt-1.5 overflow-hidden">
@@ -328,34 +611,52 @@ export function DraftStudio({
                     ? "bg-danger"
                     : totalRatio > 0.9
                       ? "bg-success"
-                      : "bg-accent/60"
+                      : "bg-accent/60",
                 )}
-                style={{ width: `${Math.min(totalRatio * 100, 100)}%` }}
+                style={{
+                  width: `${Math.min(totalRatio * 100, 100)}%`,
+                }}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Drafting integrity notice */}
       <div className="flex items-start gap-3 rounded-lg bg-muted/60 border border-border px-4 py-3">
         <Sparkles className="h-4 w-4 text-accent mt-0.5 shrink-0" />
         <div>
-          <p className="text-xs font-semibold text-foreground">Staged drafting</p>
+          <p className="text-xs font-semibold text-foreground">
+            Staged drafting
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
             Build your submission section by section using your argument map and
-            evidence links. Polis helps you compose — it does not generate text
-            for submission.
+            evidence links. Polis helps you compose \u2014 it does not generate
+            text for submission.
           </p>
         </div>
       </div>
 
+      {missingCitationSources.length > 0 && (
+        <div className="flex items-start gap-3 rounded-lg bg-warning/5 border border-warning/20 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-foreground">
+              Missing citations
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              {missingCitationSources.map((s) => s.author).join(", ")}{" "}
+              {missingCitationSources.length === 1 ? "is" : "are"} selected but
+              not cited in any evidence link.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-6">
-        {/* Section navigation sidebar */}
         <div
           className={cn(
             "shrink-0 transition-all duration-200",
-            sidebarOpen ? "w-56" : "w-0 overflow-hidden"
+            sidebarOpen ? "w-56" : "w-0 overflow-hidden",
           )}
         >
           <div className="sticky top-4">
@@ -384,7 +685,7 @@ export function DraftStudio({
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
                       isActive
                         ? "bg-accent/10 text-accent font-medium"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                     )}
                   >
                     {hasContent ? (
@@ -392,7 +693,9 @@ export function DraftStudio({
                     ) : (
                       <div className="h-3 w-3 rounded-full border border-border shrink-0" />
                     )}
-                    <span className="truncate flex-1">{section.heading}</span>
+                    <span className="truncate flex-1">
+                      {section.heading}
+                    </span>
                     <span className="text-[10px] tabular-nums text-muted-foreground/60">
                       {words}
                     </span>
@@ -401,14 +704,16 @@ export function DraftStudio({
               })}
             </nav>
 
-            <button className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+            <button
+              onClick={handleAddSection}
+              className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
+            >
               <Plus className="h-3 w-3" />
               Add section
             </button>
           </div>
         </div>
 
-        {/* Main editor area */}
         <div className="flex-1 min-w-0">
           {!sidebarOpen && (
             <button
@@ -430,16 +735,19 @@ export function DraftStudio({
                 onChange={(content) =>
                   handleSectionChange(section.id, content)
                 }
+                onRemove={() => handleRemoveSection(section.id)}
+                showRemove={
+                  section.blockType === "body" && sections.length > 3
+                }
                 evidence={
                   section.argumentId
-                    ? evidenceByArgument.get(section.argumentId) || []
+                    ? evidenceByArgument.get(section.argumentId) ?? []
                     : []
                 }
               />
             ))}
           </div>
 
-          {/* Citation anchors summary */}
           {args.length > 0 && (
             <div className="mt-6 rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -451,13 +759,13 @@ export function DraftStudio({
               <div className="flex flex-wrap gap-2">
                 {sources
                   .filter((s) =>
-                    assignment.selectedSourceIds.includes(s.id)
+                    assignment.selectedSourceIds.includes(s.id),
                   )
                   .map((source) => {
                     const linked = args.some((a) =>
                       a.evidenceLinks.some(
-                        (ev) => ev.sourceId === source.id
-                      )
+                        (ev) => ev.sourceId === source.id,
+                      ),
                     );
                     return (
                       <span
@@ -466,7 +774,7 @@ export function DraftStudio({
                           "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
                           linked
                             ? "border-source/30 bg-source/5 text-source"
-                            : "border-border bg-muted/30 text-muted-foreground"
+                            : "border-border bg-muted/30 text-muted-foreground",
                         )}
                       >
                         {linked ? (
@@ -482,7 +790,6 @@ export function DraftStudio({
             </div>
           )}
 
-          {/* Next stage prompt */}
           <div className="mt-6 flex items-center justify-between rounded-xl border border-dashed border-accent/30 bg-accent/5 px-5 py-4">
             <div>
               <p className="text-sm font-medium text-foreground">
@@ -493,7 +800,10 @@ export function DraftStudio({
                 unsupported claims.
               </p>
             </div>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90">
+            <button
+              onClick={handleNavigateToRefine}
+              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+            >
               Refine
               <ArrowRight className="h-4 w-4" />
             </button>
