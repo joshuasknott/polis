@@ -1,6 +1,10 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import {
+  argumentNodeType,
+  argumentStatus,
+} from "./lib/validators";
 
 export const list = query({
   args: { assignmentId: v.id("assignments") },
@@ -13,7 +17,7 @@ export const list = query({
 
     return await ctx.db
       .query("arguments")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_sortOrder", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("asc")
@@ -37,7 +41,7 @@ export const create = mutation({
     claim: v.string(),
     synthesis: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
-    status: v.optional(v.string()),
+    status: v.optional(argumentStatus),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -63,7 +67,7 @@ export const update = mutation({
     claim: v.optional(v.string()),
     synthesis: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
-    status: v.optional(v.string()),
+    status: v.optional(argumentStatus),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -101,7 +105,9 @@ export const listNodes = query({
 
     return await ctx.db
       .query("argumentNodes")
-      .withIndex("by_argument", (q) => q.eq("argumentId", args.argumentId))
+      .withIndex("by_argument_and_sortOrder", (q) =>
+        q.eq("argumentId", args.argumentId),
+      )
       .order("asc")
       .take(100);
   },
@@ -110,7 +116,7 @@ export const listNodes = query({
 export const createNode = mutation({
   args: {
     argumentId: v.id("arguments"),
-    type: v.string(),
+    type: argumentNodeType,
     content: v.string(),
     parentId: v.optional(v.id("argumentNodes")),
     sortOrder: v.optional(v.number()),
@@ -120,6 +126,17 @@ export const createNode = mutation({
     const argument = await ctx.db.get(args.argumentId);
     if (!argument || argument.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.parentId) {
+      const parent = await ctx.db.get(args.parentId);
+      if (
+        !parent ||
+        parent.tokenIdentifier !== tokenIdentifier ||
+        parent.argumentId !== args.argumentId
+      ) {
+        throw new Error("Parent node must belong to the same argument");
+      }
     }
 
     const now = Date.now();
@@ -136,7 +153,7 @@ export const createNode = mutation({
 export const updateNode = mutation({
   args: {
     nodeId: v.id("argumentNodes"),
-    type: v.optional(v.string()),
+    type: v.optional(argumentNodeType),
     content: v.optional(v.string()),
     parentId: v.optional(v.id("argumentNodes")),
     sortOrder: v.optional(v.number()),
@@ -147,6 +164,17 @@ export const updateNode = mutation({
     const node = await ctx.db.get(nodeId);
     if (!node || node.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.parentId) {
+      const parent = await ctx.db.get(args.parentId);
+      if (
+        !parent ||
+        parent.tokenIdentifier !== tokenIdentifier ||
+        parent.argumentId !== node.argumentId
+      ) {
+        throw new Error("Parent node must belong to the same argument");
+      }
     }
 
     await ctx.db.patch(nodeId, { ...updates, updatedAt: Date.now() });

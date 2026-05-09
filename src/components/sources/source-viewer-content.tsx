@@ -40,7 +40,7 @@ interface SourceViewerContentProps {
     extractedText: string;
     errorMessage: string;
     moduleId: string;
-    folderId: string;
+    folderId: string | null;
   };
   moduleTitle: string;
   moduleCode: string;

@@ -1,5 +1,28 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+  productionStage,
+  sourceType,
+  sourceStatus,
+  folderType,
+  cothinkerScope,
+  messageRole,
+  evidenceStrength,
+  evidenceRole,
+  judgementType,
+  judgementSeverity,
+  reviewStatus,
+  reviewFindingCategory,
+  processingJobType,
+  processingJobStatus,
+  providerName,
+  argumentNodeType,
+  argumentStatus,
+  cothinkerInterventionType,
+  draftBlockType,
+  rubricCriterion,
+  messageLabel,
+} from "./lib/validators";
 
 export default defineSchema({
   userProfiles: defineTable({
@@ -25,21 +48,29 @@ export default defineSchema({
     academicYear: v.optional(v.string()),
     semester: v.optional(v.string()),
     colour: v.optional(v.string()),
+    themes: v.optional(v.array(v.string())),
+    concepts: v.optional(v.array(v.string())),
+    learningOutcomes: v.optional(v.array(v.string())),
+    contextVersion: v.number(),
+    contextUpdatedAt: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_tokenIdentifier", ["tokenIdentifier"]),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_updatedAt", ["tokenIdentifier", "updatedAt"]),
 
   folders: defineTable({
     tokenIdentifier: v.string(),
     moduleId: v.id("modules"),
     parentFolderId: v.optional(v.id("folders")),
     name: v.string(),
-    type: v.string(),
+    type: folderType,
     sortOrder: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_module", ["moduleId"])
+    .index("by_module_and_sortOrder", ["moduleId", "sortOrder"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   sources: defineTable({
@@ -49,8 +80,8 @@ export default defineSchema({
     title: v.string(),
     authors: v.optional(v.string()),
     year: v.optional(v.number()),
-    type: v.string(),
-    status: v.string(),
+    type: sourceType,
+    status: sourceStatus,
     fileName: v.optional(v.string()),
     fileType: v.optional(v.string()),
     fileSize: v.optional(v.number()),
@@ -63,7 +94,9 @@ export default defineSchema({
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
     .index("by_module", ["moduleId"])
-    .index("by_folder", ["folderId"]),
+    .index("by_module_and_status", ["moduleId", "status"])
+    .index("by_folder", ["folderId"])
+    .index("by_status", ["status"]),
 
   sourceChunks: defineTable({
     sourceId: v.id("sources"),
@@ -72,8 +105,18 @@ export default defineSchema({
     pageStart: v.optional(v.number()),
     pageEnd: v.optional(v.number()),
     tokenEstimate: v.optional(v.number()),
+    citationLabel: v.optional(v.string()),
+    provenance: v.optional(
+      v.object({
+        extractor: v.string(),
+        extractionRunId: v.optional(v.string()),
+        chunkingStrategy: v.optional(v.string()),
+      }),
+    ),
     createdAt: v.number(),
-  }).index("by_source", ["sourceId"]),
+  })
+    .index("by_source", ["sourceId"])
+    .index("by_source_and_chunkIndex", ["sourceId", "chunkIndex"]),
 
   sourceNotes: defineTable({
     tokenIdentifier: v.string(),
@@ -93,23 +136,18 @@ export default defineSchema({
     question: v.optional(v.string()),
     wordLimit: v.optional(v.number()),
     dueDate: v.optional(v.string()),
-    rubric: v.optional(
-      v.array(
-        v.object({
-          name: v.string(),
-          description: v.string(),
-          weight: v.number(),
-        }),
-      ),
-    ),
-    stage: v.string(),
+    rubric: v.optional(v.array(rubricCriterion)),
+    stage: productionStage,
+    contextVersion: v.optional(v.number()),
+    contextUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
     .index("by_module", ["moduleId"])
-    .index("by_module_and_stage", ["moduleId", "stage"]),
+    .index("by_module_and_stage", ["moduleId", "stage"])
+    .index("by_module_and_updatedAt", ["moduleId", "updatedAt"]),
 
   assignmentSources: defineTable({
     tokenIdentifier: v.string(),
@@ -140,7 +178,7 @@ export default defineSchema({
     claim: v.string(),
     context: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    strength: v.optional(v.string()),
+    strength: v.optional(evidenceStrength),
     createdAt: v.number(),
   }).index("by_source", ["sourceId"]),
 
@@ -159,40 +197,45 @@ export default defineSchema({
     claim: v.string(),
     synthesis: v.optional(v.string()),
     sortOrder: v.number(),
-    status: v.optional(v.string()),
+    status: v.optional(argumentStatus),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
-    .index("by_assignment", ["assignmentId"]),
+    .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_and_sortOrder", ["assignmentId", "sortOrder"]),
 
   argumentNodes: defineTable({
     tokenIdentifier: v.string(),
     argumentId: v.id("arguments"),
-    type: v.string(),
+    type: argumentNodeType,
     content: v.string(),
     parentId: v.optional(v.id("argumentNodes")),
     sortOrder: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_argument", ["argumentId"]),
+  })
+    .index("by_argument", ["argumentId"])
+    .index("by_argument_and_sortOrder", ["argumentId", "sortOrder"]),
 
   evidenceLinks: defineTable({
     tokenIdentifier: v.string(),
     argumentId: v.id("arguments"),
     argumentNodeId: v.optional(v.id("argumentNodes")),
     sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(v.string()),
-    strength: v.string(),
+    usage: v.optional(evidenceRole),
+    strength: evidenceStrength,
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_argument", ["argumentId"])
     .index("by_source", ["sourceId"])
-    .index("by_argumentNodeId", ["argumentNodeId"]),
+    .index("by_argumentNodeId", ["argumentNodeId"])
+    .index("by_sourceChunk", ["sourceChunkId"]),
 
   drafts: defineTable({
     tokenIdentifier: v.string(),
@@ -205,23 +248,26 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_and_version", ["assignmentId", "version"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   draftBlocks: defineTable({
     tokenIdentifier: v.string(),
     draftId: v.id("drafts"),
-    blockType: v.string(),
+    blockType: draftBlockType,
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_draft", ["draftId"]),
+  })
+    .index("by_draft", ["draftId"])
+    .index("by_draft_and_sortOrder", ["draftId", "sortOrder"]),
 
   judgementOptions: defineTable({
     tokenIdentifier: v.string(),
     assignmentId: v.id("assignments"),
-    type: v.string(),
+    type: judgementType,
     question: v.string(),
     createdAt: v.number(),
   }).index("by_assignment", ["assignmentId"]),
@@ -230,9 +276,9 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     assignmentId: v.id("assignments"),
     judgementOptionId: v.optional(v.id("judgementOptions")),
-    type: v.string(),
+    type: judgementType,
     content: v.string(),
-    severity: v.string(),
+    severity: judgementSeverity,
     createdAt: v.number(),
   })
     .index("by_assignment", ["assignmentId"])
@@ -241,21 +287,23 @@ export default defineSchema({
   reviewRuns: defineTable({
     tokenIdentifier: v.string(),
     draftId: v.id("drafts"),
-    status: v.string(),
+    status: reviewStatus,
     overallFeedback: v.optional(v.string()),
     rubricAlignment: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_draft", ["draftId"])
-    .index("by_status", ["status"]),
+    .index("by_draft_and_status", ["draftId", "status"])
+    .index("by_status", ["status"])
+    .index("by_status_and_createdAt", ["status", "createdAt"]),
 
   reviewFindings: defineTable({
     tokenIdentifier: v.string(),
     reviewRunId: v.id("reviewRuns"),
-    category: v.string(),
+    category: reviewFindingCategory,
     content: v.string(),
-    severity: v.optional(v.string()),
+    severity: v.optional(judgementSeverity),
     resolved: v.optional(v.boolean()),
     resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -269,67 +317,85 @@ export default defineSchema({
     assignmentId: v.optional(v.id("assignments")),
     sourceId: v.optional(v.id("sources")),
     title: v.string(),
-    scope: v.string(),
-    stage: v.optional(v.string()),
+    scope: cothinkerScope,
+    stage: v.optional(productionStage),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
-    .index("by_tokenIdentifier_and_assignment", ["tokenIdentifier", "assignmentId"])
+    .index("by_tokenIdentifier_and_assignment", [
+      "tokenIdentifier",
+      "assignmentId",
+    ])
     .index("by_module", ["moduleId"])
-    .index("by_assignment", ["assignmentId"]),
+    .index("by_assignment", ["assignmentId"])
+    .index("by_module_and_createdAt", ["moduleId", "createdAt"])
+    .index("by_assignment_and_createdAt", ["assignmentId", "createdAt"]),
 
   coThinkerMessages: defineTable({
     tokenIdentifier: v.string(),
     sessionId: v.id("coThinkerSessions"),
-    role: v.string(),
+    role: messageRole,
     content: v.string(),
     citedChunkIds: v.optional(v.array(v.id("sourceChunks"))),
-    labels: v.optional(v.array(v.string())),
+    labels: v.optional(v.array(messageLabel)),
     warnings: v.optional(v.array(v.string())),
     followUpSuggestions: v.optional(v.array(v.string())),
     createdAt: v.number(),
-  }).index("by_session", ["sessionId"]),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_and_createdAt", ["sessionId", "createdAt"]),
 
   coThinkerInterventions: defineTable({
     tokenIdentifier: v.string(),
     sessionId: v.id("coThinkerSessions"),
-    type: v.string(),
+    type: cothinkerInterventionType,
     content: v.string(),
     resolved: v.optional(v.boolean()),
     resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
-  }).index("by_session", ["sessionId"]),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_session_and_createdAt", ["sessionId", "createdAt"]),
 
   processingJobs: defineTable({
     tokenIdentifier: v.string(),
     sourceId: v.optional(v.id("sources")),
-    type: v.string(),
-    status: v.string(),
+    type: processingJobType,
+    status: processingJobStatus,
     errorMessage: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_source", ["sourceId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_source_and_status", ["sourceId", "status"])
+    .index("by_status_and_type", ["status", "type"]),
 
   aiProviderConnections: defineTable({
     tokenIdentifier: v.string(),
-    provider: v.string(),
-    status: v.string(),
+    provider: providerName,
+    status: v.union(
+      v.literal("connected"),
+      v.literal("disconnected"),
+      v.literal("error"),
+    ),
     modelPreference: v.optional(v.string()),
     encryptedCredentialRef: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
-    .index("by_tokenIdentifier_and_provider", ["tokenIdentifier", "provider"]),
+    .index("by_tokenIdentifier_and_provider", [
+      "tokenIdentifier",
+      "provider",
+    ]),
 
   usageEvents: defineTable({
     tokenIdentifier: v.string(),
-    provider: v.optional(v.string()),
+    provider: v.optional(providerName),
     model: v.optional(v.string()),
     type: v.string(),
     tokensIn: v.optional(v.number()),
@@ -339,5 +405,9 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
-    .index("by_type", ["type"]),
+    .index("by_type", ["type"])
+    .index("by_tokenIdentifier_and_createdAt", [
+      "tokenIdentifier",
+      "createdAt",
+    ]),
 });

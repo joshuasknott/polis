@@ -97,18 +97,7 @@ export function AssignmentWorkspaceData({
   );
 
   const fullModule = {
-    id: mod.id,
-    workspaceId: "",
-    title: bundle.module.title,
-    code: bundle.module.code,
-    academicYear: "",
-    semester: "",
-    description: bundle.module.description ?? "",
-    sourceCount: mod.sourceCount,
-    noteCount: 0,
-    assignmentCount: mod.assignmentCount,
-    lastActivityAt: mod.lastActivityAt,
-    color: mod.color,
+    ...mod,
   };
 
   return (

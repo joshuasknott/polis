@@ -1,6 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import {
+  reviewStatus,
+  reviewFindingCategory,
+  judgementSeverity,
+} from "./lib/validators";
 
 export const listForDraft = query({
   args: { draftId: v.id("drafts") },
@@ -11,7 +16,9 @@ export const listForDraft = query({
 
     return await ctx.db
       .query("reviewRuns")
-      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .withIndex("by_draft_and_status", (q) =>
+        q.eq("draftId", args.draftId),
+      )
       .order("desc")
       .take(20);
   },
@@ -48,7 +55,7 @@ export const getWithFindings = query({
 export const createRun = mutation({
   args: {
     draftId: v.id("drafts"),
-    status: v.optional(v.string()),
+    status: v.optional(reviewStatus),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -71,7 +78,7 @@ export const createRun = mutation({
 export const updateRun = mutation({
   args: {
     reviewRunId: v.id("reviewRuns"),
-    status: v.optional(v.string()),
+    status: v.optional(reviewStatus),
     overallFeedback: v.optional(v.string()),
     rubricAlignment: v.optional(v.string()),
   },
@@ -105,9 +112,9 @@ export const removeRun = mutation({
 export const createFinding = mutation({
   args: {
     reviewRunId: v.id("reviewRuns"),
-    category: v.string(),
+    category: reviewFindingCategory,
     content: v.string(),
-    severity: v.optional(v.string()),
+    severity: v.optional(judgementSeverity),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -127,7 +134,7 @@ export const createFinding = mutation({
 export const listFindings = query({
   args: {
     reviewRunId: v.id("reviewRuns"),
-    category: v.optional(v.string()),
+    category: v.optional(reviewFindingCategory),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -169,9 +176,9 @@ export const removeFinding = mutation({
 export const updateFinding = mutation({
   args: {
     findingId: v.id("reviewFindings"),
-    category: v.optional(v.string()),
+    category: v.optional(reviewFindingCategory),
     content: v.optional(v.string()),
-    severity: v.optional(v.string()),
+    severity: v.optional(judgementSeverity),
     resolved: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {

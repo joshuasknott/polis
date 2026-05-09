@@ -1,7 +1,13 @@
-import { query, mutation, type QueryCtx } from "./_generated/server";
+import {
+  query,
+  mutation,
+  internalMutation,
+  type QueryCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
+import { productionStage } from "./lib/validators";
 
 export const list = query({
   args: {
@@ -14,7 +20,9 @@ export const list = query({
       return await ctx.db
         .query("assignments")
         .withIndex("by_tokenIdentifier_and_module", (q) =>
-          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+          q
+            .eq("tokenIdentifier", tokenIdentifier)
+            .eq("moduleId", args.moduleId!),
         )
         .order("desc")
         .take(100);
@@ -71,6 +79,8 @@ export const create = mutation({
       ...args,
       tokenIdentifier,
       stage: "ingest",
+      contextVersion: mod.contextVersion,
+      contextUpdatedAt: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -110,7 +120,7 @@ export const update = mutation({
 export const updateStage = mutation({
   args: {
     assignmentId: v.id("assignments"),
-    stage: v.string(),
+    stage: productionStage,
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -256,7 +266,9 @@ export const getWorkspaceBundle = query({
 
     const folders = await ctx.db
       .query("folders")
-      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .withIndex("by_module_and_sortOrder", (q) =>
+        q.eq("moduleId", args.moduleId),
+      )
       .order("asc")
       .take(100);
 
@@ -291,7 +303,7 @@ export const getWorkspaceBundle = query({
 
     const argsList = await ctx.db
       .query("arguments")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_sortOrder", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("asc")
@@ -308,13 +320,16 @@ export const getWorkspaceBundle = query({
 
     const latestDraft = await ctx.db
       .query("drafts")
-      .withIndex("by_assignment", (q) =>
+      .withIndex("by_assignment_and_version", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
       .first();
 
-    let latestReview: { run: Doc<"reviewRuns">; findings: Doc<"reviewFindings">[] } | null = null;
+    let latestReview: {
+      run: Doc<"reviewRuns">;
+      findings: Doc<"reviewFindings">[];
+    } | null = null;
     if (latestDraft) {
       const reviewRun = await ctx.db
         .query("reviewRuns")
@@ -346,5 +361,243 @@ export const getWorkspaceBundle = query({
       latestDraft: latestDraft ?? null,
       latestReview,
     };
+  },
+});
+
+export const getFullContext = query({
+  args: {
+    moduleId: v.id("modules"),
+    assignmentId: v.id("assignments"),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const pair = await getModuleAndAssignment(
+      ctx,
+      tokenIdentifier,
+      args.moduleId,
+      args.assignmentId,
+    );
+    if (!pair) return null;
+
+    const { mod, assignment } = pair;
+
+    const folders = await ctx.db
+      .query("folders")
+      .withIndex("by_module_and_sortOrder", (q) =>
+        q.eq("moduleId", args.moduleId),
+      )
+      .order("asc")
+      .take(100);
+
+    const moduleSources = await ctx.db
+      .query("sources")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(200);
+
+    const assignmentSourceLinks = await ctx.db
+      .query("assignmentSources")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(200);
+
+    const selectedSourceIds = new Set(
+      assignmentSourceLinks.map((l) => l.sourceId),
+    );
+    const selectedSources = moduleSources.filter((s) =>
+      selectedSourceIds.has(s._id),
+    );
+
+    const sourceNotes: Doc<"sourceNotes">[] = [];
+    for (const source of moduleSources) {
+      const notes = await ctx.db
+        .query("sourceNotes")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .take(50);
+      sourceNotes.push(...notes);
+    }
+
+    const sourceAnalyses: Doc<"sourceAnalyses">[] = [];
+    for (const source of selectedSources) {
+      const analyses = await ctx.db
+        .query("sourceAnalyses")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .take(20);
+      sourceAnalyses.push(...analyses);
+    }
+
+    const sourceClaims: Doc<"sourceClaims">[] = [];
+    for (const source of selectedSources) {
+      const claims = await ctx.db
+        .query("sourceClaims")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .take(50);
+      sourceClaims.push(...claims);
+    }
+
+    const sourceConcepts: Doc<"sourceConcepts">[] = [];
+    for (const source of selectedSources) {
+      const concepts = await ctx.db
+        .query("sourceConcepts")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .take(50);
+      sourceConcepts.push(...concepts);
+    }
+
+    const argsList = await ctx.db
+      .query("arguments")
+      .withIndex("by_assignment_and_sortOrder", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("asc")
+      .take(100);
+
+    const argumentNodes: Doc<"argumentNodes">[] = [];
+    for (const arg of argsList) {
+      const nodes = await ctx.db
+        .query("argumentNodes")
+        .withIndex("by_argument_and_sortOrder", (q) =>
+          q.eq("argumentId", arg._id),
+        )
+        .order("asc")
+        .take(50);
+      argumentNodes.push(...nodes);
+    }
+
+    const evidence: Doc<"evidenceLinks">[] = [];
+    for (const arg of argsList) {
+      const links = await ctx.db
+        .query("evidenceLinks")
+        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
+        .take(100);
+      evidence.push(...links);
+    }
+
+    const allDrafts = await ctx.db
+      .query("drafts")
+      .withIndex("by_assignment_and_version", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .take(50);
+
+    const latestDraft = allDrafts[0] ?? null;
+
+    const draftBlocks: Doc<"draftBlocks">[] = [];
+    if (latestDraft) {
+      const blocks = await ctx.db
+        .query("draftBlocks")
+        .withIndex("by_draft_and_sortOrder", (q) =>
+          q.eq("draftId", latestDraft._id),
+        )
+        .order("asc")
+        .take(200);
+      draftBlocks.push(...blocks);
+    }
+
+    const reviewRuns: Doc<"reviewRuns">[] = [];
+    const reviewFindings: Doc<"reviewFindings">[] = [];
+    if (latestDraft) {
+      const runs = await ctx.db
+        .query("reviewRuns")
+        .withIndex("by_draft", (q) => q.eq("draftId", latestDraft._id))
+        .order("desc")
+        .take(10);
+      reviewRuns.push(...runs);
+
+      for (const run of reviewRuns) {
+        const findings = await ctx.db
+          .query("reviewFindings")
+          .withIndex("by_reviewRun", (q) =>
+            q.eq("reviewRunId", run._id),
+          )
+          .take(100);
+        reviewFindings.push(...findings);
+      }
+    }
+
+    const judgementOptions = await ctx.db
+      .query("judgementOptions")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(50);
+
+    const judgementDecisions = await ctx.db
+      .query("judgementDecisions")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(100);
+
+    const coThinkerSessions = await ctx.db
+      .query("coThinkerSessions")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .take(20);
+
+    const coThinkerMessages: Doc<"coThinkerMessages">[] = [];
+    const coThinkerInterventions: Doc<"coThinkerInterventions">[] = [];
+    for (const session of coThinkerSessions) {
+      const messages = await ctx.db
+        .query("coThinkerMessages")
+        .withIndex("by_session_and_createdAt", (q) =>
+          q.eq("sessionId", session._id),
+        )
+        .order("asc")
+        .take(200);
+      coThinkerMessages.push(...messages);
+
+      const interventions = await ctx.db
+        .query("coThinkerInterventions")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .order("asc")
+        .take(50);
+      coThinkerInterventions.push(...interventions);
+    }
+
+    return {
+      module: mod,
+      assignment,
+      folders,
+      moduleSources,
+      assignmentSourceLinks,
+      selectedSources,
+      sourceNotes,
+      sourceAnalyses,
+      sourceClaims,
+      sourceConcepts,
+      arguments: argsList,
+      argumentNodes,
+      evidence,
+      allDrafts,
+      latestDraft,
+      draftBlocks,
+      reviewRuns,
+      reviewFindings,
+      judgementOptions,
+      judgementDecisions,
+      coThinkerSessions,
+      coThinkerMessages,
+      coThinkerInterventions,
+    };
+  },
+});
+
+export const bumpModuleContextVersion = internalMutation({
+  args: { moduleId: v.id("modules") },
+  handler: async (ctx, args) => {
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod) return;
+
+    const now = Date.now();
+    await ctx.db.patch(args.moduleId, {
+      contextVersion: (mod.contextVersion ?? 0) + 1,
+      contextUpdatedAt: now,
+      updatedAt: now,
+    });
   },
 });

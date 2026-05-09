@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import { evidenceStrength, evidenceRole } from "./lib/validators";
 
 export const listForArgument = query({
   args: { argumentId: v.id("arguments") },
@@ -35,11 +36,12 @@ export const create = mutation({
     argumentId: v.id("arguments"),
     sourceId: v.id("sources"),
     argumentNodeId: v.optional(v.id("argumentNodes")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(v.string()),
-    strength: v.string(),
+    usage: v.optional(evidenceRole),
+    strength: evidenceStrength,
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -50,6 +52,36 @@ export const create = mutation({
     const source = await ctx.db.get(args.sourceId);
     if (!source || source.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    const assignment = await ctx.db.get(argument.assignmentId);
+    if (!assignment || source.moduleId !== assignment.moduleId) {
+      throw new Error("Source must belong to the same module as the assignment");
+    }
+
+    if (args.argumentNodeId) {
+      const node = await ctx.db.get(args.argumentNodeId);
+      if (
+        !node ||
+        node.tokenIdentifier !== tokenIdentifier ||
+        node.argumentId !== args.argumentId
+      ) {
+        throw new Error("Argument node must belong to the same argument");
+      }
+    }
+
+    if (args.sourceChunkId) {
+      const chunk = await ctx.db.get(args.sourceChunkId);
+      if (!chunk || chunk.sourceId !== args.sourceId) {
+        throw new Error("Chunk must belong to the specified source");
+      }
+    }
+
+    if (args.sourceClaimId) {
+      const claim = await ctx.db.get(args.sourceClaimId);
+      if (!claim || claim.sourceId !== args.sourceId) {
+        throw new Error("Claim must belong to the specified source");
+      }
     }
 
     const now = Date.now();
@@ -67,8 +99,8 @@ export const update = mutation({
     evidenceLinkId: v.id("evidenceLinks"),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(v.string()),
-    strength: v.optional(v.string()),
+    usage: v.optional(evidenceRole),
+    strength: v.optional(evidenceStrength),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);

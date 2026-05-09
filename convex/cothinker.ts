@@ -1,6 +1,13 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import {
+  cothinkerScope,
+  productionStage,
+  messageRole,
+  messageLabel,
+  cothinkerInterventionType,
+} from "./lib/validators";
 
 export const listSessions = query({
   args: {
@@ -26,7 +33,9 @@ export const listSessions = query({
       return await ctx.db
         .query("coThinkerSessions")
         .withIndex("by_tokenIdentifier_and_module", (q) =>
-          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+          q
+            .eq("tokenIdentifier", tokenIdentifier)
+            .eq("moduleId", args.moduleId!),
         )
         .order("desc")
         .take(50);
@@ -55,20 +64,23 @@ export const getSession = query({
 export const createSession = mutation({
   args: {
     title: v.string(),
-    scope: v.string(),
+    scope: cothinkerScope,
     moduleId: v.optional(v.id("modules")),
     assignmentId: v.optional(v.id("assignments")),
     sourceId: v.optional(v.id("sources")),
-    stage: v.optional(v.string()),
+    stage: v.optional(productionStage),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const now = Date.now();
-    if (args.moduleId) {
-      const mod = await ctx.db.get(args.moduleId);
-      if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
-        throw new Error("Not found");
-      }
+
+    if (!args.moduleId) {
+      throw new Error("Module is required for CoThinker sessions");
+    }
+
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
     }
 
     if (args.assignmentId) {
@@ -76,7 +88,7 @@ export const createSession = mutation({
       if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
         throw new Error("Not found");
       }
-      if (args.moduleId && assignment.moduleId !== args.moduleId) {
+      if (assignment.moduleId !== args.moduleId) {
         throw new Error("Assignment does not belong to module");
       }
     }
@@ -86,7 +98,7 @@ export const createSession = mutation({
       if (!source || source.tokenIdentifier !== tokenIdentifier) {
         throw new Error("Not found");
       }
-      if (args.moduleId && source.moduleId !== args.moduleId) {
+      if (source.moduleId !== args.moduleId) {
         throw new Error("Source does not belong to module");
       }
     }
@@ -104,8 +116,8 @@ export const updateSession = mutation({
   args: {
     sessionId: v.id("coThinkerSessions"),
     title: v.optional(v.string()),
-    scope: v.optional(v.string()),
-    stage: v.optional(v.string()),
+    scope: v.optional(cothinkerScope),
+    stage: v.optional(productionStage),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -145,7 +157,9 @@ export const listMessages = query({
 
     return await ctx.db
       .query("coThinkerMessages")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_session_and_createdAt", (q) =>
+        q.eq("sessionId", args.sessionId),
+      )
       .order("asc")
       .take(200);
   },
@@ -154,10 +168,10 @@ export const listMessages = query({
 export const addMessage = mutation({
   args: {
     sessionId: v.id("coThinkerSessions"),
-    role: v.string(),
+    role: messageRole,
     content: v.string(),
     citedChunkIds: v.optional(v.array(v.id("sourceChunks"))),
-    labels: v.optional(v.array(v.string())),
+    labels: v.optional(v.array(messageLabel)),
     warnings: v.optional(v.array(v.string())),
     followUpSuggestions: v.optional(v.array(v.string())),
   },
@@ -166,6 +180,17 @@ export const addMessage = mutation({
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
+    }
+
+    if (args.citedChunkIds && args.citedChunkIds.length > 0 && session.moduleId) {
+      for (const chunkId of args.citedChunkIds) {
+        const chunk = await ctx.db.get(chunkId);
+        if (!chunk) continue;
+        const source = await ctx.db.get(chunk.sourceId);
+        if (!source || source.moduleId !== session.moduleId) {
+          throw new Error("Cited chunk source must belong to session module");
+        }
+      }
     }
 
     const messageId = await ctx.db.insert("coThinkerMessages", {
@@ -188,7 +213,9 @@ export const listInterventions = query({
 
     return await ctx.db
       .query("coThinkerInterventions")
-      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .withIndex("by_session_and_createdAt", (q) =>
+        q.eq("sessionId", args.sessionId),
+      )
       .order("asc")
       .take(50);
   },
@@ -197,7 +224,7 @@ export const listInterventions = query({
 export const addIntervention = mutation({
   args: {
     sessionId: v.id("coThinkerSessions"),
-    type: v.string(),
+    type: cothinkerInterventionType,
     content: v.string(),
   },
   handler: async (ctx, args) => {

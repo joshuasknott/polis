@@ -8,6 +8,8 @@ export const PRODUCTION_STAGES = [
   "refine",
 ] as const;
 
+export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
+
 export type SourceType =
   | "journal_article"
   | "book_chapter"
@@ -21,22 +23,28 @@ export type SourceType =
   | "report"
   | "news_article";
 
-export type ProcessingStatus = "processed" | "processing" | "needs_review" | "failed";
+export type SourceStatus =
+  | "placeholder"
+  | "processing"
+  | "processed"
+  | "needs_review"
+  | "failed";
 
-export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
-
-export type CoThinkerScope = "whole_module" | "current_folder" | "selected_sources" | "assignment";
+export type CoThinkerScope =
+  | "whole_module"
+  | "current_folder"
+  | "selected_sources"
+  | "assignment";
 
 export type MessageRole = "user" | "assistant" | "system";
 
 export type FolderType =
   | "module_info"
   | "readings"
-  | "lectures"
+  | "lecture_material"
   | "source_notes"
   | "assignments"
-  | "argument_maps"
-  | "drafts"
+  | "drafts_reviews"
   | "submissions"
   | "custom";
 
@@ -62,7 +70,63 @@ export type JudgementType =
 
 export type EvidenceStrength = "strong" | "moderate" | "weak";
 
+export type EvidenceRole =
+  | "supports"
+  | "contradicts"
+  | "nuances"
+  | "contextualizes";
+
 export type JudgementSeverity = "info" | "warning" | "critical";
+
+export type ReviewStatus = "pending" | "running" | "completed" | "failed";
+
+export type ReviewFindingCategory =
+  | "strength"
+  | "weakness"
+  | "missing_evidence"
+  | "unsupported_claim"
+  | "revision_priority";
+
+export type ProcessingJobType =
+  | "text_extraction"
+  | "chunking"
+  | "embedding"
+  | "analysis";
+
+export type ProcessingJobStatus = "pending" | "running" | "completed" | "failed";
+
+export type ProviderName = "openai" | "anthropic" | "google";
+
+export type ArgumentNodeType =
+  | "premise"
+  | "warrant"
+  | "backing"
+  | "rebuttal"
+  | "qualifier"
+  | "counterargument";
+
+export type ArgumentStatus = "draft" | "developing" | "complete";
+
+export type CoThinkerInterventionType =
+  | "evidence_prompt"
+  | "counterargument_prompt"
+  | "citation_warning"
+  | "source_gap_warning";
+
+export type DraftBlockType =
+  | "introduction"
+  | "body"
+  | "conclusion"
+  | "heading"
+  | "quote"
+  | "note";
+
+export type MessageLabel =
+  | "source_supported"
+  | "interpretation"
+  | "user_idea"
+  | "general_context"
+  | "unsupported";
 
 export interface User {
   id: string;
@@ -94,6 +158,10 @@ export interface Module {
   assignmentCount: number;
   lastActivityAt: string;
   color: string;
+  themes: string[];
+  concepts: string[];
+  learningOutcomes: string[];
+  contextVersion: number;
 }
 
 export interface Folder {
@@ -109,12 +177,12 @@ export interface Folder {
 export interface SourceFile {
   id: string;
   moduleId: string;
-  folderId: string;
+  folderId: string | null;
   title: string;
   author: string;
-  year: number;
+  year: number | null;
   type: SourceType;
-  status: ProcessingStatus;
+  status: SourceStatus;
   tags: string[];
   citation: string;
   pageCount: number;
@@ -127,10 +195,11 @@ export interface SourceFile {
 export interface SourceChunk {
   id: string;
   sourceId: string;
+  chunkIndex: number;
   text: string;
-  pageStart: number;
-  pageEnd: number;
-  citationLabel: string;
+  pageStart: number | null;
+  pageEnd: number | null;
+  citationLabel: string | null;
 }
 
 export interface SourceNote {
@@ -153,11 +222,12 @@ export interface Assignment {
   moduleId: string;
   title: string;
   question: string;
-  wordLimit: number;
-  dueDate: string;
+  wordLimit: number | null;
+  dueDate: string | null;
   rubric: RubricCriterion[];
   selectedSourceIds: string[];
   stage: ProductionStage;
+  contextVersion: number | null;
   createdAt: string;
 }
 
@@ -178,7 +248,7 @@ export interface EvidenceLink {
   sourceTitle: string;
   quote: string;
   pageRange: string;
-  usage: string;
+  usage: EvidenceRole | "";
   strength: EvidenceStrength;
 }
 
@@ -221,11 +291,6 @@ export interface CitedChunk {
   pageRange: string;
 }
 
-export interface MessageLabel {
-  type: "source_supported" | "interpretation" | "user_idea" | "general_context" | "unsupported";
-  text: string;
-}
-
 export interface CoThinkerMessage {
   id: string;
   role: MessageRole;
@@ -250,7 +315,7 @@ export interface CoThinker {
 
 export interface AIProviderConnection {
   id: string;
-  provider: string;
+  provider: ProviderName;
   status: "connected" | "disconnected" | "error";
   modelPreference: string;
   createdAt: string;
