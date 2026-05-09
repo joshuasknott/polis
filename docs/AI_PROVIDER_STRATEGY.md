@@ -1,27 +1,40 @@
 # Polis — AI Provider Strategy
 
-## Migration Note
+**Last updated**: 2026-05-09
+**Status**: Contract — describes the intended production provider architecture on Convex. References to OpenAI/Anthropic as "Active" providers and `src/lib/ai/*` implementation files are historical.
 
-Runtime AI provider integrations from the old backend have been removed during the Convex migration. Development-time Copilot/Codex access is not a runtime integration target. Provider work will resume after the Convex foundation is stable, likely starting with z.ai/Zhipu.
+## Runtime Provider Stack
 
-## Approach: BYO API Key (Per-User) + App-Level Fallback
+| Provider | Role | Models | Status |
+|----------|------|--------|--------|
+| z.ai / GLM (ZhipuAI) | Primary runtime | GLM-4, embedding models | Planned — primary target |
+| Google Gemini | Secondary runtime | gemini-2.5-flash, gemini-2.5-pro | Planned — free-tier fallback |
+| OpenAI | Historical only | gpt-4o, gpt-4o-mini | Not a runtime target |
+| Anthropic | Historical only | claude-sonnet-4, claude-3.5-haiku | Not a runtime target |
 
-### User-Level Keys (Phase 3)
+### Development Tools (Not Runtime)
 
-Users can connect their own API keys through the Settings page. Keys are:
-- Encrypted at rest with AES-256-GCM (using ENCRYPTION_KEY env var)
-- Validated before storage (test API call)
-- Decrypted only at call time, never cached
-- Scoped per-provider with optional model preference
+- GPT Plus Codex: Development productivity tool. Not a runtime provider.
+- GitHub Copilot Student: Development productivity tool. Not a runtime provider.
 
-### App-Level Keys (Fallback)
+These are not integrated into the app runtime. No server-side API credentials/endpoints exist for them.
 
-When no user key is configured, the system falls back to app-level environment variables:
-- `OPENAI_API_KEY` — For OpenAI chat and embeddings
-- `ANTHROPIC_API_KEY` — For Anthropic chat
-- `GOOGLE_AI_API_KEY` — For Google Gemini chat
-- `AI_PROVIDER` — Selects active provider ("openai", "anthropic", or "google")
+## Approach: App-Level Provider + User-Level Override
+
+### App-Level Keys (Default)
+
+The application provides default API keys for z.ai and Gemini via Convex environment variables:
+- `ZAI_API_KEY` — For z.ai / GLM chat and embeddings
+- `GEMINI_API_KEY` — For Google Gemini chat
+- `AI_PROVIDER` — Selects default provider ("zai" or "gemini")
 - `AI_MODEL` — Overrides default model
+
+### User-Level Keys (Override)
+
+Users can connect their own API keys through the Settings page via `aiProviderConnections`:
+- Stored with encrypted credential references.
+- Scoped per-provider with optional model preference.
+- Take precedence over app-level keys when configured.
 
 ### Resolution Order
 
@@ -32,73 +45,92 @@ When no user key is configured, the system falls back to app-level environment v
 4. Template fallback (no API call)
 ```
 
-## Provider Abstraction Layer
+## Provider Interface (Planned)
 
-All AI interactions go through a provider abstraction layer:
+All AI interactions will go through Convex actions:
 
 ```
-User Query → Rate Limit Check → Scope Resolution → Hybrid Retrieval → Context Assembly → Prompt Construction → Provider Call (with user key resolution) → Response Processing → Usage Logging → Citation Injection → UI Display
+User Query → Rate Limit Check → Scope Resolution → Retrieval → Context Assembly → Prompt Construction → Provider Action → Response Processing → Usage Logging → Citation Injection → Message Write → UI Display
 ```
 
-### Provider Interface
+### Chat Interface
 
 ```typescript
+// Planned: convex/ai/providers/zai.ts
 chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
-// options now includes userId for user-level key resolution
+
+// Planned: convex/ai/providers/gemini.ts
+chat(messages: ChatMessage[], options?: ChatOptions): Promise<ChatResponse>
 ```
 
-### Supported Providers
+### Embedding Interface
 
-| Provider | Models | Status |
-|----------|--------|--------|
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano | **Active** |
-| Anthropic | claude-sonnet-4-20250514, claude-3-5-haiku-latest | **Active** |
-| Google Gemini | gemini-2.5-pro, gemini-2.5-flash | **Active** |
-| Local/Open-source | Ollama models | Future |
+```typescript
+// Planned: convex/ai/providers/zai.ts
+embed(texts: string[]): Promise<number[][]>
+
+// Planned: convex/ai/providers/gemini.ts
+embed(texts: string[]): Promise<number[][]>
+```
 
 ### Default Configuration
 
-- **Provider**: OpenAI (configurable via AI_PROVIDER)
-- **Chat model**: gpt-4o-mini (cost-effective, good quality for academic Q&A)
-- **Embedding model**: text-embedding-3-small (1536 dimensions)
+- **Provider**: z.ai (configurable via AI_PROVIDER)
+- **Chat model**: GLM-4 (or equivalent)
+- **Embedding model**: z.ai embedding model
 - **Temperature**: 0.3 (0.7 for brainstorm mode)
 - **Max tokens**: 2048
 
-### Cost Estimates (per 1M tokens)
+## Planned Implementation Files
 
-| Model | Input | Output |
-|-------|-------|--------|
-| gpt-4o-mini | $0.15 | $0.60 |
-| gpt-4.1 | $2.00 | $8.00 |
-| claude-sonnet-4-20250514 | $3.00 | $15.00 |
-| claude-3-5-haiku-latest | $0.80 | $4.00 |
-| gemini-2.5-pro | $1.25 | $10.00 |
-| gemini-2.5-flash | $0.15 | $0.60 |
-| text-embedding-3-small | $0.02 | — |
+All AI provider code lives under `convex/ai/`:
+
+```
+convex/ai/
+  providers/
+    zai.ts          # z.ai / GLM provider (chat + embeddings)
+    gemini.ts       # Google Gemini provider (chat + embeddings)
+    registry.ts     # Provider resolution (user key → app key → fallback)
+  chat.ts           # CoThinker chat action
+  analysis.ts       # Source analysis action
+  review.ts         # Draft review action
+  judgements.ts     # Judgement generation actions
+  prompts.ts        # System prompts with academic integrity constraints
+  response.ts       # Citation parsing, validation, labelling
+```
 
 ## Security Rules
 
-1. **Server-side only**: All API calls are made from server-side code (Next.js API routes)
-2. **Encrypted at rest**: User API keys encrypted with AES-256-GCM before database storage
-3. **Validated before storage**: Test API call confirms key validity before saving
-4. **No client exposure**: API keys are NEVER included in client-side JavaScript bundles
-5. **No localStorage**: API keys are never stored in browser storage
-6. **Usage tracking**: All AI calls logged with token counts and cost estimates
-7. **Rate limiting**: Per-user request and token limits enforced
-8. **Error handling**: Provider errors handled gracefully without exposing internal details
-9. **Fallback**: Template responses when no provider is configured
+1. **Server-side only**: All API calls are made from Convex actions (Node.js runtime). Never from client code.
+2. **Encrypted at rest**: User API keys referenced via `encryptedCredentialRef` in `aiProviderConnections`.
+3. **Validated before storage**: Test API call confirms key validity before saving.
+4. **No client exposure**: API keys are NEVER included in client-side JavaScript bundles.
+5. **No localStorage**: API keys are never stored in browser storage.
+6. **Usage tracking**: All AI calls logged to `usageEvents` with token counts and cost estimates.
+7. **Rate limiting**: Per-user request and token limits enforced via usage event tracking.
+8. **Error handling**: Provider errors handled gracefully without exposing internal details.
+9. **Fallback**: Template responses when no provider is configured.
 
-## Implementation Files
+## Cost Estimates (per 1M tokens)
 
-- `src/lib/ai/providers.ts` — Provider registry with user-level key resolution and usage logging
-- `src/lib/ai/openai-provider.ts` — OpenAI SDK integration (chat + embeddings)
-- `src/lib/ai/anthropic-provider.ts` — Anthropic SDK integration (chat)
-- `src/lib/ai/gemini-provider.ts` — Google Gemini SDK integration (chat)
-- `src/lib/ai/prompts.ts` — System prompts with academic integrity constraints
-- `src/lib/ai/response-processor.ts` — Citation parsing, validation, labelling
-- `src/lib/ai/tool-prompts.ts` — Prompts for citation check and draft review
-- `src/lib/ai/grounded-provider.ts` — Template fallback (preserved from Phase 1)
-- `src/lib/crypto.ts` — AES-256-GCM encryption for user API keys
-- `src/lib/services/apikey-service.ts` — Encrypted API key CRUD operations
-- `src/lib/services/usage-service.ts` — Usage tracking and cost estimation
-- `src/lib/services/rate-limit-service.ts` — In-memory rate limiting
+| Model | Input | Output |
+|-------|-------|--------|
+| GLM-4 | $0.15 | $0.60 |
+| gemini-2.5-flash | $0.15 | $0.60 |
+| gemini-2.5-pro | $1.25 | $10.00 |
+
+## Historical References (Superseded)
+
+The following are from the old Prisma/Auth.js backend and do not reflect current reality:
+- `src/lib/ai/providers.ts` — Old provider registry (not active)
+- `src/lib/ai/openai-provider.ts` — Old OpenAI provider (not active)
+- `src/lib/ai/anthropic-provider.ts` — Old Anthropic provider (not active)
+- `src/lib/ai/gemini-provider.ts` — Old Gemini provider (not active)
+- `src/lib/ai/grounded-provider.ts` — Old template fallback (not active)
+- `src/lib/ai/prompts.ts` — Old prompts (not active)
+- `src/lib/ai/response-processor.ts` — Old response processor (not active)
+- `src/lib/ai/tool-prompts.ts` — Old tool prompts (not active)
+- `src/lib/crypto.ts` — Old AES-256-GCM encryption (not active)
+- `src/lib/services/apikey-service.ts` — Old key service (not active)
+- `src/lib/services/usage-service.ts` — Old usage service (not active)
+- `src/lib/services/rate-limit-service.ts` — Old rate limiter (not active)

@@ -1,8 +1,8 @@
 # Polis — Data Model
 
-## Current Backend Status
-
-Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active foundational schema now lives in `convex/schema.ts`; this document is the authoritative product-level model reference and will be reconciled as Convex-backed features are rebuilt.
+**Last updated**: 2026-05-09
+**Authority**: This document reflects the live Convex schema at `convex/schema.ts`.
+**Backend**: Convex. Prisma/PostgreSQL references are historical.
 
 ## Product Model
 
@@ -12,320 +12,476 @@ Module → Assignment → Argument → Draft
 
 ## Production Stages
 
-Every assignment progresses through:
-
 ```
 Ingest → Understand → Map → Judge → Build → Draft → Refine
 ```
 
-Represented as `ProductionStage` enum in `src/lib/types.ts`.
+Represented as `ProductionStage` type in `src/lib/types.ts`. Stored as `v.string()` in the `assignments` table `stage` field.
 
-## Core Entities
+## Convex Schema (27 Tables)
 
-### User
+### User & Auth
+
+#### userProfiles
 ```
-User {
-  id: string
-  name: string
-  email: string
-  university: string
-  course: string
-  yearOfStudy: number
-  createdAt: string
+userProfiles {
+  tokenIdentifier: string          // Clerk JWT tokenIdentifier (primary key)
+  email?: string
+  name?: string
+  image?: string
+  university?: string
+  course?: string
+  yearOfStudy?: number
+  preferences?: any
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_tokenIdentifier`, `by_email`
 
-### Module
+### Module & Organisation
+
+#### modules
 ```
-Module {
-  id: string
-  workspaceId: string
+modules {
+  tokenIdentifier: string
   title: string
   code: string
-  academicYear: string
-  semester: string
-  description: string
-  sourceCount: number
-  noteCount: number
-  assignmentCount: number
-  lastActivityAt: string
-  color: string
+  description?: string
+  academicYear?: string
+  semester?: string
+  colour?: string
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_tokenIdentifier`
 Maps to a university module (e.g., "International Security" / PIRR30041).
 
-### Folder
+#### folders
 ```
-Folder {
-  id: string
-  moduleId: string → Module
-  parentFolderId: string | null → Folder
+folders {
+  tokenIdentifier: string
+  moduleId: Id<"modules">
+  parentFolderId?: Id<"folders">
   name: string
-  type: FolderType
+  type: string                   // module_info, readings, lecture_material, source_notes, assignments, drafts_reviews, submissions, custom
   sortOrder: number
-  sourceCount: number
+  createdAt: number
+  updatedAt: number
 }
 ```
-Default folders per module: Module Info, Readings, Lectures, Source Notes, Assignments, Drafts, Submissions.
+Indexes: `by_module`, `by_tokenIdentifier`
+Default folders created on module creation: Module Info, Readings, Lecture and Seminar Material, Source Notes, Assignments, Drafts and Reviews, Submissions.
 
-### SourceFile
+### Sources & Content
+
+#### sources
 ```
-SourceFile {
-  id: string
-  moduleId: string → Module
-  folderId: string → Folder
+sources {
+  tokenIdentifier: string
+  moduleId: Id<"modules">
+  folderId?: Id<"folders">
   title: string
-  author: string
-  year: number
-  type: SourceType
-  status: ProcessingStatus
-  tags: string[]
-  citation: string
-  pageCount: number
-  uploadedAt: string
-  summary: string
-  mainArgument: string
-  keyConcepts: string[]
+  authors?: string
+  year?: number
+  type: string                   // journal_article, book_chapter, lecture_slides, module_handbook, assignment_brief, marking_rubric, seminar_notes, draft, book, report, news_article
+  status: string                 // placeholder, processing, processed, needs_review, failed
+  fileName?: string
+  fileType?: string
+  fileSize?: number
+  storageId?: Id<"_storage">
+  citation?: string
+  summary?: string
+  createdAt: number
+  updatedAt: number
 }
 ```
-Represents an uploaded or linked source document.
+Indexes: `by_tokenIdentifier`, `by_tokenIdentifier_and_module`, `by_module`, `by_folder`
 
-### SourceChunk
+#### sourceChunks
 ```
-SourceChunk {
-  id: string
-  sourceId: string → SourceFile
+sourceChunks {
+  sourceId: Id<"sources">
+  chunkIndex: number
   text: string
-  pageStart: number
-  pageEnd: number
-  citationLabel: string
+  pageStart?: number
+  pageEnd?: number
+  tokenEstimate?: number
+  createdAt: number
 }
 ```
-A text segment extracted from a source for retrieval purposes.
+Indexes: `by_source`
 
-### SourceNote
+#### sourceNotes
 ```
-SourceNote {
-  id: string
-  sourceId: string → SourceFile
-  userId: string → User
+sourceNotes {
+  tokenIdentifier: string
+  sourceId: Id<"sources">
   content: string
-  createdAt: string
-  tags: string[]
+  tags?: string[]
+  createdAt: number
+  updatedAt: number
 }
 ```
-User-created notes attached to a source.
+Indexes: `by_source`, `by_tokenIdentifier`
 
-## Assignment Model
-
-### Assignment
+#### sourceAnalyses
 ```
-Assignment {
-  id: string
-  moduleId: string → Module
-  title: string
-  question: string
-  wordLimit: number
-  dueDate: string
-  rubric: RubricCriterion[]
-  selectedSourceIds: string[]
-  stage: ProductionStage
-  createdAt: string
+sourceAnalyses {
+  tokenIdentifier: string
+  sourceId: Id<"sources">
+  assignmentId?: Id<"assignments">
+  analysisType: string           // summary, main_argument, limitations, themes, comparison
+  content: string
+  createdAt: number
+  updatedAt: number
 }
 ```
-A piece of coursework with a question, rubric, and deadline. Replaces the prior essay-centric prototype entity.
+Indexes: `by_source`, `by_assignment`, `by_source_and_type`
 
-### Argument
+#### sourceClaims
 ```
-Argument {
-  id: string
-  assignmentId: string → Assignment
+sourceClaims {
+  tokenIdentifier: string
+  sourceId: Id<"sources">
   claim: string
-  synthesis: string
-  evidenceLinks: EvidenceLink[]
-  counterarguments: string[]
-  sortOrder: number
+  context?: string
+  pageRange?: string
+  strength?: string              // strong, moderate, weak
+  createdAt: number
 }
 ```
-A structured claim within an assignment, linked to evidence from sources.
+Indexes: `by_source`
 
-### EvidenceLink
+#### sourceConcepts
 ```
-EvidenceLink {
-  id: string
-  argumentId: string → Argument
-  sourceId: string → SourceFile
-  sourceTitle: string
-  quote: string
-  pageRange: string
-  usage: string
-  strength: "strong" | "moderate" | "weak"
+sourceConcepts {
+  tokenIdentifier: string
+  sourceId: Id<"sources">
+  concept: string
+  definition?: string
+  relevance?: string
+  createdAt: number
 }
 ```
-Connects a source passage to an argument claim.
+Indexes: `by_source`
 
-### Draft
-```
-Draft {
-  id: string
-  assignmentId: string → Assignment
-  version: number
-  content: string
-  wordCount: number
-  createdAt: string
-  updatedAt: string
-}
-```
-A versioned piece of written work for an assignment.
+### Assignments & Production
 
-### Review
+#### assignments
 ```
-Review {
-  id: string
-  draftId: string → Draft
-  strengths: string[]
-  weaknesses: string[]
-  missingEvidence: string[]
-  unsupportedClaims: string[]
-  revisionPriorities: string[]
-  rubricAlignment: string
-  overallFeedback: string
-}
-```
-Structured feedback on a draft. Replaces the old `DraftReview`.
-
-### Judgement
-```
-Judgement {
-  id: string
-  assignmentId: string → Assignment
-  type: "gap_analysis" | "evidence_sufficiency" | "counterargument_check" | "citation_safety"
-  findings: string[]
-  severity: "info" | "warning" | "critical"
-  createdAt: string
-}
-```
-AI-generated assessment of argument or evidence quality within an assignment.
-
-## CoThinker Model
-
-### CoThinker (replaces AIConversation)
-```
-CoThinker {
-  id: string
-  moduleId: string → Module
-  assignmentId: string | null → Assignment
+assignments {
+  tokenIdentifier: string
+  moduleId: Id<"modules">
   title: string
-  scope: CoThinkerScope
-  stage: ProductionStage
-  messages: CoThinkerMessage[]
-  createdAt: string
+  question?: string
+  wordLimit?: number
+  dueDate?: string
+  rubric?: Array<{ name: string, description: string, weight: number }>
+  stage: string                  // ingest, understand, map, judge, build, draft, refine
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_tokenIdentifier`, `by_tokenIdentifier_and_module`, `by_module`, `by_module_and_stage`
 
-### CoThinkerMessage (replaces AIMessage)
+#### assignmentSources
 ```
-CoThinkerMessage {
-  id: string
-  role: MessageRole
+assignmentSources {
+  tokenIdentifier: string
+  assignmentId: Id<"assignments">
+  sourceId: Id<"sources">
+  addedAt: number
+}
+```
+Indexes: `by_assignment`, `by_source`, `by_assignment_and_source`
+
+### Arguments & Evidence
+
+#### arguments
+```
+arguments {
+  tokenIdentifier: string
+  assignmentId: Id<"assignments">
+  claim: string
+  synthesis?: string
+  sortOrder: number
+  status?: string
+  createdAt: number
+  updatedAt: number
+}
+```
+Indexes: `by_tokenIdentifier`, `by_assignment`
+
+#### argumentNodes
+```
+argumentNodes {
+  tokenIdentifier: string
+  argumentId: Id<"arguments">
+  type: string                   // claim, support, counter, section, budget, etc.
   content: string
-  citedChunks: CitedChunk[]
-  warnings: string[]
-  labels: MessageLabel[]
-  followUpSuggestions: string[]
-  createdAt: string
+  parentId?: Id<"argumentNodes">
+  sortOrder: number
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_argument`
 
-### CoThinkerScope (replaces AIScope)
+#### evidenceLinks
 ```
-CoThinkerScope = "whole_module" | "current_folder" | "selected_sources" | "assignment"
-```
-
-## Supporting Types
-
-### ProductionStage
-```
-ProductionStage = "ingest" | "understand" | "map" | "judge" | "build" | "draft" | "refine"
-```
-
-### RubricCriterion
-```
-RubricCriterion {
-  name: string
-  description: string
-  weight: number
+evidenceLinks {
+  tokenIdentifier: string
+  argumentId: Id<"arguments">
+  argumentNodeId?: Id<"argumentNodes">
+  sourceId: Id<"sources">
+  sourceClaimId?: Id<"sourceClaims">
+  quote?: string
+  pageRange?: string
+  usage?: string                 // candidate, planned, used
+  strength: string               // strong, moderate, weak
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_argument`, `by_source`, `by_argumentNodeId`
 
-### CitedChunk
+### Drafts & Reviews
+
+#### drafts
 ```
-CitedChunk {
-  chunkId: string
-  sourceId: string → SourceFile
-  sourceTitle: string
-  quote: string
-  pageRange: string
+drafts {
+  tokenIdentifier: string
+  assignmentId: Id<"assignments">
+  version: number
+  content?: string
+  wordCount?: number
+  status?: string
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_assignment`, `by_tokenIdentifier`
+Version auto-increments on creation.
 
-### MessageLabel
+#### draftBlocks
 ```
-MessageLabel {
-  type: "source_supported" | "interpretation" | "user_idea" | "general_context" | "unsupported"
-  text: string
+draftBlocks {
+  tokenIdentifier: string
+  draftId: Id<"drafts">
+  blockType: string
+  content?: string
+  argumentId?: Id<"arguments">
+  sortOrder: number
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_draft`
 
-### AIProviderConnection
+#### reviewRuns
 ```
-AIProviderConnection {
-  id: string
-  userId: string → User
-  provider: string
-  encryptedApiKey: string (AES-256-GCM encrypted)
-  status: "connected" | "disconnected" | "error"
-  modelPreference: string
-  createdAt: string
-  updatedAt: string
+reviewRuns {
+  tokenIdentifier: string
+  draftId: Id<"drafts">
+  status: string                 // pending, running, complete, failed
+  overallFeedback?: string
+  rubricAlignment?: string
+  createdAt: number
+  updatedAt: number
 }
 ```
+Indexes: `by_draft`, `by_status`
+
+#### reviewFindings
+```
+reviewFindings {
+  tokenIdentifier: string
+  reviewRunId: Id<"reviewRuns">
+  category: string               // strength, weakness, missing_evidence, unsupported_claim, revision_priority, citation_safety
+  content: string
+  severity?: string              // info, warning, critical
+  resolved?: boolean
+  resolvedAt?: number
+  createdAt: number
+}
+```
+Indexes: `by_reviewRun`, `by_reviewRun_and_category`
+
+### Judgements
+
+#### judgementOptions
+```
+judgementOptions {
+  tokenIdentifier: string
+  assignmentId: Id<"assignments">
+  type: string                   // gap_analysis, evidence_sufficiency, counterargument_check, rubric_risk, citation_safety
+  question: string
+  createdAt: number
+}
+```
+Indexes: `by_assignment`
+
+#### judgementDecisions
+```
+judgementDecisions {
+  tokenIdentifier: string
+  assignmentId: Id<"assignments">
+  judgementOptionId?: Id<"judgementOptions">
+  type: string
+  content: string
+  severity: string               // info, warning, critical
+  createdAt: number
+}
+```
+Indexes: `by_assignment`, `by_judgementOption`
+
+### CoThinker
+
+#### coThinkerSessions
+```
+coThinkerSessions {
+  tokenIdentifier: string
+  moduleId?: Id<"modules">
+  assignmentId?: Id<"assignments">
+  sourceId?: Id<"sources">
+  title: string
+  scope: string                  // whole_module, current_folder, selected_sources, assignment
+  stage?: string
+  createdAt: number
+  updatedAt: number
+}
+```
+Indexes: `by_tokenIdentifier`, `by_tokenIdentifier_and_module`, `by_tokenIdentifier_and_assignment`, `by_module`, `by_assignment`
+
+#### coThinkerMessages
+```
+coThinkerMessages {
+  tokenIdentifier: string
+  sessionId: Id<"coThinkerSessions">
+  role: string                   // user, assistant, system
+  content: string
+  citedChunkIds?: Array<Id<"sourceChunks">>
+  labels?: string[]              // source_supported, interpretation, general_context, unsupported
+  warnings?: string[]
+  followUpSuggestions?: string[]
+  createdAt: number
+}
+```
+Indexes: `by_session`
+
+#### coThinkerInterventions
+```
+coThinkerInterventions {
+  tokenIdentifier: string
+  sessionId: Id<"coThinkerSessions">
+  type: string
+  content: string
+  resolved?: boolean
+  resolvedAt?: number
+  createdAt: number
+}
+```
+Indexes: `by_session`
+
+### Infrastructure
+
+#### processingJobs
+```
+processingJobs {
+  tokenIdentifier: string
+  sourceId?: Id<"sources">
+  type: string
+  status: string                 // pending, running, complete, failed
+  errorMessage?: string
+  createdAt: number
+  updatedAt: number
+}
+```
+Indexes: `by_tokenIdentifier`, `by_source`, `by_status`
+
+#### aiProviderConnections
+```
+aiProviderConnections {
+  tokenIdentifier: string
+  provider: string               // zai, gemini
+  status: string                 // connected, disconnected, error
+  modelPreference?: string
+  encryptedCredentialRef?: string
+  createdAt: number
+  updatedAt: number
+}
+```
+Indexes: `by_tokenIdentifier`, `by_tokenIdentifier_and_provider`
+
+#### usageEvents
+```
+usageEvents {
+  tokenIdentifier: string
+  provider?: string
+  model?: string
+  type: string
+  tokensIn?: number
+  tokensOut?: number
+  costEstimate?: number
+  metadata?: any
+  createdAt: number
+}
+```
+Indexes: `by_tokenIdentifier`, `by_type`
 
 ## Relationships
 
 ```
-User 1→* Module
-User 1→* SourceFile
-User 1→* Assignment
-User 1→* CoThinker
-User 1→* AIProviderConnection
+Clerk Identity (tokenIdentifier) 1→* Everything
 
-Module 1→* Folder
-Module 1→* SourceFile
-Module 1→* Assignment
-Module 1→* CoThinker
+modules 1→* folders
+modules 1→* sources
+modules 1→* assignments
+modules 1→* coThinkerSessions
 
-Folder 1→* SourceFile (optional grouping)
+folders →* sources (optional grouping)
 
-SourceFile 1→* SourceChunk
-SourceFile 1→* SourceNote
+sources 1→* sourceChunks
+sources 1→* sourceNotes
+sources 1→* sourceAnalyses
+sources 1→* sourceClaims
+sources 1→* sourceConcepts
 
-Assignment 1→* Argument
-Assignment 1→* Draft
-Assignment 1→* Judgement
-Assignment 1→* CoThinker (optional scoping)
+assignments *→* sources (via assignmentSources)
+assignments 1→* arguments
+assignments 1→* drafts
+assignments 1→* judgementOptions
+assignments 1→* judgementDecisions
+assignments 1→* coThinkerSessions
 
-Argument 1→* EvidenceLink
+arguments 1→* argumentNodes
+arguments 1→* evidenceLinks
 
-Draft 1→* Review
+argumentNodes 1→* argumentNodes (parent-child)
+argumentNodes 1→* evidenceLinks
 
-EvidenceLink *→1 SourceFile
-EvidenceLink *→1 SourceChunk (optional)
+evidenceLinks *→1 sources
+evidenceLinks *→? sourceClaims
+
+drafts 1→* draftBlocks
+drafts 1→* reviewRuns
+
+reviewRuns 1→* reviewFindings
+
+draftBlocks *→? arguments
+
+coThinkerSessions 1→* coThinkerMessages
+coThinkerSessions 1→* coThinkerInterventions
+
+coThinkerMessages *→* sourceChunks (via citedChunkIds)
 ```
 
 ## Backend Implementation
 
 - **Engine**: Convex
 - **Active schema**: `convex/schema.ts`
-- **Current scope**: foundational tables plus assignment, argument, evidence, draft, review, judgement, and CoThinker functions
-- **Pending**: live UI wiring to Convex data, full retrieval pipeline, and runtime AI provider selection on the Convex backend
+- **Auth**: Clerk → `convex/auth.config.ts` → `ctx.auth.getUserIdentity()` → `tokenIdentifier`
+- **Current scope**: Full CRUD for all 27 tables. No AI actions, no extraction, no embeddings yet.
+- **Pending**: File extraction, text chunking, embedding generation, vector search, AI provider actions, source analysis actions, CoThinker runtime, draft review AI, judgement generation, rate limiting, usage tracking writes.

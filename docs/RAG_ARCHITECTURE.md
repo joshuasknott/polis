@@ -1,165 +1,167 @@
 # Polis — RAG Architecture
 
-## Migration Note
-
-The previous PostgreSQL/pgvector implementation has been removed while Polis migrates to Convex. This document describes the intended product architecture, not the current runtime implementation. Retrieval, embeddings, ingestion, and AI chat will be rebuilt after the Convex data foundation is established.
+**Last updated**: 2026-05-09
+**Status**: Contract — describes the intended production architecture on Convex. The previous PostgreSQL/pgvector implementation has been fully removed.
 
 ## Overview
 
-Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations.
+Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations. All retrieval and generation will be built on Convex.
 
 ## Pipeline
 
 ```
-Upload → Store File → Extract Text → Split into Chunks → Generate Embeddings → Store with Vectors
-                                                                                  ↓
-User Query → Embed Query → Hybrid Retrieval → Construct Prompt → LLM Generate → Parse Citations → Display
-                                         ↓ (fallback)
-                                    Keyword Retrieval → Template Response → Display
+Upload → Convex Storage → Extract Text (action) → Split into Chunks (action) → Generate Embeddings (action) → Store Chunks with Vectors
+                                                                                                         ↓
+User Query → Embed Query (action) → Convex Vector Search → Construct Prompt → LLM Generate (action) → Parse Citations → Write Message → Display
+                                              ↓ (fallback)
+                                    Keyword Search (Convex search index) → Template Response → Display
 ```
 
 ## 1. File Ingestion
 
-### Upload
-- Accept: PDF, DOCX, TXT, MD
-- Maximum file size: 50MB
-- Store original file in local uploads directory
-- Create Source record with metadata
+### Upload Flow (Convex Storage)
 
-### Text Extraction
-- **PDF**: Extract text using pdf-parse
-- **DOCX**: Extract using mammoth.js
-- **TXT/MD**: Direct text input
-- Preserve page boundaries where possible
+1. Client calls `files.generateUploadUrl` mutation.
+2. Client uploads file directly to Convex storage.
+3. Client calls `sources.attachStorage` mutation with the storage ID.
+4. Source status transitions: `placeholder` → `processing`.
+5. A processing action is scheduled.
 
-### AI Analysis (Phase 2)
-- After text extraction and chunking, an AI analysis step generates:
-  - Summary (2-3 paragraphs)
-  - Key Arguments (1-2 sentences)
-  - Concepts (comma-separated list)
-- Non-blocking: runs in background, source is marked ready before analysis completes
-- Endpoint: `POST /api/sources/[sourceId]/analyse` for manual regeneration
+### Text Extraction (Action — Planned)
+
+- **PDF**: Server-side extraction using a Node.js library.
+- **DOCX**: Server-side extraction.
+- **TXT/MD**: Direct text input.
+- Preserve page boundaries where possible.
+- Action writes extracted text to a processing job record, then triggers chunking.
+
+### AI Analysis (Planned)
+
+After text extraction and chunking, an AI analysis action generates:
+- **Summary** (2-3 paragraphs) → `sourceAnalyses` (type: `"summary"`)
+- **Main argument** (1-2 sentences) → `sourceAnalyses` (type: `"main_argument"`)
+- **Concepts** (key concepts with definitions) → `sourceConcepts`
+- **Claims** (source claims with page ranges) → `sourceClaims`
+- **Limitations** → `sourceAnalyses` (type: `"limitations"`)
+
+Non-blocking: runs in background after extraction completes. Source is marked `processed` before analysis completes.
 
 ## 2. Chunking
 
 ### Strategy
-- Split extracted text into semantically meaningful chunks
-- Target chunk size: 1000 words with 150 word overlap
-- Preserve metadata: source ID, chunk index
 
-### Chunk Structure
-```typescript
-{
-  id: string
-  sourceId: string
+- Split extracted text into semantically meaningful chunks.
+- Target chunk size: 1000 words with 150 word overlap.
+- Preserve metadata: source ID, chunk index, page boundaries.
+
+### Chunk Schema (Live)
+
+```
+sourceChunks {
+  sourceId: Id<"sources">
+  chunkIndex: number
   text: string
-  charCount: number
-  tokenEstimate: number
-  pageNumber: number | null
-  embedding: number[] | null  // 1536-dimensional vector (Phase 2)
+  pageStart?: number
+  pageEnd?: number
+  tokenEstimate?: number
+  createdAt: number
 }
 ```
 
-## 3. Embeddings (Phase 2)
+Index: `by_source`
 
-### Model
-- OpenAI text-embedding-3-small (1536 dimensions)
-- Cost: ~$0.02 per 1M tokens
-
-### Generation
-- Generated automatically after chunking during file upload
-- Batch embedding for efficiency (20 chunks per API call)
-- Non-fatal: chunks without embeddings are still searchable by keyword
+## 3. Embeddings (Planned)
 
 ### Storage
-- pgvector extension in PostgreSQL
-- Column: `embedding Unsupported("vector(1536)")` on `source_chunks` table
-- Cosine similarity via `<=>` operator
 
-### Batch Processing
-- `npm run db:embed` embeds all chunks missing embeddings
-- Suitable for initial setup or after adding API key
+- Embeddings stored on the `sourceChunks` table using Convex vector columns.
+- Schema will be updated with `vectorDimension` when Convex vector search is configured.
 
-## 4. Retrieval (Phase 2)
+### Generation
 
-### Hybrid Retrieval (default)
-Combines semantic search and keyword search:
+- Generated automatically after chunking during the processing pipeline.
+- Batch embedding for efficiency.
+- Non-fatal: chunks without embeddings are still searchable by keyword (Convex search index).
 
-1. **Semantic search** (weight: 0.7)
-   - Embed query using text-embedding-3-small
-   - Cosine similarity search via pgvector `<=>` operator
-   - Returns chunks sorted by vector similarity
+## 4. Retrieval (Planned)
 
-2. **Keyword search** (weight: 0.3)
-   - Tokenise query into words (>2 chars)
-   - Count keyword matches in chunk text
-   - Title-boosted scoring (+3 for title matches)
-   - Length-normalised scores
+### Vector Search (Primary)
 
-3. **Score combination**
-   - Normalise both scores to 0-1 range
-   - Combine: 0.7 × semantic + 0.3 × keyword
-   - Return top-K sorted by combined score
+- Convex vector search on `sourceChunks` table.
+- Cosine similarity search returning top-K chunks.
+- Filterable by source (scope filtering).
 
-### Fallback
-- When embeddings unavailable (no API key or no vector data): keyword-only retrieval
-- When no AI provider configured: template-based responses
+### Keyword Search (Fallback + Supplementary)
 
-### Retrieval Modes
-- `hybrid` (default): semantic + keyword combined
-- `semantic`: vector similarity only
-- `keyword`: keyword matching only
+- Convex full-text search index on `sourceChunks.text`.
+- Available when embeddings are not generated.
+
+### Hybrid Retrieval
+
+Combines vector search and keyword search:
+1. **Vector search** (primary): Embed query, search by vector similarity.
+2. **Keyword search** (supplementary): Full-text search on chunk text.
+3. **Score combination**: Merge and deduplicate results.
 
 ### Scope Filtering
-- **Whole module**: Search all chunks in the module
-- **Selected source**: Search chunks from a specific source
-- **Essay project**: Search chunks from sources linked to the essay evidence
 
-## 5. Answer Generation (Phase 2)
+- **Whole module**: Search all chunks in the module's sources.
+- **Selected sources**: Search chunks from sources selected for the assignment.
+- **Single source**: Search chunks from a specific source.
+- **Assignment**: Search chunks from sources linked to the assignment.
+
+## 5. Answer Generation (Planned)
 
 ### LLM Integration
-- **Primary**: OpenAI (gpt-4o-mini default)
-- **Secondary**: Anthropic (claude-sonnet-4-20250514)
-- Configurable via `AI_PROVIDER` and `AI_MODEL` environment variables
+
+- **Primary**: z.ai / GLM
+- **Secondary**: Google Gemini (free API key)
+- Configurable per-user via `aiProviderConnections`.
 
 ### Prompt Construction
+
 ```
-System: Academic research assistant + integrity rules + citation format requirement
-System: [Source 1]: chunk text from "Title" by Author (Year)
-        [Source 2]: chunk text from "Title" by Author (Year)
+System: Academic research assistant + integrity rules + Harvard citation format requirement
+System: [Source 1]: chunk text from "Title" by Author (Year, pp. X-Y)
+        [Source 2]: chunk text from "Title" by Author (Year, pp. X-Y)
         ...
 User: [conversation history]
 User: the actual query
 ```
 
 ### Citation Format
-- LLM instructed to use `[Source N]` in-line citations
+
+- LLM instructed to use `[Source N]` in-line citations.
 - Example: "Lijphart argues that consensus democracies outperform majoritarian ones [Source 1]."
+- Mapped to `(Author, Year, p. X)` Harvard format for display.
 
 ### Response Processing
-1. Parse `[Source N]` citations from LLM output
-2. Validate each citation against the retrieved chunk set
-3. Extract quoted text for each cited chunk
-4. Label response as source_supported, interpretation, or general
+
+1. Parse `[Source N]` citations from LLM output.
+2. Validate each citation against the retrieved chunk set.
+3. Extract quoted text for each cited chunk.
+4. Label response: `source_supported`, `interpretation`, `general_context`, `unsupported`.
 5. Generate warnings for:
-   - No citations when sources were available
-   - LLM indicating insufficient evidence
-   - Limited source material (<3 chunks)
-6. Generate follow-up suggestions
+   - No citations when sources were available.
+   - LLM indicating insufficient evidence.
+   - Limited source material (<3 chunks).
+6. Generate follow-up suggestions.
 
 ### Conversation Memory
-- Last 10 messages from the current conversation included as context
-- Maintains multi-turn coherence
-- Scoped to the selected module/sources
+
+- Last 10 messages from the current CoThinker session included as context.
+- Maintains multi-turn coherence.
+- Scoped to the selected module/sources/assignment.
 
 ## 6. Citation Display
 
 ### UI Requirements
-- Source citations appear as expandable cards below responses
-- Each cited chunk shows: source title, author/year, quoted text
-- "Add to Evidence Bank" button on each cited chunk
-- Warning badges for unsupported claims
-- AI mode indicator: "AI Connected" vs "Template Mode"
+
+- Source citations appear as expandable cards below responses.
+- Each cited chunk shows: source title, author/year, quoted text, page range.
+- "Add to Evidence Bank" button on each cited chunk.
+- Warning badges for unsupported claims.
+- Label badges: "Source-supported", "Interpretation", "General", "Unsupported".
 
 ## 7. Failure States
 
@@ -167,34 +169,34 @@ User: the actual query
 |----------|----------|
 | No relevant chunks found | "I couldn't find relevant information in your uploaded sources." |
 | Low confidence retrieval | Warning: "Limited source material found." |
-| Provider unavailable | Falls back to template-based keyword response |
-| No API key configured | Template mode: keyword retrieval + template responses |
+| Provider unavailable | Falls back to keyword-only retrieval + template response |
+| No AI provider configured | Template mode: keyword retrieval + template responses |
 | Embedding failure | Falls back to keyword-only retrieval |
 | LLM indicates insufficient evidence | Warning: "The AI indicated insufficient evidence." |
 | No citations in LLM response | Warning: "Response does not cite specific sources." |
 
-## 8. Workbench Actions (Phase 2)
+## 8. Workbench Actions (Planned)
 
 ### Citation Safety Check
-- Input: draft text
-- Process: retrieve relevant chunks → LLM analyses each claim → categorise as supported/weakly/unsupported
-- Output: structured JSON with claim categories
-- Endpoint: `POST /api/tools/citation-check`
+
+- Input: draft text + source chunks from assignment.
+- Process: retrieve relevant chunks → LLM analyses each claim → categorise as supported/weakly/unsupported.
+- Output: review findings in `reviewFindings` (category: `"citation_safety"`).
+- Constraint: NEVER rewrites — only analyses and flags.
 
 ### Draft Review
-- Input: draft text, optional question, rubric
-- Process: retrieve relevant chunks → LLM provides structured feedback
-- Output: strengths, weaknesses, missing evidence, revision priorities, estimated band
-- Constraint: NEVER rewrites — only analyses and suggests
-- Endpoint: `POST /api/tools/draft-review`
+
+- Input: draft text + question + rubric.
+- Process: retrieve relevant chunks → LLM provides structured feedback.
+- Output: review run + findings (strengths, weaknesses, missing_evidence, unsupported_claims, revision_priorities).
+- Constraint: NEVER rewrites — only analyses and suggests.
 
 ## Future Improvements
 
-- Reranking retrieved chunks with a cross-encoder model
-- Multi-query retrieval (reformulating the user's question for better results)
-- pgvector index (IVFFlat or HNSW) for large-scale search (>10K chunks)
-- Source deduplication (avoiding redundant chunks from the same source)
-- Adaptive chunk size based on document type
-- Per-user BYO API key management with encrypted storage
-- Google Gemini provider support
-- Rate limiting on AI API calls
+- Reranking retrieved chunks with a cross-encoder model.
+- Multi-query retrieval (reformulating the user's question for better results).
+- Convex vector index tuning for large-scale search.
+- Source deduplication (avoiding redundant chunks from the same source).
+- Adaptive chunk size based on document type.
+- Per-user BYO API key management via `aiProviderConnections`.
+- Rate limiting on AI API calls via `usageEvents`.

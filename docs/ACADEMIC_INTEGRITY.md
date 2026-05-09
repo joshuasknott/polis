@@ -1,5 +1,8 @@
 # Polis — Academic Integrity Policy
 
+**Last updated**: 2026-05-09
+**Authority**: This document defines non-negotiable integrity guarantees. All AI actions must enforce these rules.
+
 ## Core Principles
 
 1. **No fabricated citations.** The system must never generate citations that do not exist in the uploaded source base.
@@ -9,6 +12,9 @@
 5. **Sufficient evidence requirement.** The system must warn when the available source base is insufficient to support a claim.
 6. **Student responsibility.** The student remains fully responsible for the final submitted work.
 7. **Learning support, not replacement.** All features are designed to support understanding and improve academic skills.
+8. **Harvard citation style.** Default citation format is `(Author, Year, p. X)`. Users may configure alternatives in future.
+9. **AI source summaries are permitted.** AI-generated summaries of uploaded sources are an allowed feature, clearly labelled as AI-generated.
+10. **Powerful but bounded AI help.** The CoThinker should be as helpful and progress-oriented as possible, but must preserve source grounding and academic integrity at all times.
 
 ## Label Categories
 

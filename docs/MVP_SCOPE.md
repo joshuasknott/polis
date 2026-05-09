@@ -1,5 +1,7 @@
 # Polis — MVP Scope
 
+**Last updated**: 2026-05-09
+
 ## Phase 0: Static Prototype (Complete)
 
 **Goal**: Build a polished, convincing frontend prototype with realistic mock data.
@@ -25,11 +27,13 @@
 - Database persistence
 - Payment or billing
 
-## Phase 1: Core Functionality (Complete)
+## Phase 1: Core Functionality (Historical — Prisma Stack)
 
 **Goal**: Make the prototype functional with real file upload and AI integration.
 
-**Includes**:
+**Delivered on the old Prisma/PostgreSQL/Auth.js stack. Superseded by Convex migration. Capabilities need rebuilding.**
+
+**Included**:
 - File upload and text extraction (PDF, DOCX, PPTX)
 - AI provider integration (BYO API key, server-side)
 - Real conversational CoThinker scoped to modules/sources
@@ -37,11 +41,13 @@
 - Source summarisation and concept extraction
 - Assignment planning with live CoThinker assistance
 
-## Phase 2: Intelligence Layer (Complete)
+## Phase 2: Intelligence Layer (Historical — Prisma Stack)
 
 **Goal**: Build robust source-grounded AI with citation integrity.
 
-**Includes**:
+**Delivered on the old stack. Superseded by Convex migration. Capabilities need rebuilding.**
+
+**Included**:
 - Full RAG pipeline (embedding, retrieval, citation injection)
 - Page-level and chunk-level citation tracking
 - Citation safety checking
@@ -50,11 +56,13 @@
 - Evidence linking with source-grounded entries
 - Argument mapping
 
-## Phase 3: Production Platform (Complete)
+## Phase 3: Production Platform (Historical — Prisma Stack)
 
 **Goal**: Expand to a production-ready platform.
 
-**Includes**:
+**Delivered on the old stack. Superseded by Convex migration. Capabilities need rebuilding.**
+
+**Included**:
 - User authentication and accounts (OAuth)
 - Per-user BYO API key management
 - Background file processing
@@ -65,16 +73,48 @@
 - Mobile-responsive design refinements
 - Google Gemini provider integration
 
-## Phase 4: Product Model (Current)
+## Phase 4: Production Architecture & Runtime (Current)
 
-**Goal**: Implement the full Module → Assignment → Argument → Draft product model with the 7-stage production workflow.
+**Goal**: Rebuild all runtime capabilities on Convex + Clerk and ship the full product model.
 
-**Includes**:
-- Assignment entity replacing the prior essay-centric prototype model
-- Argument construction with evidence linking
-- Versioned drafts with review history
-- Judgement system for evidence quality assessment
-- CoThinker with stage-aware behaviour
-- Workbench with stage-appropriate tool surfacing
-- Production stage tracking per assignment
-- Convex backend for all new entities
+### Foundation (Complete)
+
+- [x] Convex schema (27 tables) covering full product model
+- [x] Clerk auth integrated with Convex
+- [x] Full CRUD for all entities
+- [x] File upload via Convex storage
+- [x] UI mappers bridging Convex to existing components
+- [x] Assignment workspace with production stage tracking
+- [x] Module workspace backed by Convex data
+
+### Architecture Contracts (In Progress)
+
+- [x] Reconcile current reality vs. historical docs
+- [x] Define production architecture
+- [x] Define implementation contracts
+- [x] Update data model, RAG, AI provider docs
+- [ ] Update AGENTS.md
+
+### Backend Runtime (Next)
+
+- [ ] File extraction + chunking actions on Convex
+- [ ] Vector embeddings + Convex vector search
+- [ ] AI provider actions (z.ai primary, Gemini secondary)
+- [ ] CoThinker chat with retrieval
+- [ ] Source analysis generation
+- [ ] Draft review AI
+- [ ] Judgement generation
+
+### UI Wiring (Next)
+
+- [ ] Assignment workspace fully connected to live Convex data
+- [ ] CoThinker panel connected to live AI runtime
+- [ ] Source viewer with live analyses, concepts, claims
+
+### Production Readiness (Later)
+
+- [ ] Cleanup cascade actions
+- [ ] Rate limiting
+- [ ] Processing pipeline monitoring
+- [ ] Error handling and failure states
+- [ ] Mobile refinements
