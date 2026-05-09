@@ -1,6 +1,8 @@
 import { AppShell } from "@/components/layout/shell";
 import { ModuleWorkspaceData } from "@/components/modules/module-workspace-data";
 
+export const dynamic = "force-dynamic";
+
 export default async function ModulePage({
   params,
   searchParams,

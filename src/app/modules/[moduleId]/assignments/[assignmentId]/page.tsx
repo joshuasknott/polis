@@ -2,6 +2,8 @@ import { AppShell } from "@/components/layout/shell";
 import { AssignmentWorkspaceData } from "@/components/assignments/assignment-workspace-data";
 import { PRODUCTION_STAGES, type ProductionStage } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function AssignmentPage({
   params,
   searchParams,

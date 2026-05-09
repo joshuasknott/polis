@@ -9,7 +9,13 @@
     "start": "next start",
     "lint": "eslint",
     "convex:codegen": "convex codegen",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:convex": "vitest run --config vitest.config.convex.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest",
+    "test:security": "tsx scripts/security-checks.ts",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm run test:unit && npm run test:convex && npm run test:security"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.3.2",
@@ -25,12 +31,16 @@
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
     "convex-test": "^0.0.51",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",

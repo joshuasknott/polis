@@ -2,6 +2,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { AppShell } from "@/components/layout/shell";
 import { SettingsContent } from "@/components/settings/settings-content";
 
+export const dynamic = "force-dynamic";
+
 function metadataString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
