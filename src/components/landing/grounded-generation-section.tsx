@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { FileText, CheckCircle, ArrowRight } from "lucide-react";
+import { FileText, CheckCircle, ArrowRight, Shield } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -13,12 +13,51 @@ const fadeUp = {
 };
 
 const PIPELINE = [
-  { label: "Module Brief", desc: "Isolates context" },
-  { label: "Source Base", desc: "Preserves breadth" },
-  { label: "Module Notes", desc: "Adds lecture context" },
-  { label: "Evidence Map", desc: "Filters by assignment" },
-  { label: "Argument Map", desc: "Binds claims to sources" },
-  { label: "Draft & Review", desc: "Scans while writing" },
+  { label: "Ingest", desc: "Collect raw material" },
+  { label: "Understand", desc: "Comprehend sources" },
+  { label: "Map", desc: "Link to assignment" },
+  { label: "Judge", desc: "Evaluate strength" },
+  { label: "Build", desc: "Structure argument" },
+  { label: "Draft", desc: "Compose with sources" },
+  { label: "Refine", desc: "Review & validate" },
+];
+
+const EVIDENCE_TRAIL = [
+  {
+    stage: "Ingest",
+    action: "Source text extracted and stored",
+    status: "attached" as const,
+  },
+  {
+    stage: "Understand",
+    action: "Summaries reference original passages",
+    status: "attached" as const,
+  },
+  {
+    stage: "Map",
+    action: "Evidence linked to assignment question",
+    status: "attached" as const,
+  },
+  {
+    stage: "Judge",
+    action: "Gaps flagged against source base",
+    status: "attached" as const,
+  },
+  {
+    stage: "Build",
+    action: "Every claim maps to a source",
+    status: "attached" as const,
+  },
+  {
+    stage: "Draft",
+    action: "Inline citations verified while writing",
+    status: "attached" as const,
+  },
+  {
+    stage: "Refine",
+    action: "Citation coverage scanned before submission",
+    status: "attached" as const,
+  },
 ];
 
 export function GroundedGenerationSection() {
@@ -40,16 +79,16 @@ export function GroundedGenerationSection() {
           className="max-w-3xl mx-auto text-center mb-16"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.04em] leading-[1.05] text-[#0f284d]">
-            Why Polis is better grounded{" "}
-            <span className="text-[#ba9858]">than just asking an AI.</span>
+            Evidence stays attached{" "}
+            <span className="text-[#ba9858]">through every stage.</span>
           </h2>
           <p className="mt-6 text-lg text-[#445f7c] leading-relaxed max-w-2xl mx-auto">
-            Polis does not wait until the end to check citations. It structures the module first,
-            maps sources to assignments, and carries the evidence trail into planning and writing.
+            Most tools check citations at the end. Polis carries the evidence trail forward
+            from the first upload to the final review — so nothing gets fabricated along the way.
           </p>
         </motion.div>
 
-        {/* Evidence pipeline — single wide diagram */}
+        {/* Evidence pipeline — 7 stages */}
         <motion.div
           variants={prefersReducedMotion ? undefined : fadeUp}
           initial="hidden"
@@ -63,17 +102,16 @@ export function GroundedGenerationSection() {
             </div>
 
             {/* Desktop: horizontal pipeline */}
-            <div className="hidden lg:grid grid-cols-6 gap-0 relative">
-              {/* Connector line */}
+            <div className="hidden lg:grid grid-cols-7 gap-0 relative">
               <div
-                className="absolute top-6 left-[8%] right-[8%] h-px"
+                className="absolute top-6 left-[7%] right-[7%] h-px"
                 style={{
                   background: "linear-gradient(90deg, #ba9858 0%, #ba9858 100%)",
                   opacity: 0.2,
                 }}
               />
               <div
-                className="absolute top-6 left-[8%] right-[8%] h-px"
+                className="absolute top-6 left-[7%] right-[7%] h-px"
                 style={{
                   background:
                     "repeating-linear-gradient(90deg, #ba9858 0px, #ba9858 4px, transparent 4px, transparent 12px)",
@@ -88,7 +126,7 @@ export function GroundedGenerationSection() {
                         ? "bg-[#445f7c] border-[#445f7c] text-white"
                         : i === PIPELINE.length - 1
                         ? "bg-[#0f284d] border-[#0f284d] text-white"
-                        : i === 3
+                        : i >= 2 && i <= 4
                         ? "bg-white border-[#ba9858]/40 text-[#ba9858]"
                         : "bg-white border-[#e2e8f0] text-[#445f7c]"
                     }`}
@@ -96,7 +134,7 @@ export function GroundedGenerationSection() {
                     <span className="text-[11px] font-bold">0{i + 1}</span>
                   </div>
                   {i < PIPELINE.length - 1 && (
-                    <div className="hidden lg:flex absolute top-6 -right-1 z-20 items-center justify-center w-3 h-3">
+                    <div className="hidden lg:flex absolute top-6 -right-0.5 z-20 items-center justify-center w-3 h-3">
                       <ArrowRight className="w-2.5 h-2.5 text-[#ba9858]/40" />
                     </div>
                   )}
@@ -116,7 +154,7 @@ export function GroundedGenerationSection() {
                         ? "bg-[#445f7c] border-[#445f7c] text-white"
                         : i === PIPELINE.length - 1
                         ? "bg-[#0f284d] border-[#0f284d] text-white"
-                        : i === 3
+                        : i >= 2 && i <= 4
                         ? "bg-white border-[#ba9858]/40 text-[#ba9858]"
                         : "bg-white border-[#e2e8f0] text-[#445f7c]"
                     }`}
@@ -136,7 +174,7 @@ export function GroundedGenerationSection() {
           </div>
         </motion.div>
 
-        {/* Example — writing with source-grounding */}
+        {/* Evidence trail — how grounding persists */}
         <motion.div
           variants={prefersReducedMotion ? undefined : fadeUp}
           initial="hidden"
@@ -145,6 +183,32 @@ export function GroundedGenerationSection() {
           className="rounded-2xl border border-[#ba9858]/20 bg-white p-6 lg:p-8 shadow-[0_1px_1px_rgba(15,40,77,0.03),0_8px_30px_rgba(186,152,88,0.06)]"
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-4 h-4 text-[#ba9858]" />
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#ba9858]">
+                  Evidence trail — stage by stage
+                </div>
+              </div>
+              <div className="space-y-2">
+                {EVIDENCE_TRAIL.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-[#f1f5f9] bg-[#fafbfc]"
+                  >
+                    <div className="w-6 h-6 rounded-md bg-[#ba9858]/10 flex items-center justify-center shrink-0">
+                      <span className="text-[9px] font-bold text-[#ba9858]">0{i + 1}</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[11px] font-semibold text-[#0f284d]">{item.stage}</span>
+                      <span className="text-[11px] text-[#94a3b8] mx-1.5">·</span>
+                      <span className="text-[11px] text-[#445f7c]">{item.action}</span>
+                    </div>
+                    <CheckCircle className="w-3.5 h-3.5 text-[#2F6B4A] shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-3">
                 Writing canvas — POL2028 Research Methods
@@ -167,9 +231,7 @@ export function GroundedGenerationSection() {
                   </span>
                 </p>
               </div>
-            </div>
-            <div>
-              <div className="rounded-xl border border-[#f59e0b]/30 bg-[#fffbeb] p-4 mb-4">
+              <div className="mt-5 rounded-xl border border-[#f59e0b]/30 bg-[#fffbeb] p-4">
                 <div className="flex items-center gap-2 text-[11px] font-semibold text-[#92400e] mb-1.5">
                   <div className="w-3.5 h-3.5 rounded-full border border-[#f59e0b] flex items-center justify-center shrink-0">
                     <div className="w-1 h-1 rounded-full bg-[#f59e0b]" />
@@ -182,13 +244,13 @@ export function GroundedGenerationSection() {
                   in Zuboff Ch. 8.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <span className="text-[10px] text-[#445f7c] border border-[#e2e8f0] rounded-full px-2.5 py-1 flex items-center gap-1.5 bg-white">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#2F6B4A]" />
                   2 claims sourced
                 </span>
                 <span className="text-[10px] text-[#445f7c] border border-[#e2e8f0] rounded-full px-2.5 py-1 flex items-center gap-1.5 bg-white">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#ba9858]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
                   1 gap flagged
                 </span>
                 <span className="text-[10px] text-[#445f7c] border border-[#e2e8f0] rounded-full px-2.5 py-1 flex items-center gap-1.5 bg-white">

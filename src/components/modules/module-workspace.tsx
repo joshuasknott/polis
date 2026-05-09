@@ -10,7 +10,8 @@ import {
   ArrowRight,
   Info,
   StickyNote,
-  ArrowLeft
+  ArrowLeft,
+  CheckSquare
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -60,14 +61,20 @@ export function ModuleWorkspace({
 
   const renderContent = () => {
     switch (activeTab) {
-      case "overview":
+      case "module-info":
         return <ModuleInfo module={module} />;
-      case "sources":
+      case "readings":
         return <ModuleReadings module={module} folders={folders} sources={sources} />;
-      case "notes":
-        return <EmptyState icon={StickyNote} title="Notes" description="Your module notes and source annotations will appear here." />;
+      case "lectures":
+        return <EmptyState icon={FileText} title="Lectures" description="Your module slides and seminar notes will appear here." />;
+      case "source-notes":
+        return <EmptyState icon={StickyNote} title="Source Notes" description="Your source annotations and reading notes will appear here." />;
       case "assignments":
         return <ModuleAssignments assignments={assignments} module={module} />;
+      case "drafts":
+        return <EmptyState icon={FileText} title="Drafts & Reviews" description="Your assignment drafts and feedback will appear here." />;
+      case "submissions":
+        return <EmptyState icon={CheckSquare} title="Submissions" description="Your final submissions and checklists will appear here." />;
       default:
         return <ModuleInfo module={module} />;
     }

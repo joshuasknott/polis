@@ -8,124 +8,157 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import {
-  Info,
+  Download,
   BookOpen,
-  FileText,
   Map,
+  Scale,
+  Hammer,
   PenTool,
-  Edit3,
+  Sparkles,
 } from "lucide-react";
 
 const PHASES = [
-  { label: "Context Intake", range: [0, 2] as const },
-  { label: "Assignment Mapping", range: [3, 3] as const },
-  { label: "Writing System", range: [4, 5] as const },
+  { label: "Understand your material", range: [0, 1] as const },
+  { label: "Build your argument", range: [2, 4] as const },
+  { label: "Produce your submission", range: [5, 6] as const },
 ];
 
 const STAGES = [
   {
     id: 0,
-    label: "Module Info",
-    icon: Info,
+    label: "Ingest",
+    icon: Download,
     phase: 0,
-    headline: "Extract the control layer",
-    body: "Upload or paste the module description, assessment briefs, grade descriptors, marking criteria, deadlines, and course structure. Polis extracts the important information automatically and creates the control layer for the module.",
+    headline: "Collect raw material into the module workspace",
+    body: "Upload PDFs, DOCXs, slides, assignment briefs, and rough notes. Polis extracts text, chunks it for retrieval, and stores everything inside the module — the broad knowledge base that all assignments will draw from.",
     visual: {
-      title: "POL2028 Research Methods",
+      title: "Module — POL2028 Research Methods",
       items: [
-        { label: "Assessment: 3,000-word essay (60%) + presentation (40%)", type: "info" as const },
-        { label: "Marking criteria: argument, evidence, analysis, structure", type: "info" as const },
-        { label: "Deadline: Week 12 · Dr. Sarah Chen", type: "info" as const },
-        { label: "Learning outcomes: 4 extracted", type: "info" as const },
+        { label: "Foucault — Discipline and Punish.pdf  ✓ extracted", type: "source" as const },
+        { label: "Zuboff — Surveillance Capitalism.pdf  ✓ extracted", type: "source" as const },
+        { label: "Scott — Seeing Like a State.pdf  ✓ extracted", type: "source" as const },
+        { label: "Week 1–8 lecture slides  ✓ chunked", type: "notes" as const },
+        { label: "Assignment brief uploaded", type: "info" as const },
       ],
     },
+    unlocks: "Raw material collected — nothing lost",
+    risk: "No AI interpretation yet — zero hallucination risk",
   },
   {
     id: 1,
-    label: "Sources",
+    label: "Understand",
     icon: BookOpen,
     phase: 0,
-    headline: "Build the broad knowledge base",
-    body: "Drop journal articles, book chapters, PDFs, reports, datasets, primary texts, policy documents, and cases. Sources remain broad and context-rich — Polis preserves the full base so it can make connections later.",
+    headline: "Comprehend individual sources",
+    body: "Polis generates reading summaries, identifies key concepts and main arguments within each source. Students can query individual sources to deepen understanding before connecting ideas across the module.",
     visual: {
-      title: "Source Library — 6 sources",
+      title: "Source Understanding — 6 sources analysed",
       items: [
-        { label: "Foucault — Discipline and Punish.pdf", type: "source" as const },
-        { label: "Zuboff — Surveillance Capitalism.pdf", type: "source" as const },
-        { label: "Scott — Seeing Like a State.pdf", type: "source" as const },
-        { label: "Dean — Governmentality.pdf", type: "source" as const },
-        { label: "HMGOV Policy Report 2023.pdf", type: "source" as const },
-        { label: "Pasquale — The Black Box Society.pdf", type: "source" as const },
+        { label: "Foucault: disciplinary power, panopticism, docile bodies", type: "theme" as const },
+        { label: "Zuboff: behavioural surplus, surveillance capitalism, instrumentarian power", type: "theme" as const },
+        { label: "Scott: legibility, state simplification, resistance through opacity", type: "theme" as const },
+        { label: "3 key tensions identified across module readings", type: "info" as const },
       ],
     },
+    unlocks: "Individual sources understood",
+    risk: "Summaries reference uploaded text — grounded by design",
   },
   {
     id: 2,
-    label: "Module Notes",
-    icon: FileText,
-    phase: 0,
-    headline: "Turn lecture dumps into structured themes",
-    body: "Paste lecture slides, seminar notes, tutorial notes, student notes, and rough ideas from class. Polis extracts concepts, theories, methods, recurring arguments, lecture themes, and seminar points.",
+    label: "Map",
+    icon: Map,
+    phase: 1,
+    headline: "Connect ideas across sources for the assignment",
+    body: "Map evidence, themes, theories, and counterarguments from the module's sources against the assignment question. Polis highlights connections, tensions, and gaps — filtering the broad module base to what's relevant for this specific piece of coursework.",
     visual: {
-      title: "Extracted themes — Week 1–8",
+      title: "Evidence Map — Essay 1: Digital Governance",
       items: [
-        { label: "Theme: Power, surveillance, and the state", type: "theme" as const },
-        { label: "Theory: Foucauldian disciplinary power", type: "theme" as const },
-        { label: "Concept: Governmentality and population management", type: "theme" as const },
-        { label: "Recurring tension: legibility vs. resistance", type: "theme" as const },
+        { label: "Panopticism as architectural metaphor — Foucault pp. 195–228", type: "evidence" as const },
+        { label: "Behavioural surplus extraction — Zuboff Ch. 3", type: "evidence" as const },
+        { label: "State legibility & simplification — Scott pp. 1–52", type: "evidence" as const },
+        { label: "Counter: Resistance through opacity — Scott Ch. 2", type: "counter" as const },
+        { label: "⚠ Gap: No source on post-2020 digital regulation", type: "warning" as const },
       ],
     },
+    unlocks: "Evidence mapped to assignment question",
+    risk: "Mapping draws only from uploaded sources",
   },
   {
     id: 3,
-    label: "Evidence Map",
-    icon: Map,
+    label: "Judge",
+    icon: Scale,
     phase: 1,
-    headline: "Map evidence to each assignment",
-    body: "Polis extracts source-level evidence, claims, methods, quotes, cases, concepts, and counterpoints — then maps them against the current assignment brief. Separate evidence streams if a module has multiple coursework tasks.",
+    headline: "Evaluate argument strength and evidence sufficiency",
+    body: "Before building the argument, assess whether the evidence is strong enough. Polis flags gaps, identifies weak counterarguments, checks evidence sufficiency against the rubric, and warns where the source base falls short.",
     visual: {
-      title: "Evidence Map — Essay 1",
+      title: "Judgement Panel — Evidence Assessment",
       items: [
-        { label: "Panopticism as metaphor — Foucault pp. 195–228", type: "evidence" as const },
-        { label: "Behavioural surplus — Zuboff Ch. 3", type: "evidence" as const },
-        { label: "Legibility & state simplification — Scott pp. 1–52", type: "evidence" as const },
-        { label: "Counter: Resistance through opacity — Scott Ch. 2", type: "counter" as const },
+        { label: "✓ Core claim: 3 sources with direct textual support", type: "evidence" as const },
+        { label: "✓ Counterargument: Scott Ch. 2 provides adequate challenge", type: "evidence" as const },
+        { label: "⚠ Weakness: Zuboff claim on prediction markets under-supported", type: "warning" as const },
+        { label: "Rubric check: 'critical analysis' criterion — 2 of 4 descriptors met", type: "info" as const },
       ],
     },
+    unlocks: "Evidence sufficiency evaluated before writing",
+    risk: "Warns about gaps — does not fabricate evidence to fill them",
   },
   {
     id: 4,
-    label: "Argument Map",
-    icon: PenTool,
-    phase: 2,
-    headline: "Build argument structure from evidence",
-    body: "Establish the student's critical angle, argument structure, point-by-point plan, source-to-claim mapping, evidence placement, and counterarguments. Polis queries the student: \"What angle do you want to take?\" — preventing directionless output.",
+    label: "Build",
+    icon: Hammer,
+    phase: 1,
+    headline: "Structure the argument from evidence",
+    body: "Establish the student's critical angle, build a point-by-point argument structure, allocate evidence to each claim, plan sections, and set word budgets. The student chooses the direction — Polis structures it from the available evidence.",
     visual: {
       title: "Argument Map — Digital Governance Essay",
       items: [
         { label: "Angle: Institutional failure, not just technological change", type: "plan" as const },
         { label: "Point 1: Panopticism as architectural metaphor → Foucault", type: "plan" as const },
         { label: "Point 2: Behavioural surplus extraction → Zuboff", type: "plan" as const },
-        { label: "Counterargument: Resistance through illegibility → Scott", type: "counter" as const },
+        { label: "Point 3: Legibility as prerequisite → Scott", type: "plan" as const },
+        { label: "Counter: Resistance through illegibility → Scott Ch. 2", type: "counter" as const },
       ],
     },
+    unlocks: "Argument structured with evidence allocated",
+    risk: "Every claim in the plan links to a specific source",
   },
   {
     id: 5,
-    label: "Draft & Refine",
-    icon: Edit3,
+    label: "Draft",
+    icon: PenTool,
     phase: 2,
-    headline: "Write with evidence still attached",
-    body: "Draft from the argument map, refine paragraphs, keep source links attached, suggest where evidence belongs, flag unsupported claims, and run scans for grammar, missing citations, evidence gaps, and assignment alignment.",
+    headline: "Compose with sources still attached",
+    body: "Write from the argument map in a source-linked canvas. As the student composes, Polis shows which sources support each paragraph, suggests where evidence should be cited, and keeps inline source references attached throughout drafting.",
     visual: {
       title: "Writing Canvas — Draft in progress",
       items: [
         { label: "¶ The convergence of disciplinary power and digital surveillance…", type: "writing" as const },
         { label: "↳ Foucault, 1975 · pp. 195–228  ✓ sourced", type: "citation" as const },
         { label: "¶ Zuboff extends this by demonstrating behavioural surplus…", type: "writing" as const },
-        { label: "⚠ 1 claim needs source support — review flagged", type: "warning" as const },
+        { label: "↳ Zuboff, 2019 · Ch. 3  ✓ sourced", type: "citation" as const },
       ],
     },
+    unlocks: "Draft composed — every paragraph source-linked",
+    risk: "Inline citations verified against uploaded material",
+  },
+  {
+    id: 6,
+    label: "Refine",
+    icon: Sparkles,
+    phase: 2,
+    headline: "Review, validate, and polish",
+    body: "Run the draft against the rubric, check citation coverage, flag unsupported claims, identify structural weaknesses, and get revision priorities. Polis reviews like a supervisor — it does not rewrite for the student.",
+    visual: {
+      title: "Refinement Report — Essay 1",
+      items: [
+        { label: "✓ 8 of 9 claims have direct source support", type: "evidence" as const },
+        { label: "⚠ 1 claim needs source support — para. 4, line 3", type: "warning" as const },
+        { label: "Rubric alignment: argument (strong), evidence (strong), structure (review)", type: "info" as const },
+        { label: "Priority: strengthen conclusion with explicit theoretical link", type: "plan" as const },
+      ],
+    },
+    unlocks: "Submission reviewed — revision priorities clear",
+    risk: "Feedback only — no content generated for insertion",
   },
 ];
 
@@ -177,10 +210,11 @@ export function HowItWorksStack() {
   const typeStyles: Record<string, { dot: string; badge?: string }> = {
     info: { dot: "bg-[#445f7c]" },
     source: { dot: "bg-[#445f7c]" },
+    notes: { dot: "bg-[#94a3b8]" },
     theme: { dot: "bg-[#0f284d]" },
-    evidence: { dot: "bg-[#ba9858]", badge: "Essay 1" },
+    evidence: { dot: "bg-[#ba9858]", badge: "Sourced" },
     counter: { dot: "bg-[#94a3b8]", badge: "Counter" },
-    plan: { dot: "bg-[#0f284d]", badge: "Sourced" },
+    plan: { dot: "bg-[#0f284d]", badge: "Planned" },
     writing: { dot: "bg-[#0f284d]" },
     citation: { dot: "bg-[#ba9858]" },
     warning: { dot: "bg-[#f59e0b]" },
@@ -202,16 +236,16 @@ export function HowItWorksStack() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center mb-20">
             <h2 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.04em] leading-[1.05] text-[#0f284d]">
-              Six stages.{" "}
-              <span className="text-[#ba9858]">One workspace.</span>
+              Seven stages.{" "}
+              <span className="text-[#ba9858]">Progressive refinement.</span>
             </h2>
             <p className="mt-6 text-lg text-[#445f7c] leading-relaxed max-w-xl mx-auto">
-              From messy module inputs to a source-grounded assignment draft. Each stage builds on the last,
-              keeping evidence connected throughout.
+              Ingest → Understand → Map → Judge → Build → Draft → Refine.
+              Each stage narrows the scope, strengthens the argument, and reduces
+              the risk of unsupported claims.
             </p>
           </div>
 
-          {/* Coursework Intelligence Canvas */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-0 items-start">
             {/* Left: vertical stage navigation with phase groups */}
             <div
@@ -268,9 +302,9 @@ export function HowItWorksStack() {
                                   {stage.label}
                                 </h3>
                               </div>
-                              {isActive && stage.id >= 3 && (
+                              {isActive && stage.id >= 2 && (
                                 <span className="ml-auto text-[9px] font-medium text-[#ba9858] bg-[#ba9858]/10 px-2 py-0.5 rounded-full shrink-0">
-                                  mapped
+                                  assignment-scoped
                                 </span>
                               )}
                             </div>
@@ -317,9 +351,9 @@ export function HowItWorksStack() {
                     {activeStage.label}
                   </div>
                   <div className="ml-auto flex items-center gap-2">
-                    {activeStage.id >= 3 && (
+                    {activeStage.id >= 2 && (
                       <span className="text-[9px] font-medium text-[#ba9858] bg-[#ba9858]/10 px-2 py-0.5 rounded-full">
-                        assignment-mapped
+                        assignment-scoped
                       </span>
                     )}
                     <span className="text-[10px] text-[#cbd5e1] font-medium">POL2028</span>
@@ -327,7 +361,7 @@ export function HowItWorksStack() {
                 </div>
 
                 {/* Panel content */}
-                <div className="p-6 lg:p-8 min-h-[420px]">
+                <div className="p-6 lg:p-8 min-h-[460px]">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={activeStage.id}
@@ -372,7 +406,9 @@ export function HowItWorksStack() {
                                       item.type === "counter"
                                         ? "text-[#445f7c] border border-[#e2e8f0]"
                                         : item.type === "evidence"
-                                        ? "text-[#445f7c] border border-[#e2e8f0]"
+                                        ? "bg-[#ba9858] text-white"
+                                        : item.type === "plan"
+                                        ? "bg-[#0f284d] text-white"
                                         : "bg-[#ba9858] text-white"
                                     }`}
                                   >
@@ -385,17 +421,19 @@ export function HowItWorksStack() {
                         </div>
                       </div>
 
-                      {/* What this unlocks */}
-                      <div className="mt-6 flex items-center gap-3 text-[11px]">
-                        <div className="h-px flex-1 bg-gradient-to-r from-[#ba9858]/30 to-transparent" />
-                        <span className="text-[#ba9858] font-medium uppercase tracking-wider">
-                          {activeStage.id <= 2
-                            ? "Context captured"
-                            : activeStage.id === 3
-                            ? "Evidence mapped to assignment"
-                            : "Writing with sources attached"}
-                        </span>
-                        <div className="h-px flex-1 bg-gradient-to-l from-[#ba9858]/30 to-transparent" />
+                      {/* What this unlocks + risk level */}
+                      <div className="mt-6 space-y-2">
+                        <div className="flex items-center gap-3 text-[11px]">
+                          <div className="h-px flex-1 bg-gradient-to-r from-[#ba9858]/30 to-transparent" />
+                          <span className="text-[#ba9858] font-medium uppercase tracking-wider">
+                            {activeStage.unlocks}
+                          </span>
+                          <div className="h-px flex-1 bg-gradient-to-l from-[#ba9858]/30 to-transparent" />
+                        </div>
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#94a3b8]">
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#2F6B4A]" />
+                          <span>{activeStage.risk}</span>
+                        </div>
                       </div>
                     </motion.div>
                   </AnimatePresence>

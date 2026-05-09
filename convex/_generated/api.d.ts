@@ -15,6 +15,7 @@ import type * as cothinker from "../cothinker.js";
 import type * as drafts from "../drafts.js";
 import type * as evidence from "../evidence.js";
 import type * as files from "../files.js";
+import type * as folders from "../folders.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   drafts: typeof drafts;
   evidence: typeof evidence;
   files: typeof files;
+  folders: typeof folders;
   "lib/auth": typeof lib_auth;
   modules: typeof modules;
   notes: typeof notes;

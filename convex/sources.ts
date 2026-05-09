@@ -166,3 +166,18 @@ export const listAnalyses = query({
       .take(100);
   },
 });
+
+export const listChunks = query({
+  args: { sourceId: v.id("sources") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("sourceChunks")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .order("asc")
+      .take(500);
+  },
+});

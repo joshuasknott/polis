@@ -15,7 +15,7 @@ import { formatRelativeTime } from "@/lib/utils";
 import type { Module, User } from "@/lib/types";
 
 interface DashboardContentProps {
-  user: User;
+  user?: User;
   modules: Module[];
 }
 

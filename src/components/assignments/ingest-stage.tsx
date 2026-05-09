@@ -18,9 +18,10 @@ interface IngestStageProps {
   assignment: Assignment;
   allModuleSources: SourceFile[];
   activeStage: ProductionStage;
+  assignmentId?: string;
 }
 
-export function IngestStage({ assignment, allModuleSources, activeStage }: IngestStageProps) {
+export function IngestStage({ assignment, allModuleSources, activeStage, assignmentId }: IngestStageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("brief");
 
   return (
@@ -56,6 +57,7 @@ export function IngestStage({ assignment, allModuleSources, activeStage }: Inges
         <AssignmentSourceBase
           allModuleSources={allModuleSources}
           initialSelectedIds={assignment.selectedSourceIds}
+          assignmentId={assignmentId ?? assignment.id}
         />
       )}
     </div>

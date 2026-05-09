@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   BookOpen,
   FileText,
@@ -132,21 +135,44 @@ interface AssignmentSourceBaseProps {
   allModuleSources: SourceFile[];
   initialSelectedIds: string[];
   readOnly?: boolean;
+  assignmentId?: string;
 }
 
 export function AssignmentSourceBase({
   allModuleSources,
   initialSelectedIds,
   readOnly = false,
+  assignmentId,
 }: AssignmentSourceBaseProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
   const [filter, setFilter] = useState("");
 
+  const addSource = useMutation(api.assignments.addSource);
+  const removeSource = useMutation(api.assignments.removeSource);
+
   const toggle = (id: string) => {
     if (readOnly) return;
+    const isSelected = selectedIds.includes(id);
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      isSelected ? prev.filter((x) => x !== id) : [...prev, id]
     );
+    if (assignmentId) {
+      if (isSelected) {
+        removeSource({
+          assignmentId: assignmentId as Id<"assignments">,
+          sourceId: id as Id<"sources">,
+        }).catch(() => {
+          setSelectedIds((prev) => [...prev, id]);
+        });
+      } else {
+        addSource({
+          assignmentId: assignmentId as Id<"assignments">,
+          sourceId: id as Id<"sources">,
+        }).catch(() => {
+          setSelectedIds((prev) => prev.filter((x) => x !== id));
+        });
+      }
+    }
   };
 
   const filtered = allModuleSources.filter(

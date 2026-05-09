@@ -15,9 +15,112 @@ import {
   ArrowRight,
   Loader2,
 } from "lucide-react";
-import { mockTools } from "@/lib/data/mock-data";
 import { useState } from "react";
 import Link from "next/link";
+import type { WorkbenchTool } from "@/lib/types";
+
+const tools: WorkbenchTool[] = [
+  {
+    id: "reading_summary",
+    title: "Reading Summary",
+    description: "Summarise a source by argument, method, concepts, evidence, and limitations.",
+    inputType: "One or more selected sources",
+    outputType: "Structured source summary",
+    icon: "BookOpen",
+    stages: ["understand"],
+    academicIntegrityNote: "Use summaries to orient your reading; verify claims against the original source.",
+  },
+  {
+    id: "concept_extractor",
+    title: "Concept Extractor",
+    description: "Extract key theories, concepts, and definitions from selected sources.",
+    inputType: "One or more selected sources",
+    outputType: "Concept cards with source references",
+    icon: "Lightbulb",
+    stages: ["understand"],
+    academicIntegrityNote: "Definitions are study aids and should be checked against the source text.",
+  },
+  {
+    id: "literature_matrix",
+    title: "Literature Matrix",
+    description: "Compare sources by claim, evidence, method, and relevance to the assignment question.",
+    inputType: "Multiple sources",
+    outputType: "Source comparison matrix",
+    icon: "Table",
+    stages: ["understand", "map"],
+    academicIntegrityNote: "The matrix organises sources; your synthesis remains your own work.",
+  },
+  {
+    id: "argument_map",
+    title: "Argument Map",
+    description: "Map claims, evidence links, counterarguments, and unresolved gaps.",
+    inputType: "Assignment question and selected sources",
+    outputType: "Argument structure",
+    icon: "Network",
+    stages: ["map"],
+    academicIntegrityNote: "Argument mapping supports planning without writing a submit-ready answer.",
+  },
+  {
+    id: "evidence_bank",
+    title: "Evidence Bank",
+    description: "Collect source passages and attach them to specific argument claims.",
+    inputType: "Selected sources or folder",
+    outputType: "Evidence links",
+    icon: "Database",
+    stages: ["map", "build"],
+    academicIntegrityNote: "All quoted or paraphrased material must be checked and cited by you.",
+  },
+  {
+    id: "argument_builder",
+    title: "Argument Builder",
+    description: "Turn an assignment question and evidence base into student-owned argument claims.",
+    inputType: "Assignment, rubric, and evidence links",
+    outputType: "Claim set with evidence gaps",
+    icon: "FileText",
+    stages: ["build"],
+    academicIntegrityNote: "Use this to test and refine your own line of argument, not to outsource writing.",
+  },
+  {
+    id: "counterargument_finder",
+    title: "Counterargument Finder",
+    description: "Identify plausible objections and locate source-grounded ways to address them.",
+    inputType: "Argument claims and sources",
+    outputType: "Counterarguments and evidence needs",
+    icon: "Swords",
+    stages: ["judge", "build"],
+    academicIntegrityNote: "Counterarguments strengthen your reasoning; final evaluation must be yours.",
+  },
+  {
+    id: "draft_review",
+    title: "Draft Review",
+    description: "Review a draft against the rubric, evidence base, and assignment question.",
+    inputType: "Draft text and marking rubric",
+    outputType: "Revision priorities",
+    icon: "MessageSquareText",
+    stages: ["refine"],
+    academicIntegrityNote: "Feedback should guide revision; Polis should not rewrite your draft for submission.",
+  },
+  {
+    id: "citation_safety_check",
+    title: "Citation Safety Check",
+    description: "Flag unsupported claims, risky paraphrases, and missing source links.",
+    inputType: "Draft text",
+    outputType: "Citation and evidence audit",
+    icon: "ShieldCheck",
+    stages: ["draft", "refine"],
+    academicIntegrityNote: "This reduces citation risk but does not replace your own verification.",
+  },
+  {
+    id: "research_gap_finder",
+    title: "Evidence Gap Finder",
+    description: "Judge whether the current source base can support the argument you want to make.",
+    inputType: "Assignment, arguments, and selected sources",
+    outputType: "Judgement with missing evidence",
+    icon: "Search",
+    stages: ["judge"],
+    academicIntegrityNote: "Gap analysis helps you decide what to read next; it cannot invent missing evidence.",
+  },
+];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -68,7 +171,7 @@ export function ToolsContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockTools.map((tool) => {
+        {tools.map((tool) => {
           const Icon = iconMap[tool.icon] || FileText;
           const isActive = activeTool === tool.id;
 

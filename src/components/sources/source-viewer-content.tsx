@@ -11,8 +11,6 @@ import {
   ExternalLink,
   Copy,
   RefreshCw,
-  Loader2,
-  Sparkles,
   StickyNote,
   Plus,
   Trash2,
@@ -20,13 +18,16 @@ import {
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 interface SourceViewerContentProps {
   source: {
     id: string;
     title: string;
     author: string;
-    year: number;
+    year: number | null;
     type: string;
     status: string;
     tags: string[];
@@ -48,6 +49,14 @@ interface SourceViewerContentProps {
     text: string;
     chunkIndex: number;
   }>;
+  notes: Array<{
+    id: string;
+    content: string;
+    tags: string[];
+    createdAt: string;
+  }>;
+  backHref: string;
+  backLabel: string;
 }
 
 const actions = [
@@ -64,32 +73,29 @@ export function SourceViewerContent({
   moduleTitle,
   moduleCode,
   chunks,
+  notes,
+  backHref,
+  backLabel,
 }: SourceViewerContentProps) {
-  const [regenerating, setRegenerating] = useState(false);
-  const [currentSummary, setCurrentSummary] = useState(source.summary);
-  const [currentArgument, setCurrentArgument] = useState(source.mainArgument);
-  const [currentConcepts, setCurrentConcepts] = useState(source.keyConcepts);
-  const [aiGenerated, setAiGenerated] = useState(false);
-
-  async function handleRegenerateSummary() {
-    setRegenerating(true);
-    setCurrentSummary(currentSummary);
-    setCurrentArgument(currentArgument);
-    setCurrentConcepts(currentConcepts);
-    setAiGenerated(true);
+  function handlePausedAnalysis() {
     alert("Source analysis is paused while the backend foundation migrates to Convex.");
-    setRegenerating(false);
   }
+
+  const bylineParts = [
+    source.author,
+    source.year ? `(${source.year})` : null,
+    source.pageCount ? `${source.pageCount} pages` : null,
+  ].filter(Boolean);
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 max-w-full">
       <div className="p-6 border-b border-border bg-card shrink-0 z-10 shadow-sm relative">
         <Link
-          href="/sources"
+          href={backHref}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Sources
+          {backLabel}
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -100,14 +106,18 @@ export function SourceViewerContent({
               <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
                 {getStatusLabel(source.status)}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {moduleTitle} &middot; {moduleCode}
-              </span>
+              {(moduleTitle || moduleCode) && (
+                <span className="text-xs text-muted-foreground">
+                  {[moduleTitle, moduleCode].filter(Boolean).join(" · ")}
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-bold leading-tight font-serif text-foreground">{source.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {source.author} ({source.year}) &middot; {source.pageCount} pages
-            </p>
+            {bylineParts.length > 0 && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {bylineParts.join(" · ")}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
@@ -164,30 +174,19 @@ export function SourceViewerContent({
               <div className="flex items-center justify-between mb-4">
                 <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   <FileText className="h-4 w-4 text-interpretation" />
-                  AI Summary
+                  Source Summary
                 </h2>
                 <button
-                  onClick={handleRegenerateSummary}
-                  disabled={regenerating}
+                  onClick={handlePausedAnalysis}
                   className="inline-flex items-center gap-1.5 text-xs text-interpretation hover:underline disabled:opacity-50 font-medium"
                 >
-                  {regenerating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
-                  {currentSummary ? "Regenerate" : "Generate"}
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Analysis Paused
                 </button>
               </div>
               <p className="font-serif text-sm leading-relaxed text-foreground">
-                {currentSummary || "No summary available yet. Click Generate to create an AI summary."}
+                {source.summary || "No generated summary is available. Runtime AI analysis is paused."}
               </p>
-              {(aiGenerated || currentSummary) && (
-                <div className="mt-4 flex items-center gap-1.5 text-[11px] font-medium text-interpretation bg-interpretation/10 inline-flex px-2 py-1 rounded-md">
-                  <Sparkles className="h-3 w-3" />
-                  AI-Generated Interpretation
-                </div>
-              )}
             </div>
 
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -196,7 +195,7 @@ export function SourceViewerContent({
                 Main Argument
               </h2>
               <p className="font-serif text-sm leading-relaxed text-foreground">
-                {currentArgument || "No argument extracted yet."}
+                {source.mainArgument || "No main argument has been extracted yet."}
               </p>
             </div>
             
@@ -206,7 +205,7 @@ export function SourceViewerContent({
                 Key Concepts
               </h2>
               <div className="flex flex-wrap gap-2">
-                {currentConcepts.map((concept: string) => (
+                {source.keyConcepts.map((concept: string) => (
                   <span
                     key={concept}
                     className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium"
@@ -214,25 +213,26 @@ export function SourceViewerContent({
                     {concept}
                   </span>
                 ))}
-                {currentConcepts.length === 0 && (
+                {source.keyConcepts.length === 0 && (
                   <p className="text-sm text-muted-foreground font-serif">No concepts extracted yet.</p>
                 )}
               </div>
             </div>
           </div>
 
-          <SourceNotesSection sourceId={source.id} />
+          <SourceNotesSection sourceId={source.id} notes={notes} />
 
           <div className="grid grid-cols-2 gap-3">
             {actions.map((action) => (
-              <Link
+              <button
                 key={action.label}
-                href="/assistant"
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:shadow-md hover:-translate-y-0.5 transition-all"
+                onClick={handlePausedAnalysis}
+                className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50"
               >
                 <action.icon className="h-4 w-4 text-muted-foreground" />
                 {action.label}
-              </Link>
+                <span className="ml-auto text-[10px] uppercase tracking-wider">Paused</span>
+              </button>
             ))}
           </div>
 
@@ -242,15 +242,15 @@ export function SourceViewerContent({
               Ask About This Source
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Use CoThinker to ask questions about this reading, extract arguments, compare with other sources, or plan how to use it in your assignment.
+              CoThinker questions about this source are paused until runtime AI is rebuilt on the Convex backend.
             </p>
-            <Link
-              href="/assistant"
+            <button
+              onClick={handlePausedAnalysis}
               className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source hover:underline"
             >
-              Open CoThinker
+              Analysis Paused
               <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -258,34 +258,55 @@ export function SourceViewerContent({
   );
 }
 
-function SourceNotesSection({ sourceId }: { sourceId: string }) {
-  const [notes, setNotes] = useState<Array<{ id: string; content: string; tags: string | null; createdAt: string }>>([]);
+function SourceNotesSection({
+  sourceId,
+  notes,
+}: {
+  sourceId: string;
+  notes: SourceViewerContentProps["notes"];
+}) {
+  const createNote = useMutation(api.notes.create);
+  const removeNote = useMutation(api.notes.remove);
   const [newNote, setNewNote] = useState("");
   const [newTags, setNewTags] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function addNote() {
     if (!newNote.trim()) return;
     setLoading(true);
-    setNotes([
-      {
-        id: `local-${Date.now()}`,
-        content: newNote,
-        tags: newTags || null,
-        createdAt: new Date().toISOString(),
-      },
-      ...notes,
-    ]);
-    setNewNote("");
-    setNewTags("");
-    setShowForm(false);
-    setLoading(false);
+    setError(null);
+    try {
+      await createNote({
+        sourceId: sourceId as Id<"sources">,
+        content: newNote.trim(),
+        tags: newTags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean),
+      });
+      setNewNote("");
+      setNewTags("");
+      setShowForm(false);
+    } catch {
+      setError("Failed to save note.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function deleteNote(noteId: string) {
-    void sourceId;
-    setNotes(notes.filter((n) => n.id !== noteId));
+    setRemovingId(noteId);
+    setError(null);
+    try {
+      await removeNote({ noteId: noteId as Id<"sourceNotes"> });
+    } catch {
+      setError("Failed to remove note.");
+    } finally {
+      setRemovingId(null);
+    }
   }
 
   return (
@@ -329,12 +350,18 @@ function SourceNotesSection({ sourceId }: { sourceId: string }) {
               {loading ? "Saving..." : "Save Note"}
             </button>
             <button
-              onClick={() => { setShowForm(false); setNewNote(""); }}
+              onClick={() => { setShowForm(false); setNewNote(""); setNewTags(""); }}
               className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-muted"
             >
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-danger/20 bg-danger/5 p-3 text-xs text-danger">
+          {error}
         </div>
       )}
 
@@ -349,16 +376,17 @@ function SourceNotesSection({ sourceId }: { sourceId: string }) {
               <p className="text-sm text-muted-foreground flex-1 whitespace-pre-wrap">{note.content}</p>
               <button
                 onClick={() => deleteNote(note.id)}
+                disabled={removingId === note.id}
                 className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-danger"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             </div>
-            {note.tags && (
+            {note.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {note.tags.split(",").map((tag: string) => (
+                {note.tags.map((tag: string) => (
                   <span key={tag} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                    {tag.trim()}
+                    {tag}
                   </span>
                 ))}
               </div>

@@ -50,6 +50,7 @@ interface AssignmentWorkspaceShellProps {
   judgements?: Judgement[];
   workingThesis?: string;
   assignmentSources?: SourceFile[];
+  assignmentConvexId?: string;
 }
 
 function StagePlaceholder({ label, description, icon: Icon }: { label: string; description: string; icon: React.ElementType }) {
@@ -77,6 +78,7 @@ export function AssignmentWorkspaceShell({
   judgements = [],
   workingThesis,
   assignmentSources = [],
+  assignmentConvexId,
 }: AssignmentWorkspaceShellProps) {
   const [coThinkerOpen, setCoThinkerOpen] = useState(true);
 
@@ -97,6 +99,7 @@ export function AssignmentWorkspaceShell({
             assignment={assignment}
             allModuleSources={allModuleSources}
             activeStage={assignment.stage}
+            assignmentId={assignmentConvexId ?? assignment.id}
           />
         );
       case "understand":

@@ -1,5 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
+import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
 
 export const list = query({
@@ -173,6 +174,9 @@ export const addSource = mutation({
     if (!source || source.tokenIdentifier !== tokenIdentifier) {
       throw new Error("Not found");
     }
+    if (source.moduleId !== assignment.moduleId) {
+      throw new Error("Source and assignment must be in the same module");
+    }
 
     const existing = await ctx.db
       .query("assignmentSources")
@@ -213,5 +217,134 @@ export const removeSource = mutation({
 
     await ctx.db.delete(link._id);
     return link._id;
+  },
+});
+
+async function getModuleAndAssignment(
+  ctx: QueryCtx,
+  tokenIdentifier: string,
+  moduleId: Id<"modules">,
+  assignmentId: Id<"assignments">,
+) {
+  const mod = await ctx.db.get(moduleId);
+  if (!mod || mod.tokenIdentifier !== tokenIdentifier) return null;
+  const assignment = await ctx.db.get(assignmentId);
+  if (
+    !assignment ||
+    assignment.tokenIdentifier !== tokenIdentifier ||
+    assignment.moduleId !== moduleId
+  ) {
+    return null;
+  }
+  return { mod, assignment };
+}
+
+export const getWorkspaceBundle = query({
+  args: {
+    moduleId: v.id("modules"),
+    assignmentId: v.id("assignments"),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const pair = await getModuleAndAssignment(
+      ctx,
+      tokenIdentifier,
+      args.moduleId,
+      args.assignmentId,
+    );
+    if (!pair) return null;
+
+    const folders = await ctx.db
+      .query("folders")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("asc")
+      .take(100);
+
+    const moduleSources = await ctx.db
+      .query("sources")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(200);
+
+    const assignmentSourceLinks = await ctx.db
+      .query("assignmentSources")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(200);
+
+    const selectedSourceIds = new Set(
+      assignmentSourceLinks.map((l) => l.sourceId),
+    );
+    const selectedSources = moduleSources.filter((s) =>
+      selectedSourceIds.has(s._id),
+    );
+
+    const selectedSourceNotes: Doc<"sourceNotes">[] = [];
+    for (const source of selectedSources) {
+      const notes = await ctx.db
+        .query("sourceNotes")
+        .withIndex("by_source", (q) => q.eq("sourceId", source._id))
+        .take(100);
+      selectedSourceNotes.push(...notes);
+    }
+
+    const argsList = await ctx.db
+      .query("arguments")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("asc")
+      .take(100);
+
+    const evidence: Doc<"evidenceLinks">[] = [];
+    for (const arg of argsList) {
+      const links = await ctx.db
+        .query("evidenceLinks")
+        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
+        .take(100);
+      evidence.push(...links);
+    }
+
+    const latestDraft = await ctx.db
+      .query("drafts")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .first();
+
+    let latestReview: { run: Doc<"reviewRuns">; findings: Doc<"reviewFindings">[] } | null = null;
+    if (latestDraft) {
+      const reviewRun = await ctx.db
+        .query("reviewRuns")
+        .withIndex("by_draft", (q) => q.eq("draftId", latestDraft._id))
+        .order("desc")
+        .first();
+
+      if (reviewRun) {
+        const findings = await ctx.db
+          .query("reviewFindings")
+          .withIndex("by_reviewRun", (q) =>
+            q.eq("reviewRunId", reviewRun._id),
+          )
+          .take(100);
+        latestReview = { run: reviewRun, findings };
+      }
+    }
+
+    return {
+      module: pair.mod,
+      assignment: pair.assignment,
+      folders,
+      moduleSources,
+      assignmentSourceLinks,
+      selectedSources,
+      selectedSourceNotes,
+      arguments: argsList,
+      evidence,
+      latestDraft: latestDraft ?? null,
+      latestReview,
+    };
   },
 });

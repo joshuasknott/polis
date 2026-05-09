@@ -8,7 +8,7 @@ const COMPETITORS = [
   {
     id: "polis",
     name: "Polis",
-    bestFor: "Module-scoped coursework from messy inputs to a grounded assignment draft",
+    bestFor: "Module-scoped coursework: assignment focus, argument map, draft and refine",
     highlight: true,
   },
   {
@@ -119,9 +119,9 @@ export function CompetitorAnalysisSection() {
             The missing layer for coursework.
           </h2>
           <p className="mt-6 text-base sm:text-lg text-[#445f7c] leading-relaxed max-w-3xl">
-            Polis is best for university coursework when you need module context, assignment mapping,
-            source-backed planning, and grounded writing. Every other tool does something useful —
-            Polis connects the whole workflow.
+            Polis is best for university coursework when you need module context, assignment focus,
+            argument mapping, and source-grounded drafting and refinement. Every other tool does
+            something useful — Polis connects the whole workflow.
           </p>
         </div>
 

@@ -39,12 +39,36 @@ export const create = mutation({
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const now = Date.now();
 
-    return await ctx.db.insert("modules", {
+    const moduleId = await ctx.db.insert("modules", {
       ...args,
       tokenIdentifier,
       createdAt: now,
       updatedAt: now,
     });
+
+    const defaultFolders = [
+      { name: "Module Info", type: "module_info", sortOrder: 0 },
+      { name: "Readings", type: "readings", sortOrder: 1 },
+      { name: "Lecture and Seminar Material", type: "lecture_material", sortOrder: 2 },
+      { name: "Source Notes", type: "source_notes", sortOrder: 3 },
+      { name: "Assignments", type: "assignments", sortOrder: 4 },
+      { name: "Drafts and Reviews", type: "drafts_reviews", sortOrder: 5 },
+      { name: "Submissions", type: "submissions", sortOrder: 6 },
+    ];
+
+    for (const f of defaultFolders) {
+      await ctx.db.insert("folders", {
+        tokenIdentifier,
+        moduleId,
+        name: f.name,
+        type: f.type,
+        sortOrder: f.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return moduleId;
   },
 });
 
@@ -82,5 +106,77 @@ export const remove = mutation({
 
     await ctx.db.delete(args.moduleId);
     return args.moduleId;
+  },
+});
+
+export const listWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const mods = await ctx.db
+      .query("modules")
+      .withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", tokenIdentifier),
+      )
+      .order("desc")
+      .take(100);
+
+    const results = [];
+    for (const mod of mods) {
+      const sourceCount = (
+        await ctx.db
+          .query("sources")
+          .withIndex("by_module", (q) => q.eq("moduleId", mod._id))
+          .take(1000)
+      ).length;
+
+      const assignmentCount = (
+        await ctx.db
+          .query("assignments")
+          .withIndex("by_module", (q) => q.eq("moduleId", mod._id))
+          .take(1000)
+      ).length;
+
+      results.push({
+        ...mod,
+        sourceCount,
+        assignmentCount,
+      });
+    }
+    return results;
+  },
+});
+
+export const getWorkspaceBundle = query({
+  args: { moduleId: v.id("modules") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) return null;
+
+    const folders = await ctx.db
+      .query("folders")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("asc")
+      .take(100);
+
+    const sources = await ctx.db
+      .query("sources")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(200);
+
+    const assignments = await ctx.db
+      .query("assignments")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(100);
+
+    return {
+      module: mod,
+      folders,
+      sources,
+      assignments,
+    };
   },
 });

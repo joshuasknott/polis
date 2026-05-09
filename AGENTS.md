@@ -46,7 +46,7 @@ npm run db:studio    # Prisma Studio GUI
 - **API Routes**: `src/app/api/` — upload, assistant, essays, auth, settings (api-keys, profile, usage), sources, notes, tools
 - **Auth**: Auth.js v5 with credentials + OAuth (GitHub, Google), JWT sessions, middleware protection
 - **Database**: Prisma 7 with PostgreSQL via adapter-pg, schema at `prisma/schema.prisma`
-- **Mock Data**: Preserved at `src/lib/data/mock-data.ts` for reference; real data via DB
+- **Mock Data**: Runtime mock data has been removed; live app data should come from Convex
 
 ## Coding Standards
 
@@ -55,7 +55,7 @@ npm run db:studio    # Prisma Studio GUI
 - Tailwind CSS classes only (no CSS modules, no styled-components)
 - No comments unless explicitly requested
 - Clean imports: React hooks first, then libraries, then local modules
-- Types in `src/lib/types.ts`, mock data in `src/lib/data/mock-data.ts`
+- Types in `src/lib/types.ts`; live app data should come from Convex functions
 - Utility functions in `src/lib/utils.ts`
 - Database services in `src/lib/services/`
 - Components in `src/components/` organised by feature
@@ -130,7 +130,6 @@ src/
     crypto.ts             # AES-256-GCM encryption for API keys
     db.ts                 # Prisma client singleton
     auth.ts               # Auth.js configuration (credentials + OAuth)
-    data/mock-data.ts     # Original mock data (preserved)
     ai/                   # AI provider stubs + grounded provider
       providers.ts        # Provider registry with user-level key resolution
       openai-provider.ts  # OpenAI SDK (chat + embeddings)

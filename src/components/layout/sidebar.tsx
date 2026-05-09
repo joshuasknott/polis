@@ -15,6 +15,9 @@ import {
   StickyNote,
   PenTool,
   ArrowLeft,
+  Presentation,
+  FileEdit,
+  CheckSquare,
 } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
@@ -91,10 +94,13 @@ export function Sidebar({
             
             <div className="space-y-0.5">
               {[
-                { name: "Overview", id: "overview", icon: Info, href: `/modules/${moduleContext.id}?tab=overview` },
-                { name: "Sources", id: "sources", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=sources` },
-                { name: "Notes", id: "notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=notes` },
+                { name: "Module Info", id: "module-info", icon: Info, href: `/modules/${moduleContext.id}?tab=module-info` },
+                { name: "Readings", id: "readings", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=readings` },
+                { name: "Lectures", id: "lectures", icon: Presentation, href: `/modules/${moduleContext.id}?tab=lectures` },
+                { name: "Source Notes", id: "source-notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=source-notes` },
                 { name: "Assignments", id: "assignments", icon: PenTool, href: `/modules/${moduleContext.id}?tab=assignments` },
+                { name: "Drafts & Reviews", id: "drafts", icon: FileEdit, href: `/modules/${moduleContext.id}?tab=drafts` },
+                { name: "Submissions", id: "submissions", icon: CheckSquare, href: `/modules/${moduleContext.id}?tab=submissions` },
               ].map((item) => {
                 const isActive = moduleContext.activeTab === item.id;
                 return (

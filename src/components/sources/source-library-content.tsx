@@ -155,7 +155,7 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
         <Upload className="h-6 w-6 text-muted-foreground mx-auto" />
         <p className="mt-2 text-sm font-medium">Upload New Sources</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Drop PDF, DOCX, TXT, or Markdown files. They will be extracted and chunked automatically.
+          Upload, extraction, and chunking are paused while the Convex backend foundation is completed.
         </p>
         <UploadButton modules={modules} />
       </div>

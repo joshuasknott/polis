@@ -117,7 +117,7 @@ export function AssistantContent({
       <div>
         <h1 className="text-2xl font-bold tracking-tight">CoThinker</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ask questions about modules, assignments, arguments, and sources. Answers are source-grounded.
+          Module, assignment, and source context is live. Runtime AI responses are paused.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export function AssistantContent({
             )}
           >
             <Zap className="h-3 w-3" />
-            {aiConfigured ? `AI Connected (${providerName})` : "Template Mode"}
+            {aiConfigured ? `AI Connected (${providerName})` : "AI Paused"}
           </span>
         </div>
       </div>
@@ -199,11 +199,11 @@ export function AssistantContent({
         </div>
 
         <div className="max-h-[500px] overflow-y-auto p-4 space-y-4 scrollbar-thin">
-          {messages.length === 0 && (
+              {messages.length === 0 && (
             <div className="text-center py-8">
               <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                Ask a question about your uploaded sources.
+                Runtime AI is paused while the Convex backend foundation is completed.
               </p>
               <div className="mt-4 space-y-2">
                 {[
@@ -311,7 +311,7 @@ export function AssistantContent({
             <div className="rounded-lg bg-muted/50 p-4 flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                {aiConfigured ? "Searching sources and generating response..." : "Searching sources..."}
+                {aiConfigured ? "Generating response..." : "Preparing paused AI response..."}
               </span>
             </div>
           )}
@@ -337,8 +337,8 @@ export function AssistantContent({
           </form>
           <p className="mt-2 text-xs text-muted-foreground">
             {aiConfigured
-              ? "Answers are AI-generated from your uploaded sources with hybrid retrieval. Every claim should cite a source."
-              : "Answers use template-based keyword retrieval. Connect an AI provider for richer responses."}
+              ? "AI responses should cite uploaded sources and warn when evidence is insufficient."
+              : "Runtime AI and retrieval are paused. Live module and source context is available for future wiring."}
           </p>
         </div>
       </div>
@@ -350,8 +350,7 @@ export function AssistantContent({
             Citation Safety
           </h3>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-            Every claim is labelled as source-supported, interpretation, or general context.
-            Unsupported claims are flagged with warnings. No fabricated citations.
+            Future AI responses must label claims as source-supported, interpretation, or general context, and must not fabricate citations.
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5">
@@ -361,9 +360,9 @@ export function AssistantContent({
           </h3>
           <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
             {aiConfigured
-              ? "Hybrid retrieval (semantic + keyword) finds the most relevant chunks. AI generates grounded responses with citations."
-              : "Answers reference specific sources and chunks from your uploaded materials."}
-            {sources.length === 0 && " Upload sources first to get grounded responses."}
+              ? "Source-grounded retrieval will be used for AI responses."
+              : "Source retrieval and runtime AI are paused during the Convex migration."}
+            {sources.length === 0 && " Add sources before future grounded responses can work."}
           </p>
         </div>
       </div>

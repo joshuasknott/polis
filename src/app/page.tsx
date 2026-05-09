@@ -1,5 +1,6 @@
 import { LandingNav } from "@/components/landing/landing-nav";
 import { HeroSandboxWorkspace } from "@/components/landing/hero-sandbox-workspace";
+import { ProductModelSection } from "@/components/landing/product-model-section";
 import { HowItWorksStack } from "@/components/landing/how-it-works-stack";
 import { UseCasesSection } from "@/components/landing/use-cases-section";
 import { GroundedGenerationSection } from "@/components/landing/grounded-generation-section";
@@ -11,6 +12,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white text-[#0f284d] antialiased">
       <LandingNav />
       <HeroSandboxWorkspace />
+      <ProductModelSection />
       <HowItWorksStack />
       <UseCasesSection />
       <GroundedGenerationSection />

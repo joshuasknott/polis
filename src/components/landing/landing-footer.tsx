@@ -71,8 +71,8 @@ export function LandingFooter() {
                 />
               </Link>
               <p className="text-sm text-[#445f7c] max-w-xs leading-relaxed">
-                A sandboxed workspace for social science coursework. Upload sources, generate
-                grounded writing, and keep every claim evidence-locked.
+                A coursework workspace for social science students. Plan, draft, and refine
+                with source-grounded guidance — every claim stays evidence-locked.
               </p>
             </div>
             <div>

@@ -47,8 +47,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Current Status
 
 - **Auth/user identity**: Clerk + Convex. Users sign in via Clerk, identity flows to Convex through JWT templates and `ctx.auth.getUserIdentity()`.
-- **Product data**: Still mock/placeholder. Modules, sources, essays, tools, and assistant use static mock data pending future migration to Convex.
-- **Runtime AI**: Intentionally paused. No AI provider integrations are active.
+- **Product data**: Modules, assignments, sources, chunks, notes, drafts, evidence, and CoThinker session metadata are wired to Convex where UI exists. Legacy runtime mock data has been removed.
+- **Source viewer**: Reads source, module, extracted chunks, and source notes from Convex. Notes can be created and removed through Convex mutations.
+- **Paused capabilities**: Upload, file extraction, RAG/retrieval, source analysis generation, runtime AI, and AI provider key storage are not complete and remain paused in the UI.
 
 ## Scripts
 
@@ -68,10 +69,10 @@ src/
   app/                    # Next.js App Router pages
     sign-in/[[...sign-in]]/  # Clerk sign-in page
     sign-up/[[...sign-up]]/  # Clerk sign-up page
-    dashboard/            # Dashboard (mock data)
-    modules/[moduleId]/   # Module workspace (mock data)
-    sources/              # Source library (mock data)
-    sources/[sourceId]/   # Source viewer (mock data)
+    dashboard/            # Dashboard backed by Convex modules
+    modules/[moduleId]/   # Module workspace backed by Convex
+    sources/              # Source library backed by Convex
+    sources/[sourceId]/   # Source viewer backed by Convex
     assistant/            # Assistant placeholder
     essays/[essayId]/     # Essay workspace placeholder
     tools/                # Academic tools placeholder
@@ -80,12 +81,11 @@ src/
   lib/
     types.ts              # TypeScript type definitions
     utils.ts              # Utility functions
-    data/mock-data.ts     # Mock data (preserved for now)
 convex/
   auth.config.ts          # Convex auth config for Clerk JWT validation
   schema.ts               # Convex schema
   users.ts                # User profile queries/mutations (auth-gated)
-  *.ts                    # Other Convex functions (placeholder)
+  *.ts                    # Convex functions for product data and paused AI foundations
 ```
 
 ## Authentication

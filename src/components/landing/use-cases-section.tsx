@@ -17,139 +17,142 @@ const USE_CASES = [
     degree: "Politics",
     icon: Landmark,
     general:
-      "Useful for theory-heavy essays, policy memos, comparative politics, political economy, and international relations.",
+      "Theory-heavy essays, policy memos, comparative politics, political economy, and international relations.",
     example:
       "2,500-word essay on whether institutional design explains democratic backsliding.",
-    inputs: [
-      "Assignment brief",
-      "Lecture notes on democratic backsliding",
-      "Democracy readings (Levitsky, Mounk)",
-      "Policy reports",
-      "Rough argument notes",
+    module: {
+      name: "POL2041 Comparative Government",
+      sources: "12 readings, 8 lecture decks, 3 policy reports",
+    },
+    assignment: {
+      question: "Does institutional design explain democratic backsliding in Central Europe?",
+      relevantSources: "6 of 12 readings scoped to assignment",
+    },
+    argument: [
+      "Theories of institutional erosion mapped",
+      "Cases: Hungary, Turkey, Poland — evidence allocated",
+      "Counterarguments from comparative politics linked",
     ],
-    maps: [
-      "Theories of institutional erosion",
-      "Cases: Hungary, Turkey, Poland",
-      "Evidence for/against institutional explanations",
-      "Counterarguments from comparative politics",
-    ],
-    output:
-      "Argument-led structure and source-backed draft sections with evidence links.",
+    outcome:
+      "Argument-led draft with point-by-point source links. Refined against rubric with 2 evidence gaps flagged.",
   },
   {
     id: "law",
     degree: "Law",
     icon: Scale,
     general:
-      "Useful for academic coursework, case notes, statute/source organisation, problem-question planning, and seminar prep.",
+      "Academic coursework, case notes, statute/source organisation, problem-question planning, and seminar prep.",
     example: "Problem question on negligence and duty of care.",
-    inputs: [
-      "Problem question",
-      "Case reports and judicial decisions",
-      "Statute extracts",
-      "Lecture notes",
-      "Seminar discussion notes",
+    module: {
+      name: "LAW2003 Tort Law",
+      sources: "18 case reports, 4 statute extracts, 10 lecture notes",
+    },
+    assignment: {
+      question: "Advise the claimant on whether a duty of care exists in the given scenario.",
+      relevantSources: "8 case reports, 2 statutes scoped to problem question",
+    },
+    argument: [
+      "Legal issues identified and mapped to authorities",
+      "Factual links to problem facts established",
+      "Competing judicial interpretations linked",
     ],
-    maps: [
-      "Legal issues identified",
-      "Relevant authorities per issue",
-      "Factual links to problem facts",
-      "Competing interpretations",
-    ],
-    output:
-      "Issue-authority matrix and structured coursework answer plan. No legal advice — academic planning only.",
+    outcome:
+      "Issue-authority matrix and structured answer plan. Refined with citation coverage scan — no legal advice, academic planning only.",
   },
   {
     id: "sociology",
     degree: "Sociology",
     icon: Users,
     general:
-      "Useful for theory synthesis, qualitative methods, interview analysis, field notes, and empirical studies.",
+      "Theory synthesis, qualitative methods, interview analysis, field notes, and empirical studies.",
     example:
       "Coursework analysing class identity through interview excerpts and Bourdieu.",
-    inputs: [
-      "Interview notes and field notes",
-      "Theory readings (Giddens, Bourdieu)",
-      "Methodology lecture slides",
-      "Literature review brief",
+    module: {
+      name: "SOC2012 Social Stratification",
+      sources: "8 theory readings, interview transcripts, 6 methodology notes",
+    },
+    assignment: {
+      question: "How does cultural capital shape educational attainment in working-class communities?",
+      relevantSources: "5 theory readings, 3 interview sets scoped to assignment",
+    },
+    argument: [
+      "Themes and codes mapped across theorists",
+      "Interview evidence allocated to each claim",
+      "Methodological frameworks linked to analysis",
     ],
-    maps: [
-      "Themes, codes, and key concepts",
-      "Convergence across theorists",
-      "Evidence by assignment brief",
-      "Methodological frameworks",
-    ],
-    output:
-      "Coded analysis map and source-backed sociology argument with literature review structure.",
+    outcome:
+      "Coded analysis map and source-backed argument. Draft refined with literature review structure and evidence gap warnings.",
   },
   {
     id: "business",
     degree: "Business",
     icon: Briefcase,
     general:
-      "Useful for case study analysis, strategy coursework, organisational behaviour, management memos, and reports.",
+      "Case study analysis, strategy coursework, organisational behaviour, management memos, and reports.",
     example: "Strategic analysis of a retailer entering a new market.",
-    inputs: [
-      "Case study pack (40+ pages)",
-      "Strategy framework readings",
-      "Company reports and financial data",
-      "Lecture slides on Porter and RBV",
-      "Rough recommendation notes",
-    ],
-    maps: [
+    module: {
+      name: "BUS3001 Strategic Management",
+      sources: "Case study pack, 6 framework readings, company reports",
+    },
+    assignment: {
+      question: "Evaluate whether TechRetail should expand into the Southeast Asian market.",
+      relevantSources: "Case facts, 4 strategy frameworks, 2 regional reports scoped",
+    },
+    argument: [
       "Applicable frameworks: Porter, RBV, institutional theory",
-      "Risks and supporting evidence",
-      "Counterpoints to recommendation",
-      "Case facts mapped to analysis",
+      "Risks and supporting evidence allocated",
+      "Counterpoints to recommendation mapped",
     ],
-    output:
-      "Management memo plan with evidence-backed strategic recommendations.",
+    outcome:
+      "Management memo plan with evidence-backed recommendations. Refined against rubric criteria with word budget allocated.",
   },
   {
     id: "economics",
     degree: "Economics",
     icon: TrendingUp,
     general:
-      "Useful for policy evaluation, model comparison, empirical reading notes, and economic argumentation.",
+      "Policy evaluation, model comparison, empirical reading notes, and economic argumentation.",
     example:
       "Policy brief on whether rent controls improve housing affordability.",
-    inputs: [
-      "Policy brief document",
-      "Empirical papers (IMF, working papers)",
-      "Model and data commentary notes",
-      "Lecture notes on market intervention",
+    module: {
+      name: "ECN2015 Public Economics",
+      sources: "10 empirical papers, 4 model commentaries, policy docs",
+    },
+    assignment: {
+      question: "Evaluate the effectiveness of rent controls as a policy instrument for housing affordability.",
+      relevantSources: "6 empirical papers, 2 policy evaluations scoped to assignment",
+    },
+    argument: [
+      "Assumptions and tradeoffs mapped per model",
+      "Empirical evidence allocated to evaluation points",
+      "Policy limitations and counterarguments linked",
     ],
-    maps: [
-      "Assumptions and tradeoffs",
-      "Empirical evidence per evaluation point",
-      "Policy limitations",
-      "Counterarguments from source material",
-    ],
-    output:
-      "Policy evaluation plan and evidence-backed economic brief.",
+    outcome:
+      "Policy evaluation plan with evidence-backed brief. Draft refined with rubric alignment and evidence sufficiency check.",
   },
   {
     id: "history",
     degree: "History",
     icon: BookOpen,
     general:
-      "Useful for historiography essays, primary/secondary source comparison, chronology, and evidence-led argument.",
+      "Historiography essays, primary/secondary source comparison, chronology, and evidence-led argument.",
     example:
       "Historiography essay on causes of the Russian Revolution.",
-    inputs: [
-      "Primary source extracts",
-      "Secondary and historiographical readings",
-      "Historiography notes",
-      "Essay brief and marking criteria",
-    ],
-    maps: [
+    module: {
+      name: "HIS2008 Modern European History",
+      sources: "Primary extracts, 12 historiographical readings, lecture notes",
+    },
+    assignment: {
+      question: "To what extent was the Russian Revolution of 1917 caused by structural economic factors?",
+      relevantSources: "4 primary sources, 7 secondary readings scoped to essay question",
+    },
+    argument: [
       "Schools of interpretation: revisionist, orthodox, post-revisionist",
-      "Chronological source mapping",
-      "Source relevance by argument",
-      "Evidence gaps and contested claims",
+      "Chronological source mapping to argument structure",
+      "Evidence gaps and contested claims flagged",
     ],
-    output:
-      "Historiography map and argument plan with primary and secondary citations.",
+    outcome:
+      "Historiography map and argument plan. Draft refined with primary and secondary citation balance checked.",
   },
 ];
 
@@ -175,13 +178,11 @@ export function UseCasesSection() {
             Built for coursework across the social sciences.
           </h2>
           <p className="mt-6 text-lg text-[#445f7c] leading-relaxed">
-            Polis adapts to essays, policy memos, case notes, literature reviews, source analysis,
-            seminar prep, and assignment drafting — tailored to the way each degree actually
-            works.
+            Every discipline follows the same structure: module context, assignment focus, argument
+            map, and a draft refined with source-grounded guidance.
           </p>
         </div>
 
-        {/* Degree selector + deep dive layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left: degree selector list */}
           <div className="lg:col-span-3">
@@ -220,7 +221,7 @@ export function UseCasesSection() {
             </div>
           </div>
 
-          {/* Right: detailed deep-dive panel */}
+          {/* Right: detailed panel — module → assignment → argument → draft/refine */}
           <div className="lg:col-span-9">
             <AnimatePresence mode="wait">
               <motion.div
@@ -242,64 +243,58 @@ export function UseCasesSection() {
                   </div>
                 </div>
 
-                {/* Example assignment */}
+                {/* Module context */}
                 <div className="px-6 lg:px-8 py-4 bg-[#fafbfc] border-b border-[#f1f5f9]">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-1.5">
-                    Example assignment
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#0f284d] mb-1.5">
+                        Module workspace
+                      </div>
+                      <p className="text-sm font-medium text-[#0f284d]">{activeCase.module.name}</p>
+                      <p className="text-[12px] text-[#445f7c] mt-0.5">{activeCase.module.sources}</p>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#ba9858] mb-1.5">
+                        Assignment focus
+                      </div>
+                      <p className="text-sm text-[#0f284d] leading-snug">
+                        &ldquo;{activeCase.assignment.question}&rdquo;
+                      </p>
+                      <p className="text-[12px] text-[#ba9858] mt-0.5">{activeCase.assignment.relevantSources}</p>
+                    </div>
                   </div>
-                  <p className="text-sm font-medium text-[#0f284d] leading-snug">
-                    &ldquo;{activeCase.example}&rdquo;
-                  </p>
                 </div>
 
-                {/* Three-column breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3">
-                  {/* Inputs */}
+                {/* Argument map + Draft/Refine outcome */}
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  {/* Argument map */}
                   <div className="p-6 lg:p-7 border-b md:border-b-0 md:border-r border-[#f1f5f9]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#445f7c]" />
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#445f7c]">
-                        Messy inputs
-                      </div>
-                    </div>
-                    <ul className="space-y-2">
-                      {activeCase.inputs.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5">
-                          <div className="w-1 h-1 rounded-full bg-[#cbd5e1] mt-2 shrink-0" />
-                          <span className="text-sm text-[#334155] leading-snug">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* What Polis maps */}
-                  <div className="p-6 lg:p-7 border-b md:border-b-0 md:border-r border-[#f1f5f9] bg-[#fafbfc]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#ba9858]" />
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#ba9858]">
-                        What Polis maps
-                      </div>
-                    </div>
-                    <ul className="space-y-2">
-                      {activeCase.maps.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2.5">
-                          <div className="w-1 h-1 rounded-full bg-[#ba9858]/60 mt-2 shrink-0" />
-                          <span className="text-sm text-[#334155] leading-snug">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Output */}
-                  <div className="p-6 lg:p-7">
                     <div className="flex items-center gap-2 mb-4">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#0f284d]" />
                       <div className="text-[10px] font-bold uppercase tracking-widest text-[#0f284d]">
-                        Final output
+                        Argument map
+                      </div>
+                    </div>
+                    <ul className="space-y-2">
+                      {activeCase.argument.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2.5">
+                          <div className="w-1 h-1 rounded-full bg-[#ba9858] mt-2 shrink-0" />
+                          <span className="text-sm text-[#334155] leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Draft / Refine outcome */}
+                  <div className="p-6 lg:p-7">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#ba9858]" />
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-[#ba9858]">
+                        Draft & Refine outcome
                       </div>
                     </div>
                     <div className="rounded-xl border border-[#e2e8f0] bg-white p-4">
-                      <p className="text-sm text-[#334155] leading-relaxed">{activeCase.output}</p>
+                      <p className="text-sm text-[#334155] leading-relaxed">{activeCase.outcome}</p>
                     </div>
                     <div className="mt-4 flex items-center gap-1.5 text-[10px] text-[#ba9858] font-medium">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#ba9858]" />
@@ -309,8 +304,6 @@ export function UseCasesSection() {
                 </div>
               </motion.div>
             </AnimatePresence>
-
-            {/* Mobile: accordion fallback is handled by the same selector above being stacked */}
           </div>
         </div>
       </div>
