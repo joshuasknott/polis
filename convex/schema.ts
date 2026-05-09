@@ -145,6 +145,7 @@ export default defineSchema({
     stage: productionStage,
     contextVersion: v.optional(v.number()),
     contextUpdatedAt: v.optional(v.number()),
+    thesis: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -441,4 +442,19 @@ export default defineSchema({
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_source", ["source"]),
+
+  sectionPlans: defineTable({
+    tokenIdentifier: v.string(),
+    assignmentId: v.id("assignments"),
+    label: v.string(),
+    wordBudget: v.number(),
+    argumentIds: v.optional(v.array(v.id("arguments"))),
+    counterargumentPlan: v.optional(v.string()),
+    rebuttalPlan: v.optional(v.string()),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_assignment", ["assignmentId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
 });

@@ -137,6 +137,121 @@ export const updateStage = mutation({
   },
 });
 
+export const updateThesis = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    thesis: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(args.assignmentId, {
+      thesis: args.thesis,
+      updatedAt: Date.now(),
+    });
+    return args.assignmentId;
+  },
+});
+
+export const listSectionPlans = query({
+  args: { assignmentId: v.id("assignments") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) return [];
+
+    return await ctx.db
+      .query("sectionPlans")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("asc")
+      .take(50);
+  },
+});
+
+export const createSectionPlan = mutation({
+  args: {
+    assignmentId: v.id("assignments"),
+    label: v.string(),
+    wordBudget: v.number(),
+    argumentIds: v.optional(v.array(v.id("arguments"))),
+    counterargumentPlan: v.optional(v.string()),
+    rebuttalPlan: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const assignment = await ctx.db.get(args.assignmentId);
+    if (!assignment || assignment.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const now = Date.now();
+    return await ctx.db.insert("sectionPlans", {
+      tokenIdentifier,
+      assignmentId: args.assignmentId,
+      label: args.label,
+      wordBudget: args.wordBudget,
+      argumentIds: args.argumentIds,
+      counterargumentPlan: args.counterargumentPlan,
+      rebuttalPlan: args.rebuttalPlan,
+      sortOrder: args.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateSectionPlan = mutation({
+  args: {
+    sectionPlanId: v.id("sectionPlans"),
+    label: v.optional(v.string()),
+    wordBudget: v.optional(v.number()),
+    argumentIds: v.optional(v.array(v.id("arguments"))),
+    counterargumentPlan: v.optional(v.string()),
+    rebuttalPlan: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const { sectionPlanId, ...updates } = args;
+    const plan = await ctx.db.get(sectionPlanId);
+    if (!plan || plan.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    if (updates.label !== undefined) patch.label = updates.label;
+    if (updates.wordBudget !== undefined) patch.wordBudget = updates.wordBudget;
+    if (updates.argumentIds !== undefined) patch.argumentIds = updates.argumentIds;
+    if (updates.counterargumentPlan !== undefined) patch.counterargumentPlan = updates.counterargumentPlan;
+    if (updates.rebuttalPlan !== undefined) patch.rebuttalPlan = updates.rebuttalPlan;
+    if (updates.sortOrder !== undefined) patch.sortOrder = updates.sortOrder;
+
+    await ctx.db.patch(sectionPlanId, patch);
+    return sectionPlanId;
+  },
+});
+
+export const removeSectionPlan = mutation({
+  args: { sectionPlanId: v.id("sectionPlans") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const plan = await ctx.db.get(args.sectionPlanId);
+    if (!plan || plan.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.delete(args.sectionPlanId);
+    return args.sectionPlanId;
+  },
+});
+
 export const remove = mutation({
   args: { assignmentId: v.id("assignments") },
   handler: async (ctx, args) => {
@@ -348,6 +463,38 @@ export const getWorkspaceBundle = query({
       evidence.push(...links);
     }
 
+    const counterargumentNodes: Doc<"argumentNodes">[] = [];
+    for (const arg of argsList) {
+      const nodes = await ctx.db
+        .query("argumentNodes")
+        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
+        .take(100);
+      counterargumentNodes.push(...nodes.filter((n) => n.type === "counterargument"));
+    }
+
+    const judgementOptions = await ctx.db
+      .query("judgementOptions")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .take(50);
+
+    const judgementDecisions = await ctx.db
+      .query("judgementDecisions")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("desc")
+      .take(50);
+
+    const sectionPlans = await ctx.db
+      .query("sectionPlans")
+      .withIndex("by_assignment", (q) =>
+        q.eq("assignmentId", args.assignmentId),
+      )
+      .order("asc")
+      .take(50);
+
     const latestDraft = await ctx.db
       .query("drafts")
       .withIndex("by_assignment_and_version", (q) =>
@@ -388,6 +535,10 @@ export const getWorkspaceBundle = query({
       selectedSourceNotes,
       arguments: argsList,
       evidence,
+      counterargumentNodes,
+      judgementOptions,
+      judgementDecisions,
+      sectionPlans,
       latestDraft: latestDraft ?? null,
       latestReview,
     };

@@ -13,6 +13,7 @@ import {
   mapEvidenceLink,
   mapDraft,
   mapReview,
+  mapJudgement,
 } from "@/lib/convex-ui-mappers";
 
 interface AssignmentWorkspaceDataProps {
@@ -81,8 +82,15 @@ export function AssignmentWorkspaceData({
     );
   }
 
+  const counterNodesByArgId = new Map<string, typeof bundle.counterargumentNodes>();
+  for (const node of bundle.counterargumentNodes ?? []) {
+    const argId = node.argumentId as string;
+    if (!counterNodesByArgId.has(argId)) counterNodesByArgId.set(argId, []);
+    counterNodesByArgId.get(argId)!.push(node);
+  }
+
   const assignmentArguments = bundle.arguments.map((arg) =>
-    mapArgument(arg, evidenceByArgId.get(arg._id as string) ?? []),
+    mapArgument(arg, evidenceByArgId.get(arg._id as string) ?? [], counterNodesByArgId.get(arg._id as string) ?? []),
   );
 
   const draft = bundle.latestDraft ? mapDraft(bundle.latestDraft) : undefined;
@@ -95,6 +103,23 @@ export function AssignmentWorkspaceData({
   const assignmentSources = allModuleSources.filter((s) =>
     selectedSourceIdSet.has(s.id),
   );
+
+  const judgements = (bundle.judgementOptions ?? []).map((opt) =>
+    mapJudgement(opt, bundle.judgementDecisions ?? []),
+  );
+
+  const workingThesis = bundle.assignment.thesis ?? undefined;
+
+  const sectionPlans = (bundle.sectionPlans ?? []).map((p) => ({
+    id: p._id,
+    assignmentId: p.assignmentId,
+    label: p.label,
+    wordBudget: p.wordBudget,
+    argumentIds: (p.argumentIds ?? []) as string[],
+    counterargumentPlan: p.counterargumentPlan ?? "",
+    rebuttalPlan: p.rebuttalPlan ?? "",
+    sortOrder: p.sortOrder,
+  }));
 
   const fullModule = {
     ...mod,
@@ -109,10 +134,12 @@ export function AssignmentWorkspaceData({
       assignmentArguments={assignmentArguments}
       draft={draft}
       review={review}
-      judgements={[]}
+      judgements={judgements}
+      workingThesis={workingThesis}
       assignmentSources={assignmentSources}
       assignmentConvexId={assignmentId}
       moduleConvexId={moduleId}
+      sectionPlans={sectionPlans}
     />
   );
 }

@@ -394,3 +394,14 @@ export interface InsufficientEvidenceWarning {
   message: string;
   severity: "info" | "warning" | "critical";
 }
+
+export interface SectionPlan {
+  id: string;
+  assignmentId: string;
+  label: string;
+  wordBudget: number;
+  argumentIds: string[];
+  counterargumentPlan: string;
+  rebuttalPlan: string;
+  sortOrder: number;
+}
