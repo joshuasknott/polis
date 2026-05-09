@@ -9,6 +9,7 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as ai_keys from "../ai_keys.js";
 import type * as arguments from "../arguments.js";
 import type * as assignments from "../assignments.js";
 import type * as cothinker from "../cothinker.js";
@@ -34,6 +35,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  ai_keys: typeof ai_keys;
   arguments: typeof arguments;
   assignments: typeof assignments;
   cothinker: typeof cothinker;

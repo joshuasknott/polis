@@ -101,7 +101,7 @@ export type ProcessingJobType =
 
 export type ProcessingJobStatus = "pending" | "running" | "completed" | "failed";
 
-export type ProviderName = "openai" | "anthropic" | "google";
+export type ProviderName = "zai" | "gemini";
 
 export type ArgumentNodeType =
   | "premise"

@@ -121,9 +121,8 @@ export const processingJobStatus = v.union(
 );
 
 export const providerName = v.union(
-  v.literal("openai"),
-  v.literal("anthropic"),
-  v.literal("google"),
+  v.literal("zai"),
+  v.literal("gemini"),
 );
 
 export const argumentNodeType = v.union(
