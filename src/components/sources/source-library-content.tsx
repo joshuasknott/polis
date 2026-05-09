@@ -225,7 +225,11 @@ function UploadButton({ modules }: { modules: ModuleItem[] }) {
         folderType: "readings",
       });
 
-      const postUrl = await generateUploadUrl({});
+      const postUrl = await generateUploadUrl({
+        fileName: file.name,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+      });
 
       const uploadResult = await fetch(postUrl, {
         method: "POST",

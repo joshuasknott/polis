@@ -33,7 +33,7 @@ export function mapModule(
     themes: mod.themes ?? [],
     concepts: mod.concepts ?? [],
     learningOutcomes: mod.learningOutcomes ?? [],
-    contextVersion: mod.contextVersion,
+    contextVersion: mod.contextVersion ?? 1,
   };
 }
 

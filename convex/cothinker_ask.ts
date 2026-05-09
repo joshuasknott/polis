@@ -134,74 +134,6 @@ type AskResult = {
   providerUsed: string;
 };
 
-const STAGE_DIRECTIVES: Record<string, string> = {
-  ingest:
-    "The student is collecting and uploading sources. Help them identify what they have, what they still need, and whether their brief/rubric are covered. Ask about coverage gaps.",
-  understand:
-    "The student is reading and comprehending individual sources. Help them summarise main arguments, extract key concepts, and identify where authors agree or disagree.",
-  map:
-    "The student is connecting ideas across sources. Help them identify themes, tensions, theoretical overlaps, and evidence links between readings.",
-  judge:
-    "The student is evaluating their argument before writing. Help them find gaps, counterarguments, and assess evidence sufficiency for each planned claim.",
-  build:
-    "The student is structuring their assignment. Help them refine their thesis, organise sections, and allocate their word budget across arguments.",
-  draft:
-    "The student is writing their draft. Provide feedback on structure, citation accuracy, and argument flow. Remind them to cite sources and flag unsupported claims. Do NOT write content for them.",
-  refine:
-    "The student is polishing their draft. Help them check for unsupported claims, rubric alignment, citation safety, and overall coherence. Do NOT rewrite passages.",
-};
-
-const SYSTEM_PROMPT = `You are the Polis CoThinker — an academic reasoning companion for social science students.
-
-## Core Rules
-1. Every claim must be labelled: [Source-supported], [Interpretation], [General context], or [Unsupported].
-2. NEVER fabricate citations, authors, page numbers, or quotes.
-3. If you cannot find evidence in the provided source material, say so explicitly.
-4. Warn the student when evidence is insufficient for their claim.
-5. NEVER generate content that could be submitted as the student's own work.
-6. Support learning and critical thinking — do not replace the student's own analysis.
-
-## Citation Format
-- When drawing from a source, use: [Source N] in-line.
-- Quote directly when close to original text; paraphrase otherwise.
-- Always identify which source a claim comes from.
-
-## Response Structure
-- Lead with source-supported content when available.
-- Clearly separate your interpretation from what sources explicitly state.
-- End with a brief note on evidence quality.
-- Suggest 2-3 specific follow-up questions the student could ask.`;
-
-function buildContextPrompt(
-  stage: string | undefined,
-  assignmentContext: string | null,
-  sourceContext: string,
-  moduleContext: string | null,
-): string {
-  let prompt = SYSTEM_PROMPT + "\n\n";
-
-  if (stage && STAGE_DIRECTIVES[stage]) {
-    prompt += `## Current Stage: ${stage}\n${STAGE_DIRECTIVES[stage]}\n\n`;
-  }
-
-  if (moduleContext) {
-    prompt += `## Module Context\n${moduleContext}\n\n`;
-  }
-
-  if (assignmentContext) {
-    prompt += `## Assignment Context\n${assignmentContext}\n\n`;
-  }
-
-  if (sourceContext) {
-    prompt += `## Available Source Material\n${sourceContext}\n\n`;
-  } else {
-    prompt += `## Available Source Material\nNo source material is currently available. Inform the student and suggest uploading sources.\n\n`;
-  }
-
-  prompt += `Respond with clear labels. If no sources are available, be honest about it.`;
-  return prompt;
-}
-
 function buildFallbackResponse(
   query: string,
   stage: string | undefined,
@@ -250,12 +182,10 @@ function buildFallbackResponse(
   };
 }
 
-function buildSourceContext(chunks: RetrievedChunk[]): string {
-  if (chunks.length === 0) return "";
-
+function buildSourceContextItems(chunks: RetrievedChunk[]): string[] {
   return chunks
     .slice(0, 10)
-    .map((chunk, i) => {
+    .map((chunk) => {
       const citation = chunk.authors
         ? `${chunk.authors}${chunk.year ? ` (${chunk.year})` : ""}`
         : chunk.sourceTitle;
@@ -263,9 +193,8 @@ function buildSourceContext(chunks: RetrievedChunk[]): string {
         chunk.pageStart != null
           ? `, pp. ${chunk.pageStart}${chunk.pageEnd != null && chunk.pageEnd !== chunk.pageStart ? `-${chunk.pageEnd}` : ""}`
           : "";
-      return `[Source ${i + 1}] "${chunk.sourceTitle}" by ${citation}${pages}:\n${chunk.text}`;
-    })
-    .join("\n\n---\n\n");
+      return `"${chunk.sourceTitle}" by ${citation}${pages}:\n${chunk.text}`;
+    });
 }
 
 function keywordSearch(query: string, chunks: RetrievedChunk[], topK: number): RetrievedChunk[] {
@@ -502,7 +431,8 @@ export const ask = action({
       ? keywordSearch(args.query, allChunks, 8)
       : [];
 
-    const hasProvider = false;
+    const providerStatus = await ctx.runQuery(api.ai.getProviderStatus, {});
+    const hasProvider = providerStatus.configured;
 
     if (!hasProvider || !hasSources) {
       await ctx.runMutation(api.cothinker.addMessage, {
@@ -526,47 +456,33 @@ export const ask = action({
       return fallback;
     }
 
-    const sourceContext = buildSourceContext(relevantChunks);
-    const contextPrompt = buildContextPrompt(
-      session.stage,
-      assignmentContext,
-      sourceContext,
-      moduleContext,
-    );
+    const sourceContext = buildSourceContextItems(relevantChunks);
+    const contextParts = [moduleContext, assignmentContext].filter(Boolean);
+    const queryWithContext = contextParts.length > 0
+      ? `${contextParts.join("\n\n")}\n\nStudent question: ${args.query}`
+      : args.query;
 
     const messages = [
       ...recentHistory.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
-      { role: "user" as const, content: args.query },
+      { role: "user" as const, content: queryWithContext },
     ];
 
     let responseContent: string;
+    let providerUsed = providerStatus.provider ?? "configured";
 
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
-          messages: [
-            { role: "system", content: contextPrompt },
-            ...messages,
-          ],
-          temperature: 0.3,
-          max_tokens: 2048,
-        }),
+      const response = await ctx.runAction(api.ai.chat, {
+        messages,
+        stage: session.stage,
+        sources: sourceContext,
+        provider: providerStatus.provider ?? undefined,
+        model: providerStatus.model ?? undefined,
       });
-
-      if (!response.ok) {
-        throw new Error(`Provider error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      responseContent = data.choices?.[0]?.message?.content ?? "No response generated.";
+      responseContent = response.content;
+      providerUsed = response.provider ?? providerUsed;
     } catch {
       responseContent = `[General context] I encountered an error while generating a response. Your question was: "${args.query}"\n\nPlease try again. If the issue persists, check your provider settings.`;
     }
@@ -598,7 +514,7 @@ export const ask = action({
       warnings,
       followUpSuggestions,
       citedChunks,
-      providerUsed: "openai",
+      providerUsed,
     };
   },
 });

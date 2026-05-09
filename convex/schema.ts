@@ -41,8 +41,8 @@ export default defineSchema({
     themes: v.optional(v.array(v.string())),
     concepts: v.optional(v.array(v.string())),
     learningOutcomes: v.optional(v.array(v.string())),
-    contextVersion: v.number(),
-    contextUpdatedAt: v.number(),
+    contextVersion: v.optional(v.number()),
+    contextUpdatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -315,6 +315,7 @@ export default defineSchema({
     title: v.string(),
     scope: cothinkerScope,
     stage: v.optional(productionStage),
+    messageCount: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -403,6 +404,11 @@ export default defineSchema({
       "createdAt",
     ])
     .index("by_tokenIdentifier_and_type", ["tokenIdentifier", "type"])
+    .index("by_tokenIdentifier_and_type_and_createdAt", [
+      "tokenIdentifier",
+      "type",
+      "createdAt",
+    ])
     .index("by_tokenIdentifier_and_provider", ["tokenIdentifier", "provider"])
     .index("by_tokenIdentifier_and_model", ["tokenIdentifier", "model"]),
 
@@ -427,6 +433,10 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_createdAt", [
+      "tokenIdentifier",
+      "createdAt",
+    ])
     .index("by_source", ["source"]),
 
   sectionPlans: defineTable({

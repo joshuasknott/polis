@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
 import { internal } from "./_generated/api";
 import { sourceType, sourceStatus } from "./lib/validators";
-import { inferSourceType, normalizeFileType } from "./ingestion/lib";
+import { assertSupportedUpload, inferSourceType, normalizeFileType } from "./ingestion/lib";
 
 export const list = query({
   args: {
@@ -86,7 +86,7 @@ export const createForUpload = mutation({
       const folders = await ctx.db
         .query("folders")
         .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
-        .collect();
+        .take(20);
       const found = folders.find((f) => f.type === args.folderType);
       if (found) folderId = found._id;
     }
@@ -95,6 +95,14 @@ export const createForUpload = mutation({
       args.fileName ?? "",
       args.fileType,
     );
+
+    if (args.fileName || args.fileSize != null) {
+      assertSupportedUpload({
+        fileName: args.fileName,
+        fileType,
+        fileSize: args.fileSize,
+      });
+    }
 
     return await ctx.db.insert("sources", {
       tokenIdentifier,
@@ -235,12 +243,31 @@ export const attachStorage = mutation({
     }
 
     const now = Date.now();
+    const metadata = await ctx.db.system.get("_storage", args.storageId);
+    if (!metadata) {
+      throw new Error("Uploaded file not found");
+    }
+
+    const fileName = args.fileName ?? source.fileName;
+    let fileType: string;
+    try {
+      fileType = assertSupportedUpload({
+        fileName,
+        fileType: args.fileType ?? metadata.contentType,
+        fileSize: metadata.size,
+      });
+    } catch (error) {
+      try {
+        await ctx.storage.delete(args.storageId);
+      } catch {}
+      throw error;
+    }
 
     await ctx.db.patch(args.sourceId, {
       storageId: args.storageId,
-      fileName: args.fileName,
-      fileType: args.fileType,
-      fileSize: args.fileSize,
+      fileName,
+      fileType,
+      fileSize: metadata.size,
       status: "queued",
       errorMessage: undefined,
       updatedAt: now,

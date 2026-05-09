@@ -15,7 +15,7 @@ export const listConnections = query({
       .withIndex("by_tokenIdentifier", (q) =>
         q.eq("tokenIdentifier", tokenIdentifier),
       )
-      .collect();
+      .take(10);
 
     return connections.map((c) => ({
       provider: c.provider,

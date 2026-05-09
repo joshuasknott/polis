@@ -106,6 +106,7 @@ export const createSession = mutation({
     return await ctx.db.insert("coThinkerSessions", {
       ...args,
       tokenIdentifier,
+      messageCount: 0,
       createdAt: now,
       updatedAt: now,
     });
@@ -199,7 +200,10 @@ export const addMessage = mutation({
       createdAt: Date.now(),
     });
 
-    await ctx.db.patch(args.sessionId, { updatedAt: Date.now() });
+    await ctx.db.patch(args.sessionId, {
+      messageCount: (session.messageCount ?? 0) + 1,
+      updatedAt: Date.now(),
+    });
     return messageId;
   },
 });
@@ -270,16 +274,14 @@ export const getMessageCount = query({
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.tokenIdentifier !== tokenIdentifier) return 0;
 
-    let count = 0;
-    for await (
-      const _row of ctx.db
+    if (session.messageCount != null) return session.messageCount;
+
+    return (
+      await ctx.db
         .query("coThinkerMessages")
         .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
-    ) {
-      void _row;
-      count++;
-    }
-    return count;
+        .take(500)
+    ).length;
   },
 });
 
@@ -322,15 +324,12 @@ export const listSessionsWithCounts = query({
 
     const results = [];
     for (const session of sessions) {
-      let messageCount = 0;
-      for await (
-        const _row of ctx.db
+      const messageCount = session.messageCount ?? (
+        await ctx.db
           .query("coThinkerMessages")
           .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-      ) {
-        void _row;
-        messageCount++;
-      }
+          .take(500)
+      ).length;
       results.push({ ...session, messageCount });
     }
     return results;

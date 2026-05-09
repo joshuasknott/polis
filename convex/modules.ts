@@ -181,6 +181,8 @@ export const listWithCounts = query({
 
       results.push({
         ...mod,
+        contextVersion: mod.contextVersion ?? 1,
+        contextUpdatedAt: mod.contextUpdatedAt ?? mod.createdAt,
         sourceCount,
         assignmentCount,
       });
@@ -217,7 +219,11 @@ export const getWorkspaceBundle = query({
       .take(100);
 
     return {
-      module: mod,
+      module: {
+        ...mod,
+        contextVersion: mod.contextVersion ?? 1,
+        contextUpdatedAt: mod.contextUpdatedAt ?? mod.createdAt,
+      },
       folders,
       sources,
       assignments,

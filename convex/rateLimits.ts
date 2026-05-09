@@ -6,9 +6,8 @@ const WINDOW_MS = 60 * 1000;
 const DEFAULT_REQUEST_LIMIT = 30;
 const DEFAULT_TOKEN_LIMIT = 100000;
 const PROVIDER_OVERRIDES: Record<string, { requestLimit: number; tokenLimit: number }> = {
-  openai: { requestLimit: 30, tokenLimit: 150000 },
-  anthropic: { requestLimit: 20, tokenLimit: 100000 },
-  google: { requestLimit: 30, tokenLimit: 120000 },
+  zai: { requestLimit: 30, tokenLimit: 150000 },
+  gemini: { requestLimit: 30, tokenLimit: 120000 },
 };
 
 export const checkRateLimit = mutation({
