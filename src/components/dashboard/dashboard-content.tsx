@@ -33,7 +33,7 @@ export function DashboardContent({
             Select a module to continue your coursework.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors">
+        <button disabled title="Creating workspaces is not yet supported in this preview" className="inline-flex items-center gap-2 rounded-md bg-accent/50 px-4 py-2 text-sm font-medium text-accent-foreground/50 shadow-sm cursor-not-allowed transition-colors">
           <Plus className="h-4 w-4" />
           New Workspace
         </button>
@@ -48,7 +48,7 @@ export function DashboardContent({
           <p className="mt-2 text-sm text-muted-foreground max-w-sm">
             Create your first module workspace to start organising readings, notes, and assignments.
           </p>
-          <button className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors">
+          <button disabled title="Creating workspaces is not yet supported in this preview" className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent/50 px-4 py-2 text-sm font-medium text-accent-foreground/50 shadow-sm cursor-not-allowed transition-colors">
             <Plus className="h-4 w-4" />
             Create Workspace
           </button>
@@ -77,10 +77,10 @@ export function DashboardContent({
                     <p className="mt-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">{mod.code}</p>
                   </div>
                   <div className="relative z-10 flex items-center gap-1 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors" title="Edit workspace">
+                    <button disabled className="p-1.5 text-muted-foreground/50 cursor-not-allowed rounded-md transition-colors" title="Editing workspaces is not yet supported">
                       <Edit2 className="h-3.5 w-3.5" />
                     </button>
-                    <button className="p-1.5 text-muted-foreground hover:text-danger rounded-md hover:bg-danger/10 transition-colors" title="Delete workspace">
+                    <button disabled className="p-1.5 text-muted-foreground/50 cursor-not-allowed rounded-md transition-colors" title="Deleting workspaces is not yet supported">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>

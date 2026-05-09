@@ -172,6 +172,7 @@ function SectionEditor({
 
   return (
     <div
+      id={`editor-${section.id}`}
       className={cn(
         "group rounded-xl border transition-all duration-200",
         isActive
@@ -350,27 +351,27 @@ export function DraftStudio({
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Section navigation sidebar */}
         <div
           className={cn(
             "shrink-0 transition-all duration-200",
-            sidebarOpen ? "w-56" : "w-0 overflow-hidden"
+            sidebarOpen ? "w-full lg:w-56" : "hidden lg:block lg:w-0 lg:overflow-hidden"
           )}
         >
-          <div className="sticky top-4">
+          <div className="lg:sticky lg:top-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Sections
               </h3>
               <button
-                onClick={() => setSidebarOpen(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-muted-foreground hover:text-foreground transition-colors hidden lg:block"
               >
                 <AlignLeft className="h-3.5 w-3.5" />
               </button>
             </div>
-            <nav className="flex flex-col gap-1">
+            <nav className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0 scrollbar-thin">
               {sections.map((section) => {
                 const words = countWords(section.content);
                 const isActive = section.id === activeSection;
@@ -379,9 +380,12 @@ export function DraftStudio({
                 return (
                   <button
                     key={section.id}
-                    onClick={() => setActiveSection(section.id)}
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      document.getElementById(`editor-${section.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors shrink-0 max-w-[200px] lg:max-w-none",
                       isActive
                         ? "bg-accent/10 text-accent font-medium"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
@@ -393,7 +397,7 @@ export function DraftStudio({
                       <div className="h-3 w-3 rounded-full border border-border shrink-0" />
                     )}
                     <span className="truncate flex-1">{section.heading}</span>
-                    <span className="text-[10px] tabular-nums text-muted-foreground/60">
+                    <span className="text-[10px] tabular-nums text-muted-foreground/60 hidden sm:inline">
                       {words}
                     </span>
                   </button>
@@ -401,7 +405,7 @@ export function DraftStudio({
               })}
             </nav>
 
-            <button className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-2">
+            <button disabled title="Adding sections manually is disabled" className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground/50 cursor-not-allowed px-3 py-2">
               <Plus className="h-3 w-3" />
               Add section
             </button>

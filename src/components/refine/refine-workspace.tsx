@@ -347,14 +347,14 @@ export function RefineWorkspace({
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Review navigation */}
-        <div className="w-56 shrink-0">
-          <div className="sticky top-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <div className="w-full lg:w-56 shrink-0">
+          <div className="lg:sticky lg:top-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 hidden lg:block">
               Review sections
             </h3>
-            <nav className="flex flex-col gap-0.5">
+            <nav className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-2 pb-2 lg:pb-0 scrollbar-thin">
               {REVIEW_SECTIONS.map((section) => {
                 const isActive = section.id === activeSection;
                 const count = getCounts(section.id);
@@ -365,14 +365,14 @@ export function RefineWorkspace({
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
                     className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors shrink-0 max-w-[200px] lg:max-w-none",
                       isActive
                         ? "bg-accent/10 text-accent font-medium"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                     )}
                   >
                     <SIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span className="flex-1 truncate">{section.label}</span>
+                    <span className="truncate flex-1">{section.label}</span>
                     {count > 0 && (
                       <SeverityBadge severity={section.severity} count={count} />
                     )}

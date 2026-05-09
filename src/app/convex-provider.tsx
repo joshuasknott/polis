@@ -4,18 +4,14 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useAuth } from "@clerk/nextjs";
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://polished-frog-225.convex.cloud";
+const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  if (!convex) {
-    return <>{children}</>;
-  }
-
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
       {children}

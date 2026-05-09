@@ -167,8 +167,9 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
         <h2 className="text-xl font-semibold">Readings & Sources</h2>
         <button
           onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity shadow-sm"
+          disabled={true}
+          title="Uploads are paused while the backend migrates to Convex"
+          className="inline-flex items-center gap-2 rounded-lg bg-foreground/50 px-4 py-2 text-sm font-medium text-background/50 cursor-not-allowed transition-opacity shadow-sm"
         >
           {uploading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -254,7 +255,7 @@ function ModuleAssignments({ assignments, module }: { assignments: ModuleWorkspa
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <h2 className="text-xl font-semibold">Assignments</h2>
-        <button className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity shadow-sm">
+        <button disabled title="Creating assignments is not yet supported" className="inline-flex items-center gap-2 rounded-lg bg-foreground/50 px-4 py-2 text-sm font-medium text-background/50 cursor-not-allowed transition-opacity shadow-sm">
           New Assignment
         </button>
       </div>

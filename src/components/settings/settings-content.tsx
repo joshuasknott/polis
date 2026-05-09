@@ -490,7 +490,7 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
   );
 }
 
-function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }: {
+function AILayerSection({ aiConfigured: _aiConfigured, providerName: _providerName, modelName: _modelName, hasEmbeddings: _hasEmbeddings }: {
   aiConfigured: boolean;
   providerName: string;
   modelName: string;
@@ -515,24 +515,15 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
             <div>
               <p className="text-sm font-medium">AI Provider</p>
               <p className="text-xs text-muted-foreground">
-                {aiConfigured
-                  ? `${providerName} — ${modelName}`
-                  : "Not configured"}
+                Not configured (paused)
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {aiConfigured ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
-                <CheckCircle className="h-3 w-3" />
-                Connected
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                <XCircle className="h-3 w-3" />
-                Not Connected
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+              <XCircle className="h-3 w-3" />
+              Not Connected
+            </span>
           </div>
         </div>
 
@@ -544,18 +535,14 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
             <div>
               <p className="text-sm font-medium">Vector Embeddings</p>
               <p className="text-xs text-muted-foreground">
-                {hasEmbeddings ? "text-embedding-3-small (1536d)" : "Requires OpenAI API key"}
+                Requires AI connection (paused)
               </p>
             </div>
           </div>
           <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-              hasEmbeddings
-                ? "bg-success/10 text-success"
-                : "bg-muted text-muted-foreground"
-            }`}
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground"
           >
-            {hasEmbeddings ? "Active" : "Inactive"}
+            Inactive
           </span>
         </div>
 
@@ -618,7 +605,7 @@ function AcademicIntegritySection() {
   );
 }
 
-function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: boolean; hasEmbeddings: boolean }) {
+function FeatureStatusSection({ aiConfigured: _aiConfigured, hasEmbeddings: _hasEmbeddings }: { aiConfigured: boolean; hasEmbeddings: boolean }) {
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-card p-6">
@@ -634,18 +621,18 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             { label: "Text Extraction", enabled: false },
             { label: "Source Chunking", enabled: false },
             { label: "Keyword Retrieval", enabled: false },
-            { label: "Runtime AI Provider", enabled: aiConfigured },
+            { label: "Runtime AI Provider", enabled: false },
             { label: "BYO API Key storage", enabled: false },
-            { label: "Vector Embeddings / Semantic Search", enabled: hasEmbeddings },
-            { label: "Hybrid Retrieval (semantic + keyword)", enabled: hasEmbeddings },
-            { label: "LLM-Powered Source-Grounded CoThinker", enabled: aiConfigured },
-            { label: "Auto-Generated Source Summaries", enabled: aiConfigured },
-            { label: "Citation Safety Check", enabled: aiConfigured },
-            { label: "Draft Review with Rubric Analysis", enabled: aiConfigured },
+            { label: "Vector Embeddings / Semantic Search", enabled: false },
+            { label: "Hybrid Retrieval (semantic + keyword)", enabled: false },
+            { label: "LLM-Powered Source-Grounded CoThinker", enabled: false },
+            { label: "Auto-Generated Source Summaries", enabled: false },
+            { label: "Citation Safety Check", enabled: false },
+            { label: "Draft Review with Rubric Analysis", enabled: false },
             { label: "Conversation Memory (multi-turn)", enabled: false },
             { label: "Template Fallback (no API key needed)", enabled: false },
             { label: "Background File Processing", enabled: false },
-            { label: "Source Notes", enabled: false },
+            { label: "Source Notes", enabled: true },
             { label: "Usage Analytics", enabled: false },
             { label: "Rate Limiting", enabled: false },
             { label: "Draft Editor", enabled: true },

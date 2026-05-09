@@ -137,9 +137,9 @@ export function SourceViewerContent({
         )}
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden">
         {/* Left Pane: Reading Material */}
-        <div className="w-1/2 border-r border-border overflow-y-auto scrollbar-thin bg-background p-8">
+        <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-border lg:overflow-y-auto scrollbar-thin bg-background p-4 sm:p-8">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6 font-sans">
             Source Text
           </h2>
@@ -148,9 +148,9 @@ export function SourceViewerContent({
               {chunks.map((chunk) => (
                 <div 
                   key={chunk.id} 
-                  className="group relative pl-4 border-l-2 border-transparent hover:border-source transition-colors"
+                  className="group relative pl-6 sm:pl-8 border-l-2 border-transparent hover:border-source transition-colors"
                 >
-                  <p className="absolute -left-6 top-1 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="absolute left-2 top-1.5 text-[10px] text-muted-foreground transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                     {chunk.chunkIndex + 1}
                   </p>
                   <p className="font-serif text-[15px] leading-relaxed text-foreground/90">
@@ -168,7 +168,7 @@ export function SourceViewerContent({
         </div>
 
         {/* Right Pane: Analysis & Workspace */}
-        <div className="w-1/2 overflow-y-auto scrollbar-thin bg-muted/20 p-8 space-y-6">
+        <div className="w-full lg:w-1/2 lg:overflow-y-auto scrollbar-thin bg-muted/20 p-4 sm:p-8 space-y-6">
           <div className="grid grid-cols-1 gap-6">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
@@ -177,8 +177,9 @@ export function SourceViewerContent({
                   Source Summary
                 </h2>
                 <button
-                  onClick={handlePausedAnalysis}
-                  className="inline-flex items-center gap-1.5 text-xs text-interpretation hover:underline disabled:opacity-50 font-medium"
+                  disabled
+                  title="Analysis is paused while migrating to Convex"
+                  className="inline-flex items-center gap-1.5 text-xs text-interpretation/50 cursor-not-allowed font-medium"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   Analysis Paused
@@ -227,9 +228,11 @@ export function SourceViewerContent({
               <button
                 key={action.label}
                 onClick={handlePausedAnalysis}
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50"
+                disabled
+                title="Analysis is paused while migrating to Convex"
+                className="flex items-center gap-2 rounded-lg border border-border bg-card/50 px-4 py-3 text-left text-sm font-medium text-muted-foreground/50 transition-colors cursor-not-allowed"
               >
-                <action.icon className="h-4 w-4 text-muted-foreground" />
+                <action.icon className="h-4 w-4 text-muted-foreground/50" />
                 {action.label}
                 <span className="ml-auto text-[10px] uppercase tracking-wider">Paused</span>
               </button>
@@ -245,8 +248,9 @@ export function SourceViewerContent({
               CoThinker questions about this source are paused until runtime AI is rebuilt on the Convex backend.
             </p>
             <button
-              onClick={handlePausedAnalysis}
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source hover:underline"
+              disabled
+              title="Analysis is paused while migrating to Convex"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source/50 cursor-not-allowed"
             >
               Analysis Paused
               <ExternalLink className="h-3.5 w-3.5" />
