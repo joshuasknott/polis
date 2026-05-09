@@ -52,6 +52,23 @@ export const getLatest = query({
   },
 });
 
+export const getDraftWithBlocks = query({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) return null;
+
+    const blocks = await ctx.db
+      .query("draftBlocks")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .order("asc")
+      .take(200);
+
+    return { draft, blocks };
+  },
+});
+
 export const create = mutation({
   args: {
     assignmentId: v.id("assignments"),
@@ -103,6 +120,62 @@ export const update = mutation({
 
     await ctx.db.patch(draftId, { ...updates, updatedAt: Date.now() });
     return draftId;
+  },
+});
+
+export const saveDraft = mutation({
+  args: {
+    draftId: v.id("drafts"),
+    content: v.string(),
+    wordCount: v.number(),
+    sections: v.array(
+      v.object({
+        blockType: v.string(),
+        content: v.optional(v.string()),
+        argumentId: v.optional(v.id("arguments")),
+        sortOrder: v.number(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const draft = await ctx.db.get(args.draftId);
+    if (!draft || draft.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const now = Date.now();
+
+    await ctx.db.patch(args.draftId, {
+      content: args.content,
+      wordCount: args.wordCount,
+      status: "in_progress",
+      updatedAt: now,
+    });
+
+    const existing = await ctx.db
+      .query("draftBlocks")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .take(200);
+
+    for (const block of existing) {
+      await ctx.db.delete(block._id);
+    }
+
+    for (const section of args.sections) {
+      await ctx.db.insert("draftBlocks", {
+        tokenIdentifier,
+        draftId: args.draftId,
+        blockType: section.blockType,
+        content: section.content,
+        argumentId: section.argumentId,
+        sortOrder: section.sortOrder,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return args.draftId;
   },
 });
 

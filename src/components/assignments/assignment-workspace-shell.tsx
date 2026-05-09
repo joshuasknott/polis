@@ -180,7 +180,7 @@ export function AssignmentWorkspaceShell({
   const activeStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === activeStage);
   const activeStageConfig = WORKFLOW_STAGES.find((stage) => stage.id === activeStage) ?? WORKFLOW_STAGES[0];
   const ActiveIcon = activeStageConfig.icon;
-  const hasFullBleedStageContent = (activeStage === "draft" && Boolean(draft)) || (activeStage === "refine" && Boolean(draft && review));
+  const hasFullBleedStageContent = activeStage === "draft" || activeStage === "refine";
 
   const evidenceGaps = judgements
     .filter((judgement) => judgement.type === "evidence_sufficiency" || judgement.type === "gap_analysis")
@@ -236,35 +236,24 @@ export function AssignmentWorkspaceShell({
           />
         );
       case "draft":
-        if (draft) {
-          return (
-            <DraftStudio
-              module={module}
-              assignment={assignment}
-              draft={draft}
-              arguments={assignmentArguments}
-              sources={assignmentSources}
-            />
-          );
-        }
-
         return (
-          <StagePlaceholder
-            label="Draft Studio"
-            description="Write with source-grounded guidance"
-            icon={FileText}
+          <DraftStudio
+            module={module}
+            assignment={assignment}
+            draft={draft}
+            arguments={assignmentArguments}
+            sources={assignmentSources}
+            assignmentConvexId={assignmentConvexId ?? assignment.id}
           />
         );
       case "refine":
-        if (draft && review) {
-          return <RefineWorkspace module={module} assignment={assignment} draft={draft} review={review} />;
-        }
-
         return (
-          <StagePlaceholder
-            label="Refine"
-            description="Review your draft against rubric, evidence, and citation safety"
-            icon={CheckCircle}
+          <RefineWorkspace
+            module={module}
+            assignment={assignment}
+            draft={draft}
+            review={review}
+            assignmentConvexId={assignmentConvexId ?? assignment.id}
           />
         );
       default:
