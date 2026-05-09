@@ -2,12 +2,17 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 import { DashboardContent } from "./dashboard-content";
 import { mapModule } from "@/lib/convex-ui-mappers";
 import { Loader2 } from "lucide-react";
 
 export function DashboardData() {
-  const result = useQuery(api.modules.listWithCounts);
+  const { isLoaded, isSignedIn } = useAuth();
+  const result = useQuery(
+    api.modules.listWithCounts,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
 
   if (result === undefined) {
     return (
