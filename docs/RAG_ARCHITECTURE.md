@@ -3,6 +3,10 @@
 **Last updated**: 2026-05-09
 **Status**: Contract — describes the intended production architecture on Convex. The previous PostgreSQL/pgvector implementation has been fully removed.
 
+## Current Status
+
+File ingestion is now implemented on the Convex backend. The upload → extract → chunk pipeline is live. Retrieval, embeddings, and AI chat remain pending.
+
 ## Overview
 
 Retrieval-Augmented Generation (RAG) is the core technique that enables Polis to provide source-grounded answers with citations. All retrieval and generation will be built on Convex.
@@ -17,23 +21,49 @@ User Query → Embed Query (action) → Convex Vector Search → Construct Promp
                                     Keyword Search (Convex search index) → Template Response → Display
 ```
 
-## 1. File Ingestion
+## 1. File Ingestion (Implemented)
 
 ### Upload Flow (Convex Storage)
 
 1. Client calls `files.generateUploadUrl` mutation.
 2. Client uploads file directly to Convex storage.
-3. Client calls `sources.attachStorage` mutation with the storage ID.
-4. Source status transitions: `placeholder` → `processing`.
-5. A processing action is scheduled.
+3. Source record is created before upload via `sources.createForUpload` with status `uploading`.
+4. Client calls `sources.attachStorage` mutation with the storage ID.
+5. Source status transitions through `queued`, `extracting`, `chunking`, then `processed` or `failed`.
+6. `ingestion.process.processSource` is scheduled as a Convex Node action.
 
-### Text Extraction (Action — Planned)
+### Upload
+- Accept: PDF, DOCX, TXT, MD
+- Stored via Convex file storage
+- Client-side upload using `generateUploadUrl` mutation
+- Source record created before upload, updated on completion
 
-- **PDF**: Server-side extraction using a Node.js library.
-- **DOCX**: Server-side extraction.
-- **TXT/MD**: Direct text input.
-- Preserve page boundaries where possible.
-- Action writes extracted text to a processing job record, then triggers chunking.
+### Processing Lifecycle
+```
+uploading → queued → extracting → chunking → processed
+                                          → failed
+```
+
+### Processing Pipeline
+1. `sources.createForUpload` — creates source record with status "uploading"
+2. `files.generateUploadUrl` — generates a Convex storage upload URL
+3. Client uploads file directly to Convex storage
+4. `sources.attachStorage` — attaches storage ID, sets status "queued", schedules action
+5. `ingestion.process.processSource` — Node action that:
+   - Reads file from Convex storage
+   - Extracts text (TXT/MD directly, PDF via pdf-parse, DOCX via mammoth)
+   - Chunks text into ~1000-word segments with 150-word overlap
+   - Creates `sourceChunks` documents
+   - Sets source status to "processed" or "failed"
+
+### Text Extraction
+- **TXT/MD**: Direct UTF-8 decoding
+- **PDF**: `pdf-parse` (wraps pdfjs-dist), preserves page boundaries via form-feed detection
+- **DOCX**: `mammoth` for raw text extraction; page boundaries unavailable (marked as page 1)
+- When page boundaries are unavailable, citation labels use chunk index instead
+
+### Retry
+Failed sources can be retried via `sources.retryProcessing`, which clears old chunks and reschedules the action.
 
 ### AI Analysis (Planned)
 

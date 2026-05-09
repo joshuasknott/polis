@@ -1,7 +1,9 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import { internal } from "./_generated/api";
 import { sourceType, sourceStatus } from "./lib/validators";
+import { inferSourceType, normalizeFileType } from "./ingestion/lib";
 
 export const list = query({
   args: {
@@ -58,6 +60,55 @@ export const get = query({
     const source = await ctx.db.get(args.sourceId);
     if (!source || source.tokenIdentifier !== tokenIdentifier) return null;
     return source;
+  },
+});
+
+export const createForUpload = mutation({
+  args: {
+    moduleId: v.id("modules"),
+    title: v.string(),
+    fileName: v.optional(v.string()),
+    fileType: v.optional(v.string()),
+    fileSize: v.optional(v.number()),
+    folderType: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const now = Date.now();
+
+    const mod = await ctx.db.get(args.moduleId);
+    if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    let folderId: import("./_generated/dataModel").Id<"folders"> | undefined;
+    if (args.folderType) {
+      const folders = await ctx.db
+        .query("folders")
+        .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+        .collect();
+      const found = folders.find((f) => f.type === args.folderType);
+      if (found) folderId = found._id;
+    }
+
+    const fileType = normalizeFileType(
+      args.fileName ?? "",
+      args.fileType,
+    );
+
+    return await ctx.db.insert("sources", {
+      tokenIdentifier,
+      moduleId: args.moduleId,
+      folderId,
+      title: args.title,
+      type: args.fileName ? inferSourceType(args.fileName) : "report",
+      status: "uploading",
+      fileName: args.fileName,
+      fileType,
+      fileSize: args.fileSize,
+      createdAt: now,
+      updatedAt: now,
+    });
   },
 });
 
@@ -133,6 +184,36 @@ export const remove = mutation({
       throw new Error("Not found");
     }
 
+    const chunks = await ctx.db
+      .query("sourceChunks")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(500);
+    for (const chunk of chunks) {
+      await ctx.db.delete(chunk._id);
+    }
+
+    const notes = await ctx.db
+      .query("sourceNotes")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(200);
+    for (const note of notes) {
+      await ctx.db.delete(note._id);
+    }
+
+    if (source.storageId) {
+      try {
+        await ctx.storage.delete(source.storageId);
+      } catch {}
+    }
+
+    const jobs = await ctx.db
+      .query("processingJobs")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(50);
+    for (const job of jobs) {
+      await ctx.db.delete(job._id);
+    }
+
     await ctx.db.delete(args.sourceId);
     return args.sourceId;
   },
@@ -153,15 +234,173 @@ export const attachStorage = mutation({
       throw new Error("Not found");
     }
 
+    const now = Date.now();
+
     await ctx.db.patch(args.sourceId, {
       storageId: args.storageId,
       fileName: args.fileName,
       fileType: args.fileType,
       fileSize: args.fileSize,
-      status: "processing",
-      updatedAt: Date.now(),
+      status: "queued",
+      errorMessage: undefined,
+      updatedAt: now,
     });
+
+    await ctx.db.insert("processingJobs", {
+      tokenIdentifier,
+      sourceId: args.sourceId,
+      type: "ingestion",
+      status: "queued",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.ingestion.process.processSource,
+      { sourceId: args.sourceId },
+    );
+
     return args.sourceId;
+  },
+});
+
+export const retryProcessing = mutation({
+  args: { sourceId: v.id("sources") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const source = await ctx.db.get(args.sourceId);
+    if (!source || source.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    if (!source.storageId) {
+      throw new Error("No file attached to source");
+    }
+
+    const now = Date.now();
+
+    const existingChunks = await ctx.db
+      .query("sourceChunks")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(500);
+    for (const chunk of existingChunks) {
+      await ctx.db.delete(chunk._id);
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      status: "queued",
+      errorMessage: undefined,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("processingJobs", {
+      tokenIdentifier,
+      sourceId: args.sourceId,
+      type: "ingestion",
+      status: "queued",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.scheduler.runAfter(
+      0,
+      internal.ingestion.process.processSource,
+      { sourceId: args.sourceId },
+    );
+
+    return args.sourceId;
+  },
+});
+
+export const internalGet = internalQuery({
+  args: { sourceId: v.id("sources") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.sourceId);
+  },
+});
+
+export const updateStatus = internalMutation({
+  args: {
+    sourceId: v.id("sources"),
+    status: v.string(),
+    errorMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: {
+      status: string;
+      updatedAt: number;
+      errorMessage?: string;
+    } = {
+      status: args.status,
+      updatedAt: Date.now(),
+    };
+    if (args.errorMessage !== undefined) {
+      patch.errorMessage = args.errorMessage;
+    }
+    await ctx.db.patch(args.sourceId, patch);
+
+    const jobs = await ctx.db
+      .query("processingJobs")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .order("desc")
+      .take(1);
+    if (jobs.length > 0) {
+      await ctx.db.patch(jobs[0]._id, {
+        status: args.status,
+        errorMessage: args.errorMessage,
+        updatedAt: Date.now(),
+      });
+    }
+  },
+});
+
+export const saveChunks = internalMutation({
+  args: {
+    sourceId: v.id("sources"),
+    chunks: v.array(
+      v.object({
+        chunkIndex: v.number(),
+        text: v.string(),
+        pageStart: v.optional(v.number()),
+        pageEnd: v.optional(v.number()),
+        tokenEstimate: v.number(),
+        citationLabel: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    for (const chunk of args.chunks) {
+      await ctx.db.insert("sourceChunks", {
+        sourceId: args.sourceId,
+        chunkIndex: chunk.chunkIndex,
+        text: chunk.text,
+        pageStart: chunk.pageStart,
+        pageEnd: chunk.pageEnd,
+        tokenEstimate: chunk.tokenEstimate,
+        citationLabel: chunk.citationLabel,
+        createdAt: now,
+      });
+    }
+
+    await ctx.db.patch(args.sourceId, {
+      status: "processed",
+      errorMessage: undefined,
+      updatedAt: now,
+    });
+
+    const jobs = await ctx.db
+      .query("processingJobs")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .order("desc")
+      .take(1);
+    if (jobs.length > 0) {
+      await ctx.db.patch(jobs[0]._id, {
+        status: "processed",
+        updatedAt: now,
+      });
+    }
   },
 });
 

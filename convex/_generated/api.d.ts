@@ -16,6 +16,8 @@ import type * as drafts from "../drafts.js";
 import type * as evidence from "../evidence.js";
 import type * as files from "../files.js";
 import type * as folders from "../folders.js";
+import type * as ingestion_lib from "../ingestion/lib.js";
+import type * as ingestion_process from "../ingestion/process.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as modules from "../modules.js";
 import type * as notes from "../notes.js";
@@ -39,6 +41,8 @@ declare const fullApi: ApiFromModules<{
   evidence: typeof evidence;
   files: typeof files;
   folders: typeof folders;
+  "ingestion/lib": typeof ingestion_lib;
+  "ingestion/process": typeof ingestion_process;
   "lib/auth": typeof lib_auth;
   modules: typeof modules;
   notes: typeof notes;

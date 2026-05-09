@@ -25,10 +25,16 @@ export type SourceType =
 
 export type SourceStatus =
   | "placeholder"
+  | "uploading"
+  | "queued"
+  | "extracting"
+  | "chunking"
   | "processing"
   | "processed"
   | "needs_review"
   | "failed";
+
+export type ProcessingStatus = SourceStatus;
 
 export type CoThinkerScope =
   | "whole_module"

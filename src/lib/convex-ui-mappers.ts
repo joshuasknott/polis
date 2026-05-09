@@ -62,6 +62,7 @@ export function mapSource(source: Doc<"sources">) {
     summary: source.summary ?? "",
     mainArgument: "",
     keyConcepts: [] as string[],
+    errorMessage: source.errorMessage ?? "",
   };
 }
 

@@ -26,6 +26,10 @@ export const sourceType = v.union(
 
 export const sourceStatus = v.union(
   v.literal("placeholder"),
+  v.literal("uploading"),
+  v.literal("queued"),
+  v.literal("extracting"),
+  v.literal("chunking"),
   v.literal("processing"),
   v.literal("processed"),
   v.literal("needs_review"),
@@ -98,6 +102,7 @@ export const reviewFindingCategory = v.union(
 );
 
 export const processingJobType = v.union(
+  v.literal("ingestion"),
   v.literal("text_extraction"),
   v.literal("chunking"),
   v.literal("embedding"),
@@ -105,8 +110,12 @@ export const processingJobType = v.union(
 );
 
 export const processingJobStatus = v.union(
+  v.literal("queued"),
+  v.literal("extracting"),
+  v.literal("chunking"),
   v.literal("pending"),
   v.literal("running"),
+  v.literal("processed"),
   v.literal("completed"),
   v.literal("failed"),
 );

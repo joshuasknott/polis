@@ -53,6 +53,11 @@ export function getStatusColor(status: string): string {
     processing: "bg-accent/10 text-accent",
     needs_review: "bg-warning/10 text-warning",
     failed: "bg-danger/10 text-danger",
+    uploading: "bg-muted text-muted-foreground",
+    queued: "bg-accent/10 text-accent",
+    extracting: "bg-accent/10 text-accent",
+    chunking: "bg-accent/10 text-accent",
+    placeholder: "bg-muted text-muted-foreground",
   };
   return colors[status] || "bg-muted text-muted-foreground";
 }
@@ -63,6 +68,11 @@ export function getStatusLabel(status: string): string {
     processing: "Processing",
     needs_review: "Needs Review",
     failed: "Failed",
+    uploading: "Uploading",
+    queued: "Queued",
+    extracting: "Extracting",
+    chunking: "Chunking",
+    placeholder: "Placeholder",
   };
   return labels[status] || status;
 }

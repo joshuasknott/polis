@@ -86,6 +86,7 @@ export default defineSchema({
     fileType: v.optional(v.string()),
     fileSize: v.optional(v.number()),
     storageId: v.optional(v.id("_storage")),
+    errorMessage: v.optional(v.string()),
     citation: v.optional(v.string()),
     summary: v.optional(v.string()),
     createdAt: v.number(),
