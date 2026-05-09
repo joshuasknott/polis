@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useQuery, useAction } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import {
   User,
   Key,
@@ -28,16 +31,6 @@ interface SettingsContentProps {
     yearOfStudy: number | null;
   };
   preferences: Record<string, string>;
-  aiConfigured: boolean;
-  providerName: string;
-  modelName: string;
-  hasEmbeddings: boolean;
-  connections: Array<{
-    provider: string;
-    status: string;
-    modelPreference: string | null;
-    hasKey: boolean;
-  }>;
   linkedProviders: string[];
   hasPassword: boolean;
 }
@@ -47,11 +40,6 @@ type SettingsTab = "profile" | "ai" | "connections" | "academic" | "features";
 export function SettingsContent({
   user,
   preferences,
-  aiConfigured,
-  providerName,
-  modelName,
-  hasEmbeddings,
-  connections,
   linkedProviders,
   hasPassword,
 }: SettingsContentProps) {
@@ -92,25 +80,27 @@ export function SettingsContent({
       </div>
 
       {activeTab === "profile" && (
-        <ProfileSection user={user} preferences={preferences} hasPassword={hasPassword} linkedProviders={linkedProviders} />
+        <ProfileSection
+          user={user}
+          preferences={preferences}
+          hasPassword={hasPassword}
+          linkedProviders={linkedProviders}
+        />
       )}
-      {activeTab === "connections" && (
-        <ConnectionsSection connections={connections} />
-      )}
-      {activeTab === "ai" && (
-        <AILayerSection aiConfigured={aiConfigured} providerName={providerName} modelName={modelName} hasEmbeddings={hasEmbeddings} />
-      )}
-      {activeTab === "academic" && (
-        <AcademicIntegritySection />
-      )}
-      {activeTab === "features" && (
-        <FeatureStatusSection aiConfigured={aiConfigured} hasEmbeddings={hasEmbeddings} />
-      )}
+      {activeTab === "connections" && <ConnectionsSection />}
+      {activeTab === "ai" && <AILayerSection />}
+      {activeTab === "academic" && <AcademicIntegritySection />}
+      {activeTab === "features" && <FeatureStatusSection />}
     </div>
   );
 }
 
-function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
+function ProfileSection({
+  user,
+  preferences,
+  hasPassword,
+  linkedProviders,
+}: {
   user: SettingsContentProps["user"];
   preferences: Record<string, string>;
   hasPassword: boolean;
@@ -119,24 +109,39 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
   const [name, setName] = useState(user.name);
   const [university, setUniversity] = useState(user.university);
   const [course, setCourse] = useState(user.course);
-  const [yearOfStudy, setYearOfStudy] = useState(user.yearOfStudy?.toString() || "");
+  const [yearOfStudy, setYearOfStudy] = useState(
+    user.yearOfStudy?.toString() || "",
+  );
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  const [defaultAiMode, setDefaultAiMode] = useState(preferences.defaultAiMode || "understand");
-  const [citationStyle, setCitationStyle] = useState(preferences.citationStyle || "harvard");
+  const [defaultAiMode, setDefaultAiMode] = useState(
+    preferences.defaultAiMode || "understand",
+  );
+  const [citationStyle, setCitationStyle] = useState(
+    preferences.citationStyle || "harvard",
+  );
   const [prefSaving, setPrefSaving] = useState(false);
 
   async function saveProfile() {
     setSaving(true);
     setMessage(null);
-    setMessage({ type: "success", text: "Profile changes are local until Convex auth is wired" });
+    setMessage({
+      type: "success",
+      text: "Profile changes are local until Convex auth is wired",
+    });
     setSaving(false);
   }
 
@@ -149,7 +154,10 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
       return;
     }
     void currentPassword;
-    setPasswordMessage({ type: "error", text: "Password auth is paused during the Convex migration" });
+    setPasswordMessage({
+      type: "error",
+      text: "Password auth is paused during the Convex migration",
+    });
     setPasswordSaving(false);
   }
 
@@ -169,7 +177,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
         </h2>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Name</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Name
+            </label>
             <input
               type="text"
               value={name}
@@ -178,7 +188,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Email</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Email
+            </label>
             <input
               type="email"
               value={user.email}
@@ -187,7 +199,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">University</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              University
+            </label>
             <input
               type="text"
               value={university}
@@ -197,7 +211,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Course</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Course
+            </label>
             <input
               type="text"
               value={course}
@@ -207,7 +223,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Year of Study</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Year of Study
+            </label>
             <select
               value={yearOfStudy}
               onChange={(e) => setYearOfStudy(e.target.value)}
@@ -228,11 +246,17 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             disabled={saving}
             className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             Save Profile
           </button>
           {message && (
-            <span className={`text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}>
+            <span
+              className={`text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}
+            >
               {message.text}
             </span>
           )}
@@ -246,13 +270,30 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
         </h2>
         <div className="mt-4 space-y-2">
           {[
-            { name: "Email & Password", id: "credentials", linked: hasPassword },
-            { name: "GitHub", id: "github", linked: linkedProviders.includes("github") },
-            { name: "Google", id: "google", linked: linkedProviders.includes("google") },
+            {
+              name: "Email & Password",
+              id: "credentials",
+              linked: hasPassword,
+            },
+            {
+              name: "GitHub",
+              id: "github",
+              linked: linkedProviders.includes("github"),
+            },
+            {
+              name: "Google",
+              id: "google",
+              linked: linkedProviders.includes("google"),
+            },
           ].map((account) => (
-            <div key={account.id} className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
+            <div
+              key={account.id}
+              className="flex items-center justify-between rounded-lg border border-border px-4 py-3"
+            >
               <span className="text-sm">{account.name}</span>
-              <span className={`text-xs ${account.linked ? "text-success" : "text-muted-foreground"}`}>
+              <span
+                className={`text-xs ${account.linked ? "text-success" : "text-muted-foreground"}`}
+              >
                 {account.linked ? "Connected" : "Not linked"}
               </span>
             </div>
@@ -268,7 +309,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
           </h2>
           <div className="mt-4 space-y-3 max-w-sm">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Current Password</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Current Password
+              </label>
               <input
                 type="password"
                 value={currentPassword}
@@ -277,7 +320,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">New Password</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                New Password
+              </label>
               <input
                 type="password"
                 value={newPassword}
@@ -286,7 +331,9 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Confirm New Password</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                Confirm New Password
+              </label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -299,11 +346,17 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
               disabled={passwordSaving}
               className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
             >
-              {passwordSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+              {passwordSaving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Lock className="h-3.5 w-3.5" />
+              )}
               Change Password
             </button>
             {passwordMessage && (
-              <p className={`text-xs ${passwordMessage.type === "success" ? "text-success" : "text-danger"}`}>
+              <p
+                className={`text-xs ${passwordMessage.type === "success" ? "text-success" : "text-danger"}`}
+              >
                 {passwordMessage.text}
               </p>
             )}
@@ -318,10 +371,14 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
         </h2>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Default CoThinker Stage</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Default CoThinker Stage
+            </label>
             <select
               value={defaultAiMode}
-              onChange={(e) => { setDefaultAiMode(e.target.value); }}
+              onChange={(e) => {
+                setDefaultAiMode(e.target.value);
+              }}
               className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             >
               <option value="ingest">Ingest</option>
@@ -334,10 +391,14 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Citation Style</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Citation Style
+            </label>
             <select
               value={citationStyle}
-              onChange={(e) => { setCitationStyle(e.target.value); }}
+              onChange={(e) => {
+                setCitationStyle(e.target.value);
+              }}
               className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             >
               <option value="harvard">Harvard</option>
@@ -353,7 +414,11 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
             disabled={prefSaving}
             className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
           >
-            {prefSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {prefSaving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             Save Preferences
           </button>
         </div>
@@ -362,27 +427,99 @@ function ProfileSection({ user, preferences, hasPassword, linkedProviders }: {
   );
 }
 
-function ConnectionsSection({ connections }: { connections: SettingsContentProps["connections"] }) {
-  const [connecting, setConnecting] = useState<string | null>(null);
+const PROVIDER_CONFIG = [
+  {
+    id: "zai",
+    name: "z.ai / GLM",
+    description: "Zhipu AI GLM models",
+    models: ["glm-4-plus", "glm-4-air", "glm-4-airx", "glm-4-flash", "glm-4-long"],
+    defaultModel: "glm-4-air",
+    keyPlaceholder: "Enter your z.ai API key",
+  },
+  {
+    id: "gemini",
+    name: "Google Gemini",
+    description: "Google Gemini models",
+    models: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash"],
+    defaultModel: "gemini-2.5-flash",
+    keyPlaceholder: "Enter your Gemini API key",
+  },
+];
+
+function ConnectionsSection() {
+  const connections = useQuery(api.ai_keys.listConnections, {});
+  const validateAndSave = useAction(api.ai.validateAndSaveKey);
+  const removeKey = useAction(api.ai.removeProviderKey);
+
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [modelPref, setModelPref] = useState("");
-  const [message, setMessage] = useState<{ provider: string; type: "success" | "error"; text: string } | null>(null);
-
-  const providerConfig = [
-    { id: "zai", name: "z.ai", models: ["glm-4.5", "glm-4.5-air"], defaultModel: "glm-4.5-air" },
-  ];
+  const [saving, setSaving] = useState<string | null>(null);
+  const [message, setMessage] = useState<{
+    provider: string;
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   async function saveKey(providerId: string) {
-    setConnecting(providerId);
+    if (!apiKey.trim()) return;
+    setSaving(providerId);
     setMessage(null);
-    void apiKey;
-    void modelPref;
-    setMessage({ provider: providerId, type: "error", text: "Runtime AI provider connections will be rebuilt after Convex auth" });
-    setConnecting(null);
+
+    try {
+      const result = await validateAndSave({
+        provider: providerId,
+        apiKey: apiKey.trim(),
+        modelPreference: modelPref || undefined,
+      });
+
+      if (result.success) {
+        setMessage({
+          provider: providerId,
+          type: "success",
+          text: "API key validated and saved",
+        });
+        setApiKey("");
+        setModelPref("");
+        setEditingProvider(null);
+      } else {
+        setMessage({
+          provider: providerId,
+          type: "error",
+          text: (result as { error?: string }).error || "Validation failed",
+        });
+      }
+    } catch {
+      setMessage({
+        provider: providerId,
+        type: "error",
+        text: "Failed to save key. Please try again.",
+      });
+    }
+
+    setSaving(null);
   }
 
-  async function removeKey(providerId: string) {
-    setMessage({ provider: providerId, type: "error", text: "Runtime AI provider connections are paused during migration" });
+  async function handleRemove(providerId: string) {
+    setSaving(providerId);
+    setMessage(null);
+
+    try {
+      await removeKey({ provider: providerId });
+      setMessage({
+        provider: providerId,
+        type: "success",
+        text: "API key removed",
+      });
+    } catch {
+      setMessage({
+        provider: providerId,
+        type: "error",
+        text: "Failed to remove key.",
+      });
+    }
+
+    setSaving(null);
   }
 
   return (
@@ -393,14 +530,16 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
           AI Provider Connections (BYO API Key)
         </h2>
         <p className="mt-2 text-xs text-muted-foreground">
-          Bring your own API key to enable AI features. Keys are encrypted at rest and never sent to the client.
+          Bring your own API key to enable AI features. Keys are encrypted at
+          rest and never sent to the client.
         </p>
 
         <div className="mt-4 space-y-4">
-          {providerConfig.map((pc) => {
-            const conn = connections.find((c) => c.provider === pc.id);
+          {PROVIDER_CONFIG.map((pc) => {
+            const conn = connections?.find((c) => c.provider === pc.id);
             const isConnected = conn?.status === "connected";
-            const isEditing = connecting === pc.id;
+            const isEditing = editingProvider === pc.id;
+            const isSavingThis = saving === pc.id;
 
             return (
               <div key={pc.id} className="rounded-lg border border-border p-4">
@@ -413,8 +552,8 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
                       <p className="text-sm font-medium">{pc.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {isConnected
-                          ? `Connected${conn?.modelPreference ? ` — ${conn.modelPreference}` : ` — ${pc.defaultModel}`}`
-                          : "Not connected"}
+                          ? `Connected${conn?.modelPreference ? ` \u2014 ${conn.modelPreference}` : ` \u2014 ${pc.defaultModel}`}`
+                          : pc.description}
                       </p>
                     </div>
                   </div>
@@ -426,8 +565,9 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
                           Connected
                         </span>
                         <button
-                          onClick={() => removeKey(pc.id)}
-                          className="rounded p-1 text-muted-foreground hover:text-danger transition-colors"
+                          onClick={() => handleRemove(pc.id)}
+                          disabled={isSavingThis}
+                          className="rounded p-1 text-muted-foreground hover:text-danger transition-colors disabled:opacity-50"
                           title="Remove key"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -446,38 +586,48 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
                   <div className="mt-3 space-y-2">
                     <input
                       type="password"
-                      placeholder="Enter your API key"
-                      value={connecting === pc.id ? apiKey : ""}
+                      placeholder={pc.keyPlaceholder}
+                      value={isEditing ? apiKey : ""}
                       onChange={(e) => setApiKey(e.target.value)}
-                      onFocus={() => setConnecting(pc.id)}
+                      onFocus={() => setEditingProvider(pc.id)}
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     />
                     <select
-                      value={connecting === pc.id ? modelPref : ""}
+                      value={isEditing ? modelPref : ""}
                       onChange={(e) => setModelPref(e.target.value)}
-                      onFocus={() => setConnecting(pc.id)}
+                      onFocus={() => setEditingProvider(pc.id)}
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     >
-                      <option value="">Default model ({pc.defaultModel})</option>
+                      <option value="">
+                        Default model ({pc.defaultModel})
+                      </option>
                       {pc.models.map((m) => (
-                        <option key={m} value={m}>{m}</option>
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
                       ))}
                     </select>
                     {isEditing && apiKey && (
                       <button
                         onClick={() => saveKey(pc.id)}
-                        disabled={connecting === pc.id && !apiKey}
+                        disabled={isSavingThis}
                         className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90 disabled:opacity-50"
                       >
-                        <Save className="h-3 w-3" />
-                        Save & Validate
+                        {isSavingThis ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Save className="h-3 w-3" />
+                        )}
+                        {isSavingThis ? "Validating..." : "Save & Validate"}
                       </button>
                     )}
                   </div>
                 )}
 
                 {message?.provider === pc.id && (
-                  <p className={`mt-2 text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}>
+                  <p
+                    className={`mt-2 text-xs ${message.type === "success" ? "text-success" : "text-danger"}`}
+                  >
                     {message.text}
                   </p>
                 )}
@@ -485,17 +635,36 @@ function ConnectionsSection({ connections }: { connections: SettingsContentProps
             );
           })}
         </div>
+
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+          <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800">
+            <p className="font-medium">Security</p>
+            <p className="mt-0.5">
+              API keys are encrypted with AES-256-GCM before storage. Keys are
+              never returned to the browser, stored in localStorage, or included
+              in client bundles.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }: {
-  aiConfigured: boolean;
-  providerName: string;
-  modelName: string;
-  hasEmbeddings: boolean;
-}) {
+function AILayerSection() {
+  const providerStatus = useQuery(api.ai.getProviderStatus, {});
+
+  const aiConfigured = providerStatus?.configured ?? false;
+  const providerName = providerStatus?.provider
+    ? providerStatus.provider === "zai"
+      ? "z.ai / GLM"
+      : providerStatus.provider === "gemini"
+        ? "Google Gemini"
+        : providerStatus.provider
+    : "Not configured";
+  const modelName = providerStatus?.model ?? "—";
+
   return (
     <section className="rounded-xl border border-border bg-card p-6">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -503,7 +672,8 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
         AI Intelligence Layer
       </h2>
       <p className="mt-2 text-xs text-muted-foreground">
-        Intelligence features powered by LLM providers. Connect your own API key above.
+        Intelligence features powered by LLM providers. Connect your own API key
+        above or use an app-level provider.
       </p>
 
       <div className="mt-4 space-y-3">
@@ -516,7 +686,7 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
               <p className="text-sm font-medium">AI Provider</p>
               <p className="text-xs text-muted-foreground">
                 {aiConfigured
-                  ? `${providerName} — ${modelName}`
+                  ? `${providerName} \u2014 ${modelName}`
                   : "Not configured"}
               </p>
             </div>
@@ -544,18 +714,12 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
             <div>
               <p className="text-sm font-medium">Vector Embeddings</p>
               <p className="text-xs text-muted-foreground">
-                {hasEmbeddings ? "text-embedding-3-small (1536d)" : "Requires OpenAI API key"}
+                Future: semantic search via embeddings
               </p>
             </div>
           </div>
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-              hasEmbeddings
-                ? "bg-success/10 text-success"
-                : "bg-muted text-muted-foreground"
-            }`}
-          >
-            {hasEmbeddings ? "Active" : "Inactive"}
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            Inactive
           </span>
         </div>
 
@@ -567,27 +731,30 @@ function AILayerSection({ aiConfigured, providerName, modelName, hasEmbeddings }
               </div>
               <div>
                 <p className="text-sm font-medium">Usage Analytics</p>
-                <p className="text-xs text-muted-foreground">View token usage and cost estimates</p>
+                <p className="text-xs text-muted-foreground">
+                  View token usage and cost estimates
+                </p>
               </div>
             </div>
           </div>
         </Link>
       </div>
 
-      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
-        <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-800">
-          <p className="font-medium">Configuration</p>
-          <p className="mt-0.5">
-            Runtime AI keys are paused during the Convex migration. z.ai/Zhipu provider support will be added later.
-          </p>
+      {!aiConfigured && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2">
+          <Zap className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800">
+            <p className="font-medium">No provider connected</p>
+            <p className="mt-0.5">
+              Go to the AI Keys tab to connect your z.ai or Google Gemini API
+              key, or ask your administrator to configure an app-level provider.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
-
-import Link from "next/link";
 
 function AcademicIntegritySection() {
   return (
@@ -598,19 +765,35 @@ function AcademicIntegritySection() {
       </h2>
       <div className="mt-4 space-y-3">
         <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" defaultChecked className="rounded border-border" />
+          <input
+            type="checkbox"
+            defaultChecked
+            className="rounded border-border"
+          />
           <span>Always show source-supported labels on AI responses</span>
         </label>
         <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" defaultChecked className="rounded border-border" />
+          <input
+            type="checkbox"
+            defaultChecked
+            className="rounded border-border"
+          />
           <span>Warn when evidence is insufficient</span>
         </label>
         <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" defaultChecked className="rounded border-border" />
+          <input
+            type="checkbox"
+            defaultChecked
+            className="rounded border-border"
+          />
           <span>Flag unsupported claims in draft reviews</span>
         </label>
         <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" defaultChecked className="rounded border-border" />
+          <input
+            type="checkbox"
+            defaultChecked
+            className="rounded border-border"
+          />
           <span>Show academic integrity reminder when using AI tools</span>
         </label>
       </div>
@@ -618,7 +801,10 @@ function AcademicIntegritySection() {
   );
 }
 
-function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: boolean; hasEmbeddings: boolean }) {
+function FeatureStatusSection() {
+  const providerStatus = useQuery(api.ai.getProviderStatus, {});
+  const aiConfigured = providerStatus?.configured ?? false;
+
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-card p-6">
@@ -629,21 +815,42 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
         <div className="mt-4 space-y-2">
           {[
             { label: "Convex backend foundation", enabled: true },
-            { label: "Authentication", enabled: false },
+            { label: "Authentication (Clerk)", enabled: true },
             { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: false },
             { label: "Text Extraction", enabled: false },
             { label: "Source Chunking", enabled: false },
             { label: "Keyword Retrieval", enabled: false },
-            { label: "Runtime AI Provider", enabled: aiConfigured },
-            { label: "BYO API Key storage", enabled: false },
-            { label: "Vector Embeddings / Semantic Search", enabled: hasEmbeddings },
-            { label: "Hybrid Retrieval (semantic + keyword)", enabled: hasEmbeddings },
-            { label: "LLM-Powered Source-Grounded CoThinker", enabled: aiConfigured },
-            { label: "Auto-Generated Source Summaries", enabled: aiConfigured },
+            {
+              label: "Runtime AI Provider (z.ai + Gemini)",
+              enabled: aiConfigured,
+            },
+            { label: "BYO API Key storage (encrypted)", enabled: true },
+            {
+              label: "Vector Embeddings / Semantic Search",
+              enabled: false,
+            },
+            {
+              label: "Hybrid Retrieval (semantic + keyword)",
+              enabled: false,
+            },
+            {
+              label: "LLM-Powered Source-Grounded CoThinker",
+              enabled: aiConfigured,
+            },
+            {
+              label: "Auto-Generated Source Summaries",
+              enabled: aiConfigured,
+            },
             { label: "Citation Safety Check", enabled: aiConfigured },
-            { label: "Draft Review with Rubric Analysis", enabled: aiConfigured },
+            {
+              label: "Draft Review with Rubric Analysis",
+              enabled: aiConfigured,
+            },
             { label: "Conversation Memory (multi-turn)", enabled: false },
-            { label: "Template Fallback (no API key needed)", enabled: false },
+            {
+              label: "Template Fallback (no API key needed)",
+              enabled: false,
+            },
             { label: "Background File Processing", enabled: false },
             { label: "Source Notes", enabled: false },
             { label: "Usage Analytics", enabled: false },
@@ -651,9 +858,15 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             { label: "Draft Editor", enabled: true },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-sm">
-              <CheckCircle className={`h-4 w-4 ${item.enabled ? "text-success" : "text-muted-foreground"}`} />
-              <span className={item.enabled ? "" : "text-muted-foreground"}>{item.label}</span>
-              <span className={`text-xs ${item.enabled ? "text-success" : "text-muted-foreground"}`}>
+              <CheckCircle
+                className={`h-4 w-4 ${item.enabled ? "text-success" : "text-muted-foreground"}`}
+              />
+              <span className={item.enabled ? "" : "text-muted-foreground"}>
+                {item.label}
+              </span>
+              <span
+                className={`text-xs ${item.enabled ? "text-success" : "text-muted-foreground"}`}
+              >
                 {item.enabled ? "Active" : "Paused"}
               </span>
             </div>
@@ -680,8 +893,13 @@ function FeatureStatusSection({ aiConfigured, hasEmbeddings }: { aiConfigured: b
             "Drafts and Reviews",
             "Submissions",
           ].map((folder, i) => (
-            <div key={folder} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
-              <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
+            <div
+              key={folder}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+            >
+              <span className="text-xs text-muted-foreground w-5">
+                {i + 1}.
+              </span>
               {folder}
             </div>
           ))}

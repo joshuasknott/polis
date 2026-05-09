@@ -24,11 +24,6 @@ export default async function SettingsPage() {
           yearOfStudy: metadataNumber(user?.publicMetadata.yearOfStudy),
         }}
         preferences={{}}
-        aiConfigured={false}
-        providerName="z.ai"
-        modelName="Planned"
-        hasEmbeddings={false}
-        connections={[]}
         linkedProviders={[]}
         hasPassword={false}
       />
