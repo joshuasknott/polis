@@ -15,7 +15,7 @@ import {
   PanelRightClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage } from "@/lib/types";
+import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage, SectionPlan } from "@/lib/types";
 import { IngestStage } from "./ingest-stage";
 import { EvidenceMap } from "@/components/evidence/evidence-map";
 import { JudgeStage } from "@/components/arguments/judge-stage";
@@ -51,6 +51,7 @@ interface AssignmentWorkspaceShellProps {
   workingThesis?: string;
   assignmentSources?: SourceFile[];
   assignmentConvexId?: string;
+  sectionPlans?: SectionPlan[];
 }
 
 function StagePlaceholder({ label, description, icon: Icon }: { label: string; description: string; icon: React.ElementType }) {
@@ -79,6 +80,7 @@ export function AssignmentWorkspaceShell({
   workingThesis,
   assignmentSources = [],
   assignmentConvexId,
+  sectionPlans = [],
 }: AssignmentWorkspaceShellProps) {
   const [coThinkerOpen, setCoThinkerOpen] = useState(true);
 
@@ -111,11 +113,33 @@ export function AssignmentWorkspaceShell({
           />
         );
       case "map":
-        return <EvidenceMap arguments={assignmentArguments} evidenceGaps={evidenceGaps} />;
+        return (
+          <EvidenceMap
+            arguments={assignmentArguments}
+            evidenceGaps={evidenceGaps}
+            assignmentConvexId={assignmentConvexId ?? assignment.id}
+            assignmentSources={assignmentSources}
+          />
+        );
       case "judge":
-        return <JudgeStage assignment={assignment} arguments={assignmentArguments} judgements={judgements} />;
+        return (
+          <JudgeStage
+            assignment={assignment}
+            arguments={assignmentArguments}
+            judgements={judgements}
+            assignmentConvexId={assignmentConvexId ?? assignment.id}
+          />
+        );
       case "build":
-        return <ArgumentBuilder assignment={assignment} arguments={assignmentArguments} workingThesis={workingThesis} />;
+        return (
+          <ArgumentBuilder
+            assignment={assignment}
+            arguments={assignmentArguments}
+            workingThesis={workingThesis}
+            sectionPlans={sectionPlans}
+            assignmentConvexId={assignmentConvexId ?? assignment.id}
+          />
+        );
       case "draft":
         if (draft) {
           return (

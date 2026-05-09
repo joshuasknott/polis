@@ -1,5 +1,5 @@
 import type { Doc } from "../../convex/_generated/dataModel";
-import type { Assignment, Argument, EvidenceLink, Draft, Review, EvidenceStrength, ProductionStage } from "./types";
+import type { Assignment, Argument, EvidenceLink, Draft, Review, EvidenceStrength, ProductionStage, Judgement } from "./types";
 
 export function mapModule(
   mod: Doc<"modules"> & { sourceCount?: number; assignmentCount?: number },
@@ -95,13 +95,16 @@ export function mapEvidenceLink(
 export function mapArgument(
   arg: Doc<"arguments">,
   evidenceLinks: EvidenceLink[],
+  counterargumentNodes?: Doc<"argumentNodes">[],
 ): Argument {
   return {
     id: arg._id,
     assignmentId: arg.assignmentId,
     claim: arg.claim,
     synthesis: arg.synthesis ?? "",
-    counterarguments: [],
+    counterarguments: (counterargumentNodes ?? [])
+      .filter((n) => n.argumentId === arg._id)
+      .map((n) => n.content),
     sortOrder: arg.sortOrder,
     evidenceLinks,
   };
@@ -136,5 +139,37 @@ export function mapReview(
     revisionPriorities: byCategory("revision_priority"),
     rubricAlignment: run.rubricAlignment ?? "",
     overallFeedback: run.overallFeedback ?? "",
+  };
+}
+
+export function mapJudgement(
+  option: Doc<"judgementOptions">,
+  decisions: Doc<"judgementDecisions">[],
+): Judgement {
+  const relatedDecisions = decisions.filter(
+    (d) => d.judgementOptionId === option._id,
+  );
+  return {
+    id: option._id,
+    assignmentId: option.assignmentId,
+    type: option.type as import("./types").JudgementType,
+    findings: relatedDecisions.map((d) => d.content),
+    severity: relatedDecisions.length > 0
+      ? (relatedDecisions[0].severity as import("./types").JudgementSeverity)
+      : "info",
+    createdAt: new Date(option.createdAt).toISOString(),
+  };
+}
+
+export function mapSectionPlan(plan: Doc<"sectionPlans">) {
+  return {
+    id: plan._id,
+    assignmentId: plan.assignmentId,
+    label: plan.label,
+    wordBudget: plan.wordBudget,
+    argumentIds: plan.argumentIds ?? [],
+    counterargumentPlan: plan.counterargumentPlan ?? "",
+    rebuttalPlan: plan.rebuttalPlan ?? "",
+    sortOrder: plan.sortOrder,
   };
 }

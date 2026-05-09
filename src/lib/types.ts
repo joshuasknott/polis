@@ -276,3 +276,14 @@ export interface QuickAction {
 }
 
 export type AnswerStyle = "concise" | "detailed" | "critical" | "assignment_focused";
+
+export interface SectionPlan {
+  id: string;
+  assignmentId: string;
+  label: string;
+  wordBudget: number;
+  argumentIds: string[];
+  counterargumentPlan: string;
+  rebuttalPlan: string;
+  sortOrder: number;
+}

@@ -107,6 +107,80 @@ export const listNodes = query({
   },
 });
 
+export const listCounterarguments = query({
+  args: { argumentId: v.id("arguments") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const argument = await ctx.db.get(args.argumentId);
+    if (!argument || argument.tokenIdentifier !== tokenIdentifier) return [];
+
+    const nodes = await ctx.db
+      .query("argumentNodes")
+      .withIndex("by_argument", (q) => q.eq("argumentId", args.argumentId))
+      .order("asc")
+      .take(100);
+
+    return nodes.filter((n) => n.type === "counterargument");
+  },
+});
+
+export const addCounterargument = mutation({
+  args: {
+    argumentId: v.id("arguments"),
+    content: v.string(),
+    sortOrder: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const argument = await ctx.db.get(args.argumentId);
+    if (!argument || argument.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    const now = Date.now();
+    return await ctx.db.insert("argumentNodes", {
+      argumentId: args.argumentId,
+      tokenIdentifier,
+      type: "counterargument",
+      content: args.content,
+      sortOrder: args.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateCounterargument = mutation({
+  args: {
+    nodeId: v.id("argumentNodes"),
+    content: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const node = await ctx.db.get(args.nodeId);
+    if (!node || node.tokenIdentifier !== tokenIdentifier || node.type !== "counterargument") {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(args.nodeId, { ...args.content ? { content: args.content } : {}, updatedAt: Date.now() });
+    return args.nodeId;
+  },
+});
+
+export const removeCounterargument = mutation({
+  args: { nodeId: v.id("argumentNodes") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const node = await ctx.db.get(args.nodeId);
+    if (!node || node.tokenIdentifier !== tokenIdentifier || node.type !== "counterargument") {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.delete(args.nodeId);
+    return args.nodeId;
+  },
+});
+
 export const createNode = mutation({
   args: {
     argumentId: v.id("arguments"),

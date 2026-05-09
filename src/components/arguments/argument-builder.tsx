@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import {
   Plus,
   ChevronDown,
@@ -13,9 +16,12 @@ import {
   ArrowDown,
   RefreshCw,
   FileText,
+  Trash2,
+  Target,
+  LayoutList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Argument, EvidenceLink, EvidenceStrength, Assignment } from "@/lib/types";
+import type { Argument, EvidenceLink, EvidenceStrength, Assignment, SectionPlan } from "@/lib/types";
 
 const STRENGTH_META: Record<EvidenceStrength, { label: string; icon: React.ElementType; colour: string }> = {
   strong: { label: "Strong", icon: ArrowUp, colour: "text-success" },
@@ -87,7 +93,6 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
         ready ? "border-success/30 bg-success/5" : "border-border bg-card"
       )}
     >
-      {/* Header */}
       <button
         id={`argument-card-${argument.id}`}
         onClick={() => setExpanded((e) => !e)}
@@ -131,7 +136,6 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
 
       {expanded && (
         <div className="border-t border-border px-5 pb-5 pt-4 space-y-5">
-          {/* Issues */}
           {!ready && (
             <div className="rounded-lg border border-warning/20 bg-warning/5 p-3">
               <p className="text-xs font-semibold text-warning mb-1.5">Before building:</p>
@@ -146,20 +150,10 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
             </div>
           )}
 
-          {/* Evidence */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Linked evidence
-              </p>
-              <button
-                id={`add-evidence-${argument.id}`}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="h-3 w-3" />
-                Add
-              </button>
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Linked evidence
+            </p>
             {argument.evidenceLinks.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border py-6 text-center">
                 <p className="text-xs text-muted-foreground">No evidence linked yet.</p>
@@ -173,7 +167,6 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
             )}
           </div>
 
-          {/* Synthesis */}
           {argument.synthesis && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -185,20 +178,10 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
             </div>
           )}
 
-          {/* Counterarguments */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Counterarguments &amp; rebuttals
-              </p>
-              <button
-                id={`add-counter-${argument.id}`}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Plus className="h-3 w-3" />
-                Add
-              </button>
-            </div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+              Counterarguments &amp; rebuttals
+            </p>
             {argument.counterarguments.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border py-6 text-center">
                 <p className="text-xs text-muted-foreground">No counterarguments mapped yet.</p>
@@ -206,11 +189,7 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
             ) : (
               <div className="space-y-2">
                 {argument.counterarguments.map((counter, i) => (
-                  <CounterargumentRow
-                    key={i}
-                    text={counter}
-                    rebuttal={undefined}
-                  />
+                  <CounterargumentRow key={i} text={counter} />
                 ))}
               </div>
             )}
@@ -221,9 +200,26 @@ function ArgumentCard({ argument, index }: ArgumentCardProps) {
   );
 }
 
-function ThesisBlock({ thesis }: { thesis: string }) {
+function ThesisBlock({ thesis, assignmentConvexId }: { thesis: string; assignmentConvexId: string }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(thesis);
+  const [lastThesis, setLastThesis] = useState(thesis);
+  const updateThesis = useMutation(api.assignments.updateThesis);
+
+  if (thesis !== lastThesis) {
+    setValue(thesis);
+    setLastThesis(thesis);
+  }
+
+  const handleSave = async () => {
+    await updateThesis({
+      assignmentId: assignmentConvexId as Id<"assignments">,
+      thesis: value,
+    });
+    setEditing(false);
+  };
+
+  const hasThesis = value.trim().length > 0;
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -231,28 +227,306 @@ function ThesisBlock({ thesis }: { thesis: string }) {
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Working thesis</p>
         <button
           id="thesis-edit-toggle"
-          onClick={() => setEditing((e) => !e)}
+          onClick={() => {
+            if (editing) handleSave();
+            else setEditing(true);
+          }}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <RefreshCw className="h-3 w-3" />
-          {editing ? "Done" : "Edit"}
+          {editing ? "Save" : "Edit"}
         </button>
       </div>
 
       {editing ? (
-        <textarea
-          id="thesis-textarea"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          rows={4}
-          className="w-full rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm font-serif text-foreground leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-          placeholder="Write your working thesis…"
-        />
+        <div className="space-y-3">
+          <textarea
+            id="thesis-textarea"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            rows={4}
+            className="w-full rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm font-serif text-foreground leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            placeholder="Write your working thesis…"
+          />
+          {!hasThesis && (
+            <p className="text-xs text-muted-foreground italic">
+              <span className="font-medium text-warning">[Scaffold]</span> A working thesis helps structure your argument. Write one based on your evidence and position judgement.
+            </p>
+          )}
+        </div>
       ) : (
         <p className="text-base font-serif text-foreground leading-relaxed border-l-4 border-accent pl-4 py-1">
-          {value || <span className="text-muted-foreground italic">No thesis yet — click Edit to add one.</span>}
+          {hasThesis ? value : <span className="text-muted-foreground italic">No thesis yet — click Edit to add one.</span>}
         </p>
       )}
+    </div>
+  );
+}
+
+interface SectionPlanCardProps {
+  plan: SectionPlan;
+  arguments: Argument[];
+  onDelete: () => void;
+}
+
+function SectionPlanCard({ plan, arguments: args, onDelete }: SectionPlanCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [label, setLabel] = useState(plan.label);
+  const [wordBudget, setWordBudget] = useState(plan.wordBudget);
+  const [counterargumentPlan, setCounterargumentPlan] = useState(plan.counterargumentPlan);
+  const [rebuttalPlan, setRebuttalPlan] = useState(plan.rebuttalPlan);
+  const [selectedArgIds, setSelectedArgIds] = useState<Set<string>>(new Set(plan.argumentIds));
+
+  const updatePlan = useMutation(api.assignments.updateSectionPlan);
+
+  const assignedArgs = args.filter((a) => selectedArgIds.has(a.id));
+  const totalEvidence = assignedArgs.reduce((sum, a) => sum + a.evidenceLinks.length, 0);
+
+  const handleSave = async () => {
+    await updatePlan({
+      sectionPlanId: plan.id as Id<"sectionPlans">,
+      label,
+      wordBudget,
+      argumentIds: Array.from(selectedArgIds) as Id<"arguments">[],
+      counterargumentPlan: counterargumentPlan || undefined,
+      rebuttalPlan: rebuttalPlan || undefined,
+    });
+    setEditing(false);
+  };
+
+  const toggleArg = (argId: string) => {
+    setSelectedArgIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(argId)) next.delete(argId);
+      else next.add(argId);
+      return next;
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <button
+        onClick={() => setExpanded((e) => !e)}
+        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/20 transition-colors"
+      >
+        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/10">
+          <span className="text-xs font-bold text-accent">{plan.sortOrder + 1}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground">{plan.label}</p>
+          <div className="flex items-center gap-3 mt-1">
+            <span className="text-xs text-muted-foreground">{plan.wordBudget} words</span>
+            <span className="text-xs text-muted-foreground">{assignedArgs.length} arg · {totalEvidence} evidence</span>
+          </div>
+        </div>
+        {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+      </button>
+
+      {expanded && (
+        <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
+          {editing ? (
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Section label</label>
+                <input
+                  type="text"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Word budget</label>
+                <input
+                  type="number"
+                  value={wordBudget}
+                  onChange={(e) => setWordBudget(Number(e.target.value))}
+                  className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  min={0}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Assigned arguments</label>
+                <div className="space-y-1">
+                  {args.map((arg) => (
+                    <label key={arg.id} className="flex items-center gap-2 text-xs text-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedArgIds.has(arg.id)}
+                        onChange={() => toggleArg(arg.id)}
+                        className="rounded border-border"
+                      />
+                      <span className="line-clamp-1">{arg.claim}</span>
+                    </label>
+                  ))}
+                  {args.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic">No arguments created yet.</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Counterargument plan</label>
+                <textarea
+                  value={counterargumentPlan}
+                  onChange={(e) => setCounterargumentPlan(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  placeholder="How will this section address counterarguments?"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Rebuttal plan</label>
+                <textarea
+                  value={rebuttalPlan}
+                  onChange={(e) => setRebuttalPlan(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent/30"
+                  placeholder="Planned rebuttal strategy for this section"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+                <button onClick={handleSave} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-accent-foreground">Save</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setEditing(true)} className="text-xs text-muted-foreground hover:text-foreground">Edit</button>
+                <button onClick={onDelete} className="flex items-center gap-1 text-xs text-danger hover:text-danger/80">
+                  <Trash2 className="h-3 w-3" /> Delete
+                </button>
+              </div>
+
+              {assignedArgs.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Arguments</p>
+                  <ul className="space-y-1">
+                    {assignedArgs.map((a) => (
+                      <li key={a.id} className="text-xs text-foreground flex items-start gap-1.5">
+                        <span className="mt-1.5 h-1 w-1 rounded-full bg-accent flex-shrink-0" />
+                        {a.claim}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {plan.counterargumentPlan && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-warning mb-1">Counterargument plan</p>
+                  <p className="text-xs text-muted-foreground">{plan.counterargumentPlan}</p>
+                </div>
+              )}
+
+              {plan.rebuttalPlan && (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-success mb-1">Rebuttal plan</p>
+                  <p className="text-xs text-muted-foreground">{plan.rebuttalPlan}</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface NewSectionPlanFormProps {
+  assignmentConvexId: string;
+  onClose: () => void;
+  existingCount: number;
+}
+
+function NewSectionPlanForm({ assignmentConvexId, onClose, existingCount }: NewSectionPlanFormProps) {
+  const createPlan = useMutation(api.assignments.createSectionPlan);
+  const [label, setLabel] = useState("");
+  const [wordBudget, setWordBudget] = useState(500);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!label.trim()) return;
+    setSubmitting(true);
+    try {
+      await createPlan({
+        assignmentId: assignmentConvexId as Id<"assignments">,
+        label,
+        wordBudget,
+        sortOrder: existingCount,
+      });
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">New section</h4>
+      <input
+        type="text"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+        placeholder="Section label (e.g. Introduction, Theoretical Framework…)"
+      />
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">Word budget</label>
+        <input
+          type="number"
+          value={wordBudget}
+          onChange={(e) => setWordBudget(Number(e.target.value))}
+          className="w-full rounded-lg border border-border bg-muted/20 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+          min={0}
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+        <button
+          onClick={handleSubmit}
+          disabled={!label.trim() || submitting}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent text-accent-foreground disabled:opacity-50"
+        >
+          {submitting ? "Creating…" : "Add section"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WordBudgetBar({ sections, wordLimit }: { sections: SectionPlan[]; wordLimit: number }) {
+  const allocated = sections.reduce((sum, s) => sum + s.wordBudget, 0);
+  const remaining = wordLimit - allocated;
+  const overBudget = remaining < 0;
+  const pct = wordLimit > 0 ? Math.min((allocated / wordLimit) * 100, 100) : 0;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Target className="h-3.5 w-3.5" />
+          Word budget
+        </p>
+        <span className={cn("text-xs font-medium", overBudget ? "text-danger" : remaining === 0 ? "text-success" : "text-muted-foreground")}>
+          {allocated} / {wordLimit} words
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-muted overflow-hidden">
+        <div
+          className={cn("h-full rounded-full transition-all", overBudget ? "bg-danger" : "bg-accent")}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="flex justify-between mt-1.5">
+        <span className="text-xs text-muted-foreground">
+          {sections.length} section{sections.length !== 1 ? "s" : ""} planned
+        </span>
+        <span className={cn("text-xs", overBudget ? "text-danger font-medium" : "text-muted-foreground")}>
+          {overBudget ? `${Math.abs(remaining)} over budget` : `${remaining} remaining`}
+        </span>
+      </div>
     </div>
   );
 }
@@ -292,39 +566,75 @@ interface ArgumentBuilderProps {
   assignment: Assignment;
   arguments: Argument[];
   workingThesis?: string;
+  sectionPlans: SectionPlan[];
+  assignmentConvexId: string;
 }
 
-const DEFAULT_THESIS =
-  "While majoritarian democracies offer greater decisiveness, consensus democracies produce more durable and legitimate policy outcomes when supported by stable bargaining norms.";
+export function ArgumentBuilder({ arguments: args, workingThesis, sectionPlans, assignmentConvexId, assignment }: ArgumentBuilderProps) {
+  const [showNewSection, setShowNewSection] = useState(false);
+  const deletePlan = useMutation(api.assignments.removeSectionPlan);
 
-export function ArgumentBuilder({ arguments: args, workingThesis }: ArgumentBuilderProps) {
   return (
     <div className="space-y-8">
-      {/* Build readiness banner */}
       <BuildReadinessSummary args={args} />
 
-      {/* Working thesis */}
-      <ThesisBlock thesis={workingThesis ?? DEFAULT_THESIS} />
+      <ThesisBlock thesis={workingThesis ?? ""} assignmentConvexId={assignmentConvexId} />
 
-      {/* Argument cards */}
+      <WordBudgetBar sections={sectionPlans} wordLimit={assignment.wordLimit} />
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <LayoutList className="h-3.5 w-3.5" />
+            Section planner
+          </h3>
+          <button
+            onClick={() => setShowNewSection(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-sm text-foreground hover:bg-muted/60 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add section
+          </button>
+        </div>
+
+        {sectionPlans.length === 0 && !showNewSection ? (
+          <div className="rounded-xl border border-dashed border-border py-10 text-center">
+            <LayoutList className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No sections planned yet. Add sections to allocate your word budget and evidence.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {sectionPlans.map((plan) => (
+              <SectionPlanCard
+                key={plan.id}
+                plan={plan}
+                arguments={args}
+                onDelete={() => deletePlan({ sectionPlanId: plan.id as Id<"sectionPlans"> })}
+              />
+            ))}
+          </div>
+        )}
+
+        {showNewSection && (
+          <NewSectionPlanForm
+            assignmentConvexId={assignmentConvexId}
+            onClose={() => setShowNewSection(false)}
+            existingCount={sectionPlans.length}
+          />
+        )}
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Argument claims
           </h3>
-          <button
-            id="add-argument"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card text-sm text-foreground hover:bg-muted/60 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add claim
-          </button>
         </div>
 
         {args.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center">
             <p className="text-sm text-muted-foreground">
-              No arguments yet. Add your first claim to begin building.
+              No arguments yet. Return to the Map stage to create claims and link evidence.
             </p>
           </div>
         ) : (
