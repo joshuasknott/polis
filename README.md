@@ -61,7 +61,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
 | `CLERK_SECRET_KEY` | Yes | Clerk secret key |
 | `CLERK_JWT_ISSUER_DOMAIN` | Yes | Clerk JWT issuer domain for Convex auth |
-| `ENCRYPTION_SECRET` | Planned | For encrypting user AI API keys at rest |
+| `ENCRYPTION_KEY` | Optional | For encrypting user AI API keys at rest |
 
 ## Current Status
 

@@ -1,4 +1,4 @@
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, type QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
 import { paginationOptsValidator } from "convex/server";
@@ -12,6 +12,18 @@ const USAGE_TYPES = v.union(
   v.literal("citation_check"),
   v.literal("ingestion"),
 );
+
+const MAX_USAGE_EVENTS_FOR_STATS = 1000;
+
+async function recentUsageEvents(ctx: QueryCtx, tokenIdentifier: string) {
+  return await ctx.db
+    .query("usageEvents")
+    .withIndex("by_tokenIdentifier_and_createdAt", (q) =>
+      q.eq("tokenIdentifier", tokenIdentifier),
+    )
+    .order("desc")
+    .take(MAX_USAGE_EVENTS_FOR_STATS);
+}
 
 export const recordEvent = mutation({
   args: {
@@ -104,11 +116,8 @@ export const getStatsAllTime = query({
     let costEstimate = 0;
     let count = 0;
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       tokensIn += event.tokensIn ?? 0;
       tokensOut += event.tokensOut ?? 0;
       costEstimate += event.costEstimate ?? 0;
@@ -131,11 +140,8 @@ export const getStatsThisMonth = query({
     let costEstimate = 0;
     let count = 0;
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       if (event.createdAt < monthStart) break;
       tokensIn += event.tokensIn ?? 0;
       tokensOut += event.tokensOut ?? 0;
@@ -153,11 +159,8 @@ export const getStatsByType = query({
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const agg = new Map<string, { tokensIn: number; tokensOut: number; costEstimate: number; count: number }>();
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       const existing = agg.get(event.type) ?? { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 };
       existing.tokensIn += event.tokensIn ?? 0;
       existing.tokensOut += event.tokensOut ?? 0;
@@ -176,11 +179,8 @@ export const getStatsByModel = query({
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const agg = new Map<string, { tokensIn: number; tokensOut: number; costEstimate: number; count: number }>();
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       const key = event.model ?? "unknown";
       const existing = agg.get(key) ?? { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 };
       existing.tokensIn += event.tokensIn ?? 0;
@@ -200,11 +200,8 @@ export const getStatsByProvider = query({
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const agg = new Map<string, { tokensIn: number; tokensOut: number; costEstimate: number; count: number }>();
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       const key = event.provider ?? "unknown";
       const existing = agg.get(key) ?? { tokensIn: 0, tokensOut: 0, costEstimate: 0, count: 0 };
       existing.tokensIn += event.tokensIn ?? 0;
@@ -225,11 +222,15 @@ export const getRetrievalBreakdown = query({
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const counts = new Map<string, number>();
 
-    for await (const event of ctx.db
+    const events = await ctx.db
       .query("usageEvents")
-      .withIndex("by_tokenIdentifier_and_type", (q) =>
+      .withIndex("by_tokenIdentifier_and_type_and_createdAt", (q) =>
         q.eq("tokenIdentifier", tokenIdentifier).eq("type", "retrieval"),
-      )) {
+      )
+      .order("desc")
+      .take(MAX_USAGE_EVENTS_FOR_STATS);
+
+    for (const event of events) {
       if (event.createdAt < thirtyDaysAgo) break;
       const mode = (event.metadata as Record<string, string> | null)?.mode ?? "hybrid";
       counts.set(mode, (counts.get(mode) ?? 0) + 1);
@@ -249,7 +250,7 @@ export const getRecentEvents = query({
         q.eq("tokenIdentifier", tokenIdentifier),
       )
       .order("desc")
-      .take(args.limit ?? 20);
+      .take(Math.min(args.limit ?? 20, 100));
   },
 });
 
@@ -273,11 +274,8 @@ export const getDashboardStats = query({
     const retrievalModes = new Map<string, number>();
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
-    for await (const event of ctx.db
-      .query("usageEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
-        q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+    const events = await recentUsageEvents(ctx, tokenIdentifier);
+    for (const event of events) {
       const ti = event.tokensIn ?? 0;
       const to = event.tokensOut ?? 0;
       const ce = event.costEstimate ?? 0;

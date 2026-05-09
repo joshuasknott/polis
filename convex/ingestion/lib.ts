@@ -12,9 +12,52 @@ export interface ChunkData {
   citationLabel: string;
 }
 
+export const SUPPORTED_UPLOAD_TYPES = new Set([
+  "text/plain",
+  "text/markdown",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+
+const DEFAULT_MAX_UPLOAD_SIZE_MB = 50;
 const CHUNK_WORD_TARGET = 1000;
 const CHUNK_WORD_OVERLAP = 150;
 const TOKEN_RATIO = 1.3;
+
+export function getMaxUploadBytes(): number {
+  const configured = Number(process.env.MAX_UPLOAD_SIZE_MB);
+  const maxMb = Number.isFinite(configured) && configured > 0
+    ? configured
+    : DEFAULT_MAX_UPLOAD_SIZE_MB;
+  return maxMb * 1024 * 1024;
+}
+
+export function assertSupportedUpload(args: {
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+}): string {
+  const normalizedType = normalizeFileType(args.fileName ?? "", args.fileType);
+  if (!SUPPORTED_UPLOAD_TYPES.has(normalizedType)) {
+    throw new Error("Unsupported file type. Upload TXT, Markdown, PDF, or DOCX files.");
+  }
+
+  if (args.fileSize == null || args.fileSize <= 0) {
+    throw new Error("File size is required for uploads.");
+  }
+
+  if (args.fileSize > getMaxUploadBytes()) {
+    throw new Error(
+      `File is too large. Maximum upload size is ${Math.round(getMaxUploadBytes() / (1024 * 1024))}MB.`,
+    );
+  }
+
+  return normalizedType;
+}
+
+export function isSupportedFileType(fileName: string | undefined, fileType: string | undefined): boolean {
+  return SUPPORTED_UPLOAD_TYPES.has(normalizeFileType(fileName ?? "", fileType));
+}
 
 export function extractPlainText(buffer: Buffer, fileType: string): string {
   if (fileType === "text/plain" || fileType === "text/markdown") {

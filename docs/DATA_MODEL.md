@@ -52,8 +52,8 @@ Module {
   themes: string[]            // module-level themes (context)
   concepts: string[]          // module-level concepts (context)
   learningOutcomes: string[]  // module learning outcomes (context)
-  contextVersion: number      // incremented on context change
-  contextUpdatedAt: number    // timestamp of last context change
+  contextVersion?: number     // incremented on context change; optional during migration
+  contextUpdatedAt?: number   // timestamp of last context change; optional during migration
   sourceCount: number
   assignmentCount: number
   noteCount: number
@@ -291,6 +291,7 @@ CoThinkerSession {
   title: string
   scope: CoThinkerScope
   stage: ProductionStage | null
+  messageCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -370,7 +371,7 @@ AIProviderConnection {
 }
 ```
 
-**ProviderName**: `openai | anthropic | google`
+**ProviderName**: `zai | gemini`
 
 ### ProcessingJob
 ```
@@ -385,9 +386,9 @@ ProcessingJob {
 }
 ```
 
-**ProcessingJobType**: `text_extraction | chunking | embedding | analysis`
+**ProcessingJobType**: `ingestion | text_extraction | chunking | embedding | analysis`
 
-**ProcessingJobStatus**: `pending | running | completed | failed`
+**ProcessingJobStatus**: `queued | extracting | chunking | pending | running | processed | completed | failed`
 
 ## Relationships
 

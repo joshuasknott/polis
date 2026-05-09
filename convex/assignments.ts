@@ -79,8 +79,8 @@ export const create = mutation({
       ...args,
       tokenIdentifier,
       stage: "ingest",
-      contextVersion: mod.contextVersion,
-      contextUpdatedAt: now,
+      contextVersion: mod.contextVersion ?? 1,
+      contextUpdatedAt: mod.contextUpdatedAt ?? now,
       createdAt: now,
       updatedAt: now,
     });

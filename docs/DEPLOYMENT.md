@@ -69,8 +69,8 @@ When AI features are wired:
 | Variable | Description |
 |----------|-------------|
 | `ZAI_API_KEY` | z.ai/Zhipu GLM API key (primary provider) |
-| `GOOGLE_AI_API_KEY` | Google Gemini API key (secondary provider) |
-| `ENCRYPTION_SECRET` | AES-256-GCM secret for user API keys (`openssl rand -hex 32`) |
+| `GEMINI_API_KEY` | Google Gemini API key (secondary provider) |
+| `ENCRYPTION_KEY` | AES-256-GCM secret for user API keys (`openssl rand -hex 32`) |
 
 ## Verification
 
@@ -103,5 +103,5 @@ npx convex deploy --dry-run
 | `CLERK_SECRET_KEY` | Yes | — | Clerk secret key |
 | `CLERK_JWT_ISSUER_DOMAIN` | Yes | — | Clerk JWT issuer for Convex |
 | `ZAI_API_KEY` | No | Yes | z.ai API key |
-| `GOOGLE_AI_API_KEY` | No | Yes | Gemini API key |
-| `ENCRYPTION_SECRET` | No | Yes | Key encryption secret |
+| `GEMINI_API_KEY` | No | Yes | Gemini API key |
+| `ENCRYPTION_KEY` | No | Yes | Key encryption secret |

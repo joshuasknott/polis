@@ -3,7 +3,7 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
-import { chunkText, normalizeFileType } from "./lib";
+import { assertSupportedUpload, chunkText, normalizeFileType } from "./lib";
 import type { ChunkData } from "./lib";
 import type { Id } from "../_generated/dataModel";
 
@@ -39,12 +39,18 @@ export const processSource = internalAction({
         throw new Error("File not found in storage");
       }
 
-      const arrayBuffer = await blob.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
       const fileType = normalizeFileType(
         source.fileName ?? "",
         source.fileType,
       );
+      assertSupportedUpload({
+        fileName: source.fileName,
+        fileType,
+        fileSize: blob.size,
+      });
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
       const { text, pages } = await extractText(buffer, fileType);
 

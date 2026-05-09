@@ -73,11 +73,15 @@ export const getErrorCounts = query({
     const byType = new Map<string, number>();
     let total = 0;
 
-    for await (const event of ctx.db
+    const events = await ctx.db
       .query("errorEvents")
-      .withIndex("by_tokenIdentifier", (q) =>
+      .withIndex("by_tokenIdentifier_and_createdAt", (q) =>
         q.eq("tokenIdentifier", tokenIdentifier),
-      )) {
+      )
+      .order("desc")
+      .take(500);
+
+    for (const event of events) {
       if (event.createdAt < twentyFourHoursAgo) break;
       bySource.set(event.source, (bySource.get(event.source) ?? 0) + 1);
       byType.set(event.errorType, (byType.get(event.errorType) ?? 0) + 1);

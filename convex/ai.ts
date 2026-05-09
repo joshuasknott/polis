@@ -1,6 +1,6 @@
 import { query, action } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import {
   PROVIDERS,
   PROVIDER_LIST,
@@ -21,10 +21,19 @@ function getAppLevelKey(provider: ProviderId): string | null {
 }
 
 function getDefaultProvider(): { provider: ProviderId; model: string } {
-  const provider = (process.env.AI_PROVIDER as ProviderId) || "zai";
+  const configuredProvider = process.env.AI_PROVIDER;
+  const provider: ProviderId =
+    configuredProvider === "gemini" || configuredProvider === "zai"
+      ? configuredProvider
+      : "zai";
   const model =
     process.env.AI_MODEL || PROVIDERS[provider]?.defaultModel || "glm-4-air";
   return { provider, model };
+}
+
+function resolveProvider(provider?: string): ProviderId {
+  if (provider === "zai" || provider === "gemini") return provider;
+  return getDefaultProvider().provider;
 }
 
 export const getProviderStatus = query({
@@ -40,16 +49,16 @@ export const getProviderStatus = query({
       .withIndex("by_tokenIdentifier", (q) =>
         q.eq("tokenIdentifier", identity.tokenIdentifier),
       )
-      .filter((q) => q.eq(q.field("status"), "connected"))
-      .first();
+      .take(10);
+    const connection = connections.find((c) => c.status === "connected");
 
-    if (connections) {
-      const providerConfig = PROVIDERS[connections.provider as ProviderId];
+    if (connection) {
+      const providerConfig = PROVIDERS[connection.provider as ProviderId];
       return {
         configured: true,
-        provider: connections.provider,
+        provider: connection.provider,
         model:
-          connections.modelPreference ||
+          connection.modelPreference ||
           providerConfig?.defaultModel ||
           null,
       };
@@ -101,17 +110,18 @@ export const chat = action({
     sources: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const targetProvider =
-      (args.provider as ProviderId) || getDefaultProvider().provider;
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const targetProvider = resolveProvider(args.provider);
 
     let apiKey: string | null = null;
     let resolvedModel =
       args.model || getDefaultProvider().model;
 
-    const identity = await ctx.auth.getUserIdentity();
     const encryptionKey = process.env.ENCRYPTION_KEY;
 
-    if (identity && encryptionKey) {
+    if (encryptionKey) {
       const encrypted = await ctx.runQuery(
         internal.ai_keys.internalGetEncryptedKey,
         {
@@ -161,6 +171,23 @@ export const chat = action({
       })),
     ];
 
+    const estimatedTokens = Math.ceil(
+      chatMessages.reduce((total, message) => total + message.content.length, 0) / 4,
+    );
+    const rateLimit = await ctx.runMutation(api.rateLimits.checkRateLimit, {
+      provider: targetProvider,
+      estimatedTokens,
+    });
+    if (!rateLimit.allowed) {
+      return {
+        content: "Rate limit exceeded. Please wait before sending another AI request.",
+        provider: targetProvider,
+        model: resolvedModel,
+        usage: { tokensIn: 0, tokensOut: 0 },
+        label: "error" as const,
+      };
+    }
+
     let response;
     try {
       if (targetProvider === "zai") {
@@ -197,16 +224,14 @@ export const chat = action({
       };
     }
 
-    if (identity) {
-      await ctx.runMutation(internal.ai_keys.internalLogUsage, {
-        tokenIdentifier: identity.tokenIdentifier,
-        provider: targetProvider,
-        model: response.model,
-        type: "chat",
-        tokensIn: response.usage?.tokensIn,
-        tokensOut: response.usage?.tokensOut,
-      });
-    }
+    await ctx.runMutation(internal.ai_keys.internalLogUsage, {
+      tokenIdentifier: identity.tokenIdentifier,
+      provider: targetProvider,
+      model: response.model,
+      type: "chat",
+      tokensIn: response.usage?.tokensIn,
+      tokensOut: response.usage?.tokensOut,
+    });
 
     return {
       ...response,
