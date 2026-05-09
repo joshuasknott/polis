@@ -64,7 +64,7 @@ export default async function ModulePage({
           summary: s.summary || "",
           pageCount: s.pageCount,
         }))}
-        essays={assignments.map((assignment) => ({
+        assignments={assignments.map((assignment) => ({
           id: assignment.id,
           title: assignment.title,
           status: assignment.stage,

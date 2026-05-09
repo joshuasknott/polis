@@ -89,8 +89,6 @@ export interface Module {
   sourceCount: number;
   noteCount: number;
   assignmentCount: number;
-  /** @deprecated Use assignmentCount */
-  essayProjectCount: number;
   lastActivityAt: string;
   color: string;
 }
@@ -272,113 +270,6 @@ export interface QuickAction {
   description: string;
   href: string;
   icon: string;
-}
-
-// ---------------------------------------------------------------------------
-// Legacy compatibility aliases
-// ---------------------------------------------------------------------------
-// These preserve compilation for files that still import the old names.
-// Each alias is marked @deprecated and should be migrated in follow-up work.
-
-
-
-/** @deprecated Use `ProductionStage` */
-export type EssayStatus = ProductionStage;
-
-/** @deprecated Use `CoThinkerScope` */
-export type AIScope = CoThinkerScope;
-
-/** @deprecated Use `WorkbenchToolType` */
-export type ToolType = WorkbenchToolType;
-
-/** @deprecated Use `ProductionStage` */
-export type AIMode = ProductionStage;
-
-/** @deprecated Use `CoThinkerMessage` */
-export type AIMessage = CoThinkerMessage;
-
-/** @deprecated Use `CoThinker` */
-export type AIConversation = CoThinker;
-
-/** @deprecated Use `WorkbenchTool` */
-export type AcademicTool = WorkbenchTool;
-
-/** @deprecated Use `Review` */
-export type DraftReview = Review;
-
-/** @deprecated Use `Assignment` */
-export interface EssayProject {
-  id: string;
-  moduleId: string;
-  title: string;
-  question: string;
-  wordCount: number;
-  dueDate: string;
-  rubric: RubricCriterion[];
-  selectedSourceIds: string[];
-  thesis: string;
-  status: ProductionStage;
-  structure: EssaySection[];
-  evidenceBank: LegacyEvidenceItem[];
-  counterarguments: LegacyCounterargument[];
-  gaps: LegacyResearchGap[];
-  draftContent: string;
-}
-
-/** @deprecated Use structured Arguments instead */
-export interface EssaySection {
-  id: string;
-  heading: string;
-  points: string[];
-  evidenceIds: string[];
-  wordAllocation: number;
-}
-
-/** @deprecated Use `EvidenceLink` */
-export interface LegacyEvidenceItem {
-  id: string;
-  sourceId: string;
-  sourceTitle: string;
-  quote: string;
-  pageRange: string;
-  argumentUse: string;
-}
-
-/** @deprecated Counterarguments are now strings on `Argument` */
-export interface LegacyCounterargument {
-  id: string;
-  claim: string;
-  sourceId: string;
-  sourceTitle: string;
-  rebuttal: string;
-}
-
-/** @deprecated Use `Judgement` with type "gap_analysis" */
-export interface LegacyResearchGap {
-  id: string;
-  description: string;
-  severity: "high" | "medium" | "low";
-  suggestedSourceType: string;
-}
-
-/** @deprecated Use `LegacyEvidenceItem` */
-export type EvidenceItem = LegacyEvidenceItem;
-
-/** @deprecated Use `LegacyCounterargument` */
-export type Counterargument = LegacyCounterargument;
-
-/** @deprecated Use `LegacyResearchGap` */
-export type ResearchGap = LegacyResearchGap;
-
-/** @deprecated Use `GeneratedOutput` is removed — tools generate Judgements or Reviews */
-export interface GeneratedOutput {
-  id: string;
-  moduleId: string;
-  type: WorkbenchToolType;
-  title: string;
-  content: string;
-  sourcesUsed: string[];
-  createdAt: string;
 }
 
 export type AnswerStyle = "concise" | "detailed" | "critical" | "assignment_focused";

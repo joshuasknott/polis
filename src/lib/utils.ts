@@ -67,7 +67,7 @@ export function getStatusLabel(status: string): string {
   return labels[status] || status;
 }
 
-export function getEssayStatusLabel(status: string): string {
+export function getProductionStageLabel(status: string): string {
   const labels: Record<string, string> = {
     ingest: "Ingest",
     understand: "Understand",
@@ -80,7 +80,7 @@ export function getEssayStatusLabel(status: string): string {
   return labels[status] || status;
 }
 
-export function getEssayStatusColor(status: string): string {
+export function getProductionStageColor(status: string): string {
   const colors: Record<string, string> = {
     ingest: "bg-muted text-muted-foreground",
     understand: "bg-accent/10 text-accent",

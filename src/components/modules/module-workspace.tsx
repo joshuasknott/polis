@@ -43,7 +43,7 @@ interface ModuleWorkspaceProps {
     summary: string;
     pageCount: number;
   }>;
-  essays: Array<{
+  assignments: Array<{
     id: string;
     title: string;
     status: string;
@@ -54,7 +54,7 @@ export function ModuleWorkspace({
   module,
   folders,
   sources,
-  essays,
+  assignments,
 }: ModuleWorkspaceProps) {
   const { activeTab } = module;
 
@@ -67,7 +67,7 @@ export function ModuleWorkspace({
       case "notes":
         return <EmptyState icon={StickyNote} title="Notes" description="Your module notes and source annotations will appear here." />;
       case "assignments":
-        return <ModuleAssignments assignments={essays} module={module} />;
+        return <ModuleAssignments assignments={assignments} module={module} />;
       default:
         return <ModuleInfo module={module} />;
     }
@@ -242,7 +242,7 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
   );
 }
 
-function ModuleAssignments({ assignments, module }: { assignments: ModuleWorkspaceProps["essays"], module: ModuleWorkspaceProps["module"] }) {
+function ModuleAssignments({ assignments, module }: { assignments: ModuleWorkspaceProps["assignments"], module: ModuleWorkspaceProps["module"] }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b border-border pb-4">

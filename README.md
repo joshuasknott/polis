@@ -4,7 +4,7 @@ Coursework intelligence workspace for social science students.
 
 ## What It Is
 
-Polis helps Politics, IR, Sociology, and other social science students organise module materials, understand readings, build evidence-based essay plans, and review drafts — all using source-grounded AI that preserves citation integrity.
+Polis helps Politics, IR, Sociology, and other social science students organise module materials, understand readings, build evidence-based arguments, and review drafts — all using source-grounded AI that preserves citation integrity.
 
 ## Tech Stack
 

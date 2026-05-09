@@ -55,7 +55,7 @@ const actions = [
   { label: "Extract Concepts", icon: Lightbulb },
   { label: "Add to Evidence Bank", icon: Database },
   { label: "Compare with Source", icon: GitCompareArrows },
-  { label: "Use in Essay Plan", icon: FileText },
+  { label: "Link to Assignment Argument", icon: FileText },
   { label: "Ask About This Source", icon: MessageSquare },
 ];
 

@@ -3,15 +3,12 @@ import type {
   Assignment,
   Argument,
   CoThinker,
-  Counterargument,
   CitedChunk,
   Draft,
-  EvidenceItem,
   Folder,
   Judgement,
   MessageLabel,
   Module,
-  ResearchGap,
   Review,
   RubricCriterion,
   SourceFile,
@@ -42,7 +39,6 @@ export const mockModules: Module[] = [
     sourceCount: 5,
     noteCount: 12,
     assignmentCount: 1,
-    essayProjectCount: 1,
     lastActivityAt: "2026-04-28T14:30:00Z",
     color: "#1e3a5f",
   },
@@ -58,7 +54,6 @@ export const mockModules: Module[] = [
     sourceCount: 7,
     noteCount: 18,
     assignmentCount: 1,
-    essayProjectCount: 1,
     lastActivityAt: "2026-04-29T09:15:00Z",
     color: "#4a6741",
   },
@@ -74,7 +69,6 @@ export const mockModules: Module[] = [
     sourceCount: 2,
     noteCount: 7,
     assignmentCount: 1,
-    essayProjectCount: 1,
     lastActivityAt: "2026-04-27T16:45:00Z",
     color: "#7c3aed",
   },
@@ -90,7 +84,6 @@ export const mockModules: Module[] = [
     sourceCount: 2,
     noteCount: 6,
     assignmentCount: 0,
-    essayProjectCount: 0,
     lastActivityAt: "2026-04-26T11:20:00Z",
     color: "#b45309",
   },
@@ -683,63 +676,6 @@ export const mockProviders: AIProviderConnection[] = [
   },
 ];
 
-const mockEssaySections = mockArguments.map((argument, index) => ({
-  id: `sec_${String(index + 1).padStart(2, "0")}`,
-  heading: argument.claim,
-  points: [argument.synthesis, ...argument.counterarguments.map((counter) => `Counterargument: ${counter}`)],
-  evidenceIds: argument.evidenceLinks.map((link) => link.id),
-  wordAllocation: index === 0 ? 900 : 700,
-}));
-
-const mockEvidence: EvidenceItem[] = mockArguments.flatMap((argument) =>
-  argument.evidenceLinks.map((link) => ({
-    id: link.id,
-    sourceId: link.sourceId,
-    sourceTitle: link.sourceTitle,
-    quote: link.quote,
-    pageRange: link.pageRange,
-    argumentUse: link.usage,
-  }))
-);
-
-const mockCounterarguments: Counterargument[] = mockArguments.flatMap((argument, argumentIndex) =>
-  argument.counterarguments.map((claim, counterIndex) => ({
-    id: `ca_${argumentIndex + 1}_${counterIndex + 1}`,
-    claim,
-    sourceId: argument.evidenceLinks[0]?.sourceId || "src_01",
-    sourceTitle: argument.evidenceLinks[0]?.sourceTitle || "Patterns of Democracy",
-    rebuttal: "Needs student-authored evaluation using the mapped evidence.",
-  }))
-);
-
-const mockGaps: ResearchGap[] = mockJudgements[0].findings.map((finding, index) => ({
-  id: `gap_${String(index + 1).padStart(2, "0")}`,
-  description: finding,
-  severity: index === 1 ? "high" : "medium",
-  suggestedSourceType: "Peer-reviewed source or specific empirical case",
-}));
-
-export const mockEssayProject = {
-  id: "asn_01",
-  moduleId: mockAssignments[0].moduleId,
-  title: mockAssignments[0].title,
-  question: mockAssignments[0].question,
-  wordCount: mockAssignments[0].wordLimit,
-  dueDate: mockAssignments[0].dueDate,
-  rubric: mockAssignments[0].rubric,
-  selectedSourceIds: mockAssignments[0].selectedSourceIds,
-  thesis:
-    "While majoritarian democracies offer greater decisiveness, consensus democracies produce more durable and legitimate policy outcomes when supported by stable bargaining norms.",
-  status: mockAssignments[0].stage,
-  structure: mockEssaySections,
-  evidenceBank: mockEvidence,
-  counterarguments: mockCounterarguments,
-  gaps: mockGaps,
-  draftContent: mockDrafts[0].content,
-};
-
-export const mockDraftReview = mockReviews[0];
-
 export function getSourceById(id: string): SourceFile | undefined {
   return mockSources.find((source) => source.id === id);
 }
@@ -762,6 +698,10 @@ export function getSourcesForFolder(folderId: string): SourceFile[] {
 
 export function getAssignmentsForModule(moduleId: string): Assignment[] {
   return mockAssignments.filter((assignment) => assignment.moduleId === moduleId);
+}
+
+export function getAssignmentById(id: string): Assignment | undefined {
+  return mockAssignments.find((assignment) => assignment.id === id);
 }
 
 export function getArgumentsForAssignment(assignmentId: string): Argument[] {

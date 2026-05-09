@@ -8,7 +8,7 @@ const COMPETITORS = [
   {
     id: "polis",
     name: "Polis",
-    bestFor: "Module-scoped coursework from messy inputs to grounded final coursework",
+    bestFor: "Module-scoped coursework from messy inputs to a grounded assignment draft",
     highlight: true,
   },
   {
@@ -53,7 +53,7 @@ const ROWS: { feature: string; levels: Record<CompetitorId, SupportLevel> }[] = 
     levels: { polis: "yes", notebooklm: "no", chatgpt: "no", claude: "no", grammarly: "no" },
   },
   {
-    feature: "Turns notes into coursework plans",
+    feature: "Turns notes into argument maps",
     levels: { polis: "yes", notebooklm: "no", chatgpt: "partial", claude: "partial", grammarly: "no" },
   },
   {

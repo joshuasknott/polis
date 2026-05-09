@@ -206,7 +206,7 @@ export function HowItWorksStack() {
               <span className="text-[#ba9858]">One workspace.</span>
             </h2>
             <p className="mt-6 text-lg text-[#445f7c] leading-relaxed max-w-xl mx-auto">
-              From messy module inputs to grounded final coursework. Each stage builds on the last,
+              From messy module inputs to a source-grounded assignment draft. Each stage builds on the last,
               keeping evidence connected throughout.
             </p>
           </div>

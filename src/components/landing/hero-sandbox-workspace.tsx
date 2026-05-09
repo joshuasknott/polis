@@ -34,7 +34,7 @@ const EXTRACTION_ITEMS = [
 
 const OUTPUT_ITEMS = [
   { label: "Argument structure with student angle", sourced: true },
-  { label: "Point-by-point coursework plan", sourced: true },
+  { label: "Point-by-point argument map", sourced: true },
   { label: "Source-linked writing canvas", sourced: true },
   { label: "2 unsupported claims flagged", sourced: false },
 ];

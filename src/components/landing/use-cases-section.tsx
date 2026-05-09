@@ -34,7 +34,7 @@ const USE_CASES = [
       "Counterarguments from comparative politics",
     ],
     output:
-      "Argument-led coursework plan and source-backed draft sections with evidence bank.",
+      "Argument-led structure and source-backed draft sections with evidence links.",
   },
   {
     id: "law",
@@ -176,7 +176,7 @@ export function UseCasesSection() {
           </h2>
           <p className="mt-6 text-lg text-[#445f7c] leading-relaxed">
             Polis adapts to essays, policy memos, case notes, literature reviews, source analysis,
-            seminar prep, and final coursework writing — tailored to the way each degree actually
+            seminar prep, and assignment drafting — tailored to the way each degree actually
             works.
           </p>
         </div>

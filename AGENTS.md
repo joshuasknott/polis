@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Project Overview
 
-Polis is a coursework intelligence workspace for social science students. It helps students organise modules, understand readings, build essay plans, and review drafts using source-grounded AI. Read `docs/PRODUCT_VISION.md` for the full product thesis.
+Polis is a coursework intelligence workspace for social science students. It helps students organise modules, understand readings, build evidence-based arguments, and review drafts using source-grounded AI. Read `docs/PRODUCT_VISION.md` for the full product thesis.
 
 ## Current Status
 
