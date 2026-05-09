@@ -1,6 +1,6 @@
 # Polis Brand System
 
-This document outlines the authoritative brand identity for the Polis platform, establishing a cohesive, premium, and academic visual system. This system acts as the foundation for the Phase 3 workspace-first frontend reset.
+This document outlines the authoritative brand identity for the Polis platform, establishing a cohesive, premium, and academic visual system.
 
 ## Core Brand Concept
 Polis is a coursework intelligence workspace designed for social science students. The visual identity should evoke a professional, academic, and polished environment—combining the rigour of a physical library archive with the seamless experience of modern consumer software (e.g., Apple x Google). 
