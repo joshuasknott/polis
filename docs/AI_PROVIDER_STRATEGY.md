@@ -135,10 +135,44 @@ Set via `npx convex env set` or the Convex dashboard:
 - All provider data fetched live via Convex subscriptions
 - No secrets ever reach the client
 
+## Convex Usage Analytics & Rate Limiting
+
+### Usage Events (`convex/usage.ts`)
+
+All AI interactions are tracked via `usageEvents` table. Event types: `chat`, `embedding`, `retrieval`, `source_analysis`, `draft_review`, `citation_check`, `ingestion`.
+
+**Writes**: `usage.recordEvent` (public mutation), `usage.recordEventInternal` (internal mutation for server-side use).
+
+**Queries**: `usage.getDashboardStats` (single aggregated query for the Usage UI), `usage.getStatsAllTime`, `usage.getStatsThisMonth`, `usage.getStatsByType`, `usage.getStatsByModel`, `usage.getStatsByProvider`, `usage.getRetrievalBreakdown`, `usage.getRecentEvents`.
+
+### Rate Limiting (`convex/rateLimits.ts`)
+
+Server-side per-user rate limiting is enforced in Convex, not client-side.
+
+- **Window**: 60-second sliding window per provider.
+- **Default**: 30 requests/min, 100k tokens/min.
+- **Provider overrides**: z.ai (30/120k), Gemini (30/120k).
+- **Check**: `rateLimits.checkRateLimit` mutation atomically increments counters and returns `allowed`/`denied` with reset time.
+- **Status**: `rateLimits.getRateLimitStatus` query returns remaining limits for UI display.
+- **Cleanup**: `rateLimits.cleanupOldWindows` internal mutation removes stale window documents.
+
+### Observability (`convex/observability.ts`)
+
+Error tracking and processing job monitoring.
+
+- **Error writes**: `observability.recordError` (public), `observability.recordErrorInternal` (internal).
+- **Error queries**: `observability.listRecentErrors`, `observability.getErrorCounts` (24h aggregated by source/type).
+- **Processing status**: `observability.getProcessingStatus` (24h job summary with pending/failed counts).
+
+### Database Tables
+
+- `usageEvents` — indexed by `tokenIdentifier`, `type`, `tokenIdentifier_and_createdAt`, `tokenIdentifier_and_type`, `tokenIdentifier_and_provider`, `tokenIdentifier_and_model`.
+- `rateLimits` — indexed by `tokenIdentifier`, `tokenIdentifier_and_provider`.
+- `errorEvents` — indexed by `tokenIdentifier`, `source`.
+
 ## Limitations
 
 - No embedding support yet (future: will require a dedicated embedding provider)
 - No streaming responses yet
-- No rate limiting on the Convex side (relies on provider limits)
 - No conversation memory management in the AI action (handled at the cothinker layer)
 - z.ai JWT token generation not implemented (uses direct API key auth)

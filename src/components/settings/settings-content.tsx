@@ -804,6 +804,7 @@ function AcademicIntegritySection() {
 function FeatureStatusSection() {
   const providerStatus = useQuery(api.ai.getProviderStatus, {});
   const aiConfigured = providerStatus?.configured ?? false;
+  const hasEmbeddings = false;
 
   return (
     <div className="space-y-6">
@@ -813,48 +814,31 @@ function FeatureStatusSection() {
           Feature Status
         </h2>
         <div className="mt-4 space-y-2">
-          {[
-            { label: "Convex backend foundation", enabled: true },
-            { label: "Authentication (Clerk)", enabled: true },
-            { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: false },
-            { label: "Text Extraction", enabled: false },
-            { label: "Source Chunking", enabled: false },
-            { label: "Keyword Retrieval", enabled: false },
-            {
-              label: "Runtime AI Provider (z.ai + Gemini)",
-              enabled: aiConfigured,
-            },
-            { label: "BYO API Key storage (encrypted)", enabled: true },
-            {
-              label: "Vector Embeddings / Semantic Search",
-              enabled: false,
-            },
-            {
-              label: "Hybrid Retrieval (semantic + keyword)",
-              enabled: false,
-            },
-            {
-              label: "LLM-Powered Source-Grounded CoThinker",
-              enabled: aiConfigured,
-            },
-            {
-              label: "Auto-Generated Source Summaries",
-              enabled: aiConfigured,
-            },
-            { label: "Citation Safety Check", enabled: aiConfigured },
+            {[
+              { label: "Convex backend foundation", enabled: true },
+              { label: "Authentication (Clerk)", enabled: true },
+              { label: "File Upload (PDF, DOCX, TXT, MD)", enabled: true },
+              { label: "Text Extraction", enabled: true },
+              { label: "Source Chunking", enabled: true },
+              { label: "Keyword Retrieval", enabled: true },
+              { label: "Runtime AI Provider (z.ai + Gemini)", enabled: aiConfigured },
+              { label: "BYO API Key storage (encrypted)", enabled: true },
+              { label: "Vector Embeddings / Semantic Search", enabled: hasEmbeddings },
+              { label: "Hybrid Retrieval (semantic + keyword)", enabled: hasEmbeddings },
+              { label: "LLM-Powered Source-Grounded CoThinker", enabled: aiConfigured },
+              { label: "Auto-Generated Source Summaries", enabled: aiConfigured },
+              { label: "Citation Safety Check", enabled: aiConfigured },
             {
               label: "Draft Review with Rubric Analysis",
               enabled: aiConfigured,
             },
             { label: "Conversation Memory (multi-turn)", enabled: false },
-            {
-              label: "Template Fallback (no API key needed)",
-              enabled: false,
-            },
-            { label: "Background File Processing", enabled: false },
-            { label: "Source Notes", enabled: false },
-            { label: "Usage Analytics", enabled: false },
-            { label: "Rate Limiting", enabled: false },
+            { label: "Template Fallback (no API key needed)", enabled: false },
+            { label: "Background File Processing", enabled: true },
+            { label: "Source Notes", enabled: true },
+            { label: "Usage Analytics", enabled: true },
+            { label: "Rate Limiting", enabled: true },
+            { label: "Error Observability", enabled: true },
             { label: "Draft Editor", enabled: true },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-sm">

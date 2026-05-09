@@ -414,5 +414,31 @@ export default defineSchema({
     .index("by_tokenIdentifier_and_createdAt", [
       "tokenIdentifier",
       "createdAt",
-    ]),
+    ])
+    .index("by_tokenIdentifier_and_type", ["tokenIdentifier", "type"])
+    .index("by_tokenIdentifier_and_provider", ["tokenIdentifier", "provider"])
+    .index("by_tokenIdentifier_and_model", ["tokenIdentifier", "model"]),
+
+  rateLimits: defineTable({
+    tokenIdentifier: v.string(),
+    windowStart: v.number(),
+    requestCount: v.number(),
+    tokenCount: v.number(),
+    provider: v.optional(providerName),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_provider", ["tokenIdentifier", "provider"]),
+
+  errorEvents: defineTable({
+    tokenIdentifier: v.string(),
+    source: v.string(),
+    provider: v.optional(providerName),
+    model: v.optional(v.string()),
+    errorType: v.string(),
+    errorMessage: v.string(),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_source", ["source"]),
 });
