@@ -159,3 +159,27 @@ export const removeFinding = mutation({
     return args.findingId;
   },
 });
+
+export const updateFinding = mutation({
+  args: {
+    findingId: v.id("reviewFindings"),
+    category: v.optional(v.string()),
+    content: v.optional(v.string()),
+    severity: v.optional(v.string()),
+    resolved: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const { findingId, ...updates } = args;
+    const finding = await ctx.db.get(findingId);
+    if (!finding || finding.tokenIdentifier !== tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    await ctx.db.patch(findingId, {
+      ...updates,
+      ...(args.resolved ? { resolvedAt: Date.now() } : {}),
+    });
+    return findingId;
+  },
+});
