@@ -12,41 +12,75 @@ Polis is a coursework intelligence workspace for social science students. It hel
 
 ## Current Status
 
-Phase 3: Production platform with per-user AI keys, OAuth, background processing, cloud storage, usage analytics, rate limiting, draft editor, source notes, mobile-responsive design, Google Gemini provider, and pgvector indexing. See `docs/PHASE_3_IMPLEMENTATION.md` for details.
+**Active phase**: Product Model (Phase 4) — Module → Assignment → Argument → Draft with the 7-stage production workflow.
+
+The Convex/Clerk foundation is in place. Clerk handles authentication; Convex is the backend database and function layer. Runtime AI (z.ai/GLM, Gemini), file upload, extraction, retrieval, and embeddings are **paused** and will be rebuilt on the Convex backend after the data/auth foundation is stable. Do not treat pre-Convex implementation docs (Phase 1–3) as describing the current runtime.
+
+### What Is Live
+
+- Convex schema and functions for all product entities
+- Clerk authentication with JWT flow to Convex
+- Dashboard, modules, sources, source viewer, notes — all read/write through Convex
+- Assignment, argument, evidence, draft, review, judgement, and CoThinker Convex functions
+- Settings page (profile, AI keys, academic integrity, feature status)
+- File upload URL generation via Convex storage
+
+### What Is Paused
+
+- Runtime AI provider calls (z.ai/GLM and Gemini not yet wired)
+- File text extraction (PDF, DOCX parsing)
+- Text chunking and embedding generation
+- Hybrid retrieval pipeline
+- LLM-powered CoThinker responses
+- Source analysis auto-generation
+- Citation safety check and draft review tool endpoints
+- Background processing and processing status
+- Usage analytics dashboard (schema exists, UI placeholder only)
 
 ## Tech Stack
 
-- Next.js 16 App Router (TypeScript)
-- React 19
-- Tailwind CSS v4 (CSS-first config via `@theme` in globals.css — NO tailwind.config.js)
-- PostgreSQL + Prisma 7 (with @prisma/adapter-pg)
-- Auth.js v5 (credentials + OAuth, JWT sessions)
-- lucide-react for icons
-- pdf-parse and mammoth for text extraction
-- @google/generative-ai for Google Gemini
-- @aws-sdk/client-s3 for S3-compatible storage
+- **Next.js 16** App Router (TypeScript)
+- **React 19**
+- **Tailwind CSS v4** (CSS-first config via `@theme` in globals.css — NO tailwind.config.js)
+- **Convex** (backend database, functions, storage)
+- **Clerk** (authentication and user identity, JWT sessions)
+- **lucide-react** for icons
+- **z.ai/GLM** (planned AI provider)
+- **Google Gemini** (planned AI provider)
+
+### Do Not Reference
+
+These are from a pre-Convex migration and do **not** describe the current system:
+- PostgreSQL, Prisma, @prisma/adapter-pg, pgvector
+- Auth.js / next-auth
+- src/lib/services/* (extraction-service, chunking-service, retrieval-service, etc.)
+- src/lib/ai/* (openai-provider, anthropic-provider, gemini-provider, etc.)
+- src/lib/auth.ts, src/lib/db.ts, src/lib/crypto.ts
+- prisma/schema.prisma, prisma/seed.ts
+- src/types/next-auth.d.ts
+- src/app/api/* routes
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (Turbopack)
-npm run build        # Prisma generate + production build (run before considering work done)
-npm run lint         # ESLint check
-npm run db:generate  # Generate Prisma client
-npm run db:push      # Push schema to database
-npm run db:migrate   # Create and apply migrations
-npm run db:seed      # Seed demo data
-npm run db:studio    # Prisma Studio GUI
+npm run dev            # Start dev server (Turbopack)
+npm run dev:convex     # Start Convex dev server
+npm run build          # Production build
+npm run start          # Production server
+npm run lint           # ESLint check
+npm run convex:codegen # Generate Convex client bindings
 ```
+
+There are no `db:*` commands. There is no Prisma. The database is Convex.
 
 ## Architecture
 
-- **Pages**: Server components that fetch data via service layer, pass to client components
-- **Service Layer**: `src/lib/services/` — data-service, extraction-service, chunking-service, retrieval-service, upload-service, storage-service, apikey-service, usage-service, rate-limit-service
-- **API Routes**: `src/app/api/` — upload, assistant, essays, auth, settings (api-keys, profile, usage), sources, notes, tools
-- **Auth**: Auth.js v5 with credentials + OAuth (GitHub, Google), JWT sessions, middleware protection
-- **Database**: Prisma 7 with PostgreSQL via adapter-pg, schema at `prisma/schema.prisma`
-- **Mock Data**: Runtime mock data has been removed; live app data should come from Convex
+- **Pages**: Next.js App Router pages, primarily client components that read/write through Convex hooks
+- **Auth**: Clerk handles sign-in, sign-up, session management. `src/middleware.ts` is not present — Clerk middleware protects routes. Identity flows to Convex through JWT templates via `ConvexProviderWithClerk`.
+- **Database**: Convex, schema at `convex/schema.ts`, auth config at `convex/auth.config.ts`
+- **Data access**: Convex queries and mutations in `convex/*.ts`, consumed via `useQuery`/`useMutation` React hooks
+- **File storage**: Convex storage (`ctx.storage.generateUploadUrl()` in `convex/files.ts`)
+- **UI mapping**: `src/lib/convex-ui-mappers.ts` converts Convex documents to UI types
 
 ## Coding Standards
 
@@ -55,12 +89,11 @@ npm run db:studio    # Prisma Studio GUI
 - Tailwind CSS classes only (no CSS modules, no styled-components)
 - No comments unless explicitly requested
 - Clean imports: React hooks first, then libraries, then local modules
-- Types in `src/lib/types.ts`; live app data should come from Convex functions
+- Types in `src/lib/types.ts`
 - Utility functions in `src/lib/utils.ts`
-- Database services in `src/lib/services/`
+- Convex UI mappers in `src/lib/convex-ui-mappers.ts`
 - Components in `src/components/` organised by feature
-- Server components for data fetching, client components for interactivity
-- All database queries must be scoped to the current user
+- All Convex queries and mutations must be scoped to the authenticated user via `getAuthIdentifier(ctx)` from `convex/lib/auth.ts`
 
 ## Product Principles
 
@@ -81,40 +114,41 @@ npm run db:studio    # Prisma Studio GUI
 
 ## What Not To Do
 
-- Do not implement AI API calls without server-side routes
+- Do not reference or resurrect Prisma, PostgreSQL, Auth.js, or next-auth patterns
+- Do not reference `src/lib/services/`, `src/lib/ai/`, `src/lib/auth.ts`, or `src/lib/db.ts` — these do not exist
+- Do not reference `src/app/api/` routes — API routes are not the backend; Convex functions are
 - Do not store API keys in localStorage, cookies, or client state
 - Do not create fake citations that look real without marking them as mock/demo
 - Do not build payments or collaboration features yet
+- Do not implement AI API calls without Convex actions or server-side routes
 - Do not use real API keys without encryption
 
 ## How to Update Docs
 
 When making significant changes, update the relevant docs:
 - New features → update `docs/ROADMAP.md` and `docs/MVP_SCOPE.md`
-- Data model changes → update `docs/DATA_MODEL.md`, `prisma/schema.prisma`, and `src/lib/types.ts`
+- Data model changes → update `docs/DATA_MODEL.md`, `convex/schema.ts`, and `src/lib/types.ts`
 - Architecture changes → update `docs/RAG_ARCHITECTURE.md` or `docs/AI_PROVIDER_STRATEGY.md`
 - UX changes → update `docs/UX_FLOW.md`
-- Phase changes → update `docs/PHASE_1_IMPLEMENTATION.md`
 
 ## File Structure
 
 ```
 src/
   app/                    # Next.js App Router pages
-    api/                  # API routes
-      assistant/          # Assistant endpoint
-      auth/               # Auth.js routes
-      essays/             # Essay CRUD
-      sources/upload/     # File upload
-    auth/signin/          # Sign-in page
-    page.tsx              # Landing page
-    dashboard/            # Dashboard
-    modules/[moduleId]/   # Module workspace
-    sources/              # Source library
-    sources/[sourceId]/   # Source viewer
-    tools/                # Academic tools
-    essays/[essayId]/     # Essay workspace
-    settings/             # Settings
+    layout.tsx            # Root layout: ClerkProvider → ConvexClientProvider
+    convex-provider.tsx   # ConvexProviderWithClerk wiring
+    page.tsx              # Landing page (public)
+    sign-in/[[...sign-in]]/  # Clerk sign-in page
+    sign-up/[[...sign-up]]/  # Clerk sign-up page
+    dashboard/            # Dashboard (Convex modules)
+    modules/[moduleId]/   # Module workspace (Convex)
+    sources/              # Source library (Convex)
+    sources/[sourceId]/   # Source viewer (Convex)
+    assistant/            # Assistant placeholder
+    essays/[essayId]/     # Essay workspace placeholder
+    tools/                # Academic tools placeholder
+    settings/             # Settings (profile, AI keys, features)
   components/
     layout/               # Shell, sidebar, topbar
     dashboard/            # Dashboard components
@@ -127,35 +161,27 @@ src/
   lib/
     types.ts              # TypeScript type definitions
     utils.ts              # Utility functions
-    crypto.ts             # AES-256-GCM encryption for API keys
-    db.ts                 # Prisma client singleton
-    auth.ts               # Auth.js configuration (credentials + OAuth)
-    ai/                   # AI provider stubs + grounded provider
-      providers.ts        # Provider registry with user-level key resolution
-      openai-provider.ts  # OpenAI SDK (chat + embeddings)
-      anthropic-provider.ts # Anthropic SDK (chat)
-      gemini-provider.ts  # Google Gemini SDK (chat)
-      grounded-provider.ts # Template-based response generation (fallback)
-      prompts.ts          # Prompt templates for 6 modes
-      response-processor.ts # Citation parsing, validation, labelling
-      tool-prompts.ts     # Prompts for citation check and draft review
-    services/             # Service layer
-      data-service.ts     # Data access (CRUD)
-      extraction-service.ts # Text extraction
-      chunking-service.ts   # Text chunking
-      retrieval-service.ts  # Hybrid retrieval
-      upload-service.ts     # Background file upload processing
-      storage-service.ts    # Cloud storage abstraction (local/S3)
-      apikey-service.ts     # Encrypted API key management
-      usage-service.ts      # Usage analytics and cost estimation
-      rate-limit-service.ts # In-memory AI rate limiting
-      embedding-service.ts  # Embedding generation and storage
-    ingestion/            # File ingestion stubs
-    retrieval/            # RAG stubs
-  types/                  # Type declarations (next-auth)
-prisma/
-  schema.prisma           # Database schema
-  seed.ts                 # Demo data seed
+    convex-ui-mappers.ts  # Convex document → UI type mappers
+convex/
+  auth.config.ts          # Convex auth config (Clerk JWT validation)
+  schema.ts               # Convex schema (all tables)
+  users.ts                # User profile queries/mutations
+  modules.ts              # Module CRUD
+  folders.ts              # Folder CRUD
+  sources.ts              # Source CRUD
+  sourceChunks placeholder
+  notes.ts                # Source notes CRUD
+  assignments.ts          # Assignment CRUD
+  arguments.ts            # Argument CRUD
+  evidence.ts             # Evidence link CRUD
+  drafts.ts               # Draft CRUD
+  reviews.ts              # Review runs and findings
+  cothinker.ts            # CoThinker session/message CRUD
+  ai.ts                   # AI provider placeholder
+  files.ts                # Convex storage upload URL
+  usage.ts                # Usage event queries
+  lib/
+    auth.ts               # getAuthIdentifier helper
 docs/                     # Product documentation
 ```
 

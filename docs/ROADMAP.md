@@ -1,41 +1,50 @@
 # Polis — Roadmap
 
-## Current: Phase 4 — Product Model Refactor
+## Current: Phase 4 — Product Model on Convex
 
-**Status**: Integrated on `feat/workflow-product-model`
-**Goal**: Replace the prior essay-centric prototype with Module → Assignment → Argument → Draft and the 7-stage production workflow.
+**Status**: In progress
+**Goal**: Full Module → Assignment → Argument → Draft product model with the 7-stage production workflow on the Convex + Clerk foundation.
 
-### Contract Delivered
-- [x] Updated product documentation with new model and terminology
-- [x] Defined new TypeScript types: Assignment, Argument, Draft, EvidenceLink, Judgement, Review, CoThinker, ProductionStage
-- [x] Updated mock data to demonstrate the new workflow
-- [x] Renamed user-facing concepts (CoThinker, Workbench, Assignments)
+### Foundation Delivered
 
-### Integrated
-- [x] Implemented Convex schema/functions for assignments, arguments, evidence links, drafts, reviews, judgements, and CoThinker sessions
-- [x] Built assignment workspace UI with production stage tracking
-- [x] Built argument construction, evidence map, judgement, draft, refine, and CoThinker surfaces
-- [x] Preserved staged draft support without one-click essay generation
-- [x] Isolated the legacy `/essays` route behind redirects to assignment workspaces
+- [x] Convex schema for all product entities (30+ tables)
+- [x] Clerk authentication with JWT flow to Convex
+- [x] Convex functions for modules, folders, sources, notes
+- [x] Convex functions for assignments, arguments, evidence links, drafts, reviews, judgements, CoThinker
+- [x] Dashboard, modules, sources, source viewer wired to Convex data
+- [x] Settings page with AI key placeholder (z.ai), feature status, academic integrity
 
-### Remaining Product Work
-- [ ] Connect assignment workspace UI to live Convex data
-- [ ] Rebuild runtime AI provider selection and retrieval against Convex
-- [ ] Implement draft diff/history beyond the current staged draft surface
+### In Progress
+
+- [ ] Connect remaining assignment workspace UI surfaces to live Convex data
+- [ ] Wire runtime AI provider selection and retrieval against Convex
+
+### Planned
+
+- [ ] Rebuild file upload → extraction → chunking → embedding pipeline on Convex
+- [ ] Implement z.ai/GLM provider via Convex actions
+- [ ] Implement Gemini provider via Convex actions
+- [ ] Rebuild hybrid retrieval pipeline on Convex
+- [ ] Implement draft diff/history beyond staged draft surface
 - [ ] Surface Workbench actions contextually inside assignment stages
+- [ ] Rebuild usage analytics dashboard against Convex data
+- [ ] Implement rate limiting for AI calls
 
 ---
 
 ## Done: Convex Foundation Migration
 
-**Status**: Complete (foundation only)
-**Goal**: Replace the pre-existing Prisma/PostgreSQL/Auth.js/backend service foundation with a clean Convex backend.
+**Status**: Complete
+**Goal**: Replace Prisma/PostgreSQL/Auth.js backend with Convex + Clerk.
 
-### Foundation Delivered
-- [x] Removed Prisma/PostgreSQL package scripts and backend files
+### Delivered
+
+- [x] Removed all Prisma/PostgreSQL package scripts and backend files
 - [x] Removed old Next API routes for the previous backend behaviour
-- [x] Installed Convex and added foundational schema/functions
-- [x] Kept frontend components and mock data as placeholders during migration
+- [x] Installed Convex and Clerk
+- [x] Built foundational Convex schema and functions
+- [x] Kept frontend components as workspace surfaces during migration
+- [x] Removed runtime mock data; UI reads from Convex
 
 ---
 
@@ -45,6 +54,7 @@
 **Goal**: Polished frontend prototype with mock data
 
 ### Deliverables
+
 - [x] Next.js project setup with TypeScript and Tailwind
 - [x] Landing page
 - [x] Dashboard with module cards
@@ -56,71 +66,53 @@
 - [x] Settings page
 - [x] Documentation set
 - [x] Type definitions and mock data
-- [x] AI/RAG architecture stubs
 
 ---
 
-## Done: Phase 1 — Academic Workspace Foundation
+## Historical: Phases 1–3 (Pre-Convex)
 
-**Status**: Complete
-**Goal**: Working foundation with database, auth, uploads, ingestion, retrieval, and source-grounded CoThinker
+These phases were implemented on the old Prisma/PostgreSQL/Auth.js backend. They were complete and functional before the Convex migration. The features described below are **paused** and will be rebuilt on Convex.
 
-### Key Features
+### Phase 1 — Academic Workspace Foundation
+
 - [x] PostgreSQL database with Prisma ORM (15 models)
 - [x] User authentication (Auth.js v5, credentials)
 - [x] File upload (PDF, DOCX, TXT, MD)
 - [x] Text extraction (pdf-parse, mammoth)
-- [x] Automatic text chunking (1000-word chunks with 150-word overlap)
+- [x] Automatic text chunking
 - [x] Keyword-based source retrieval
-- [x] Source-grounded CoThinker (retrieval-aware template responses)
-- [x] Assignment and evidence persistence
+- [x] Source-grounded CoThinker (template-based responses)
 - [x] Module workspace with real data
 - [x] Source library with search and filtering
 - [x] Route protection via middleware
 - [x] Demo data seed script
 
----
+### Phase 2 — Intelligence Layer
 
-## Done: Phase 2 — Intelligence Layer
-
-**Status**: Complete
-**Goal**: Real LLM-powered source-grounded AI with citation integrity
-
-### Key Features
-- [x] Real AI provider integration (OpenAI primary, Anthropic secondary)
-- [x] Vector embeddings with pgvector (text-embedding-3-small, 1536 dimensions)
-- [x] Hybrid retrieval (semantic 0.7 + keyword 0.3 weighting)
-- [x] LLM-powered source-grounded CoThinker responses with citation parsing
+- [x] Real AI provider integration (OpenAI, Anthropic)
+- [x] Vector embeddings with pgvector (text-embedding-3-small, 1536d)
+- [x] Hybrid retrieval (semantic 0.7 + keyword 0.3)
+- [x] LLM-powered CoThinker with citation parsing
 - [x] Template fallback when no AI provider configured
 - [x] Auto-generated source summaries and concept extraction
-- [x] Citation safety checking tool endpoint
-- [x] Draft review with rubric analysis endpoint
-- [x] Conversation memory (multi-turn, last 10 messages)
-- [x] Enhanced UI: CoThinker mode badge, evidence bank button, tool cards wired
-- [x] pgvector schema integration with embedding column
-- [x] Batch embedding script for existing chunks
+- [x] Citation safety checking
+- [x] Draft review with rubric analysis
+- [x] Conversation memory (multi-turn)
 
----
+### Phase 3 — Production Platform
 
-## Done: Phase 3 — Production Platform
-
-**Status**: Complete
-**Goal**: Production-ready platform with per-user AI configuration, background processing, and enhanced workflows
-
-### Key Features
-- [x] Per-user BYO API key management (AES-256-GCM encrypted storage)
+- [x] Per-user BYO API key management (AES-256-GCM encrypted)
 - [x] OAuth providers (GitHub, Google) with account linking
 - [x] Profile editing and user preferences
-- [x] Background file processing (extract → chunk → embed → analyse)
+- [x] Background file processing
 - [x] Cloud file storage abstraction (local + S3)
-- [x] Usage analytics dashboard with cost estimation
-- [x] Rate limiting on AI API calls (in-memory)
+- [x] Usage analytics dashboard
+- [x] Rate limiting on AI API calls
 - [x] Draft editor in assignment workspace
-- [x] Source notes (user-created notes on sources)
+- [x] Source notes
 - [x] Mobile-responsive design refinements
 - [x] Google Gemini provider integration
-- [x] pgvector HNSW index script
-- [x] Processing status polling for uploads
+- [x] pgvector HNSW index
 
 ---
 
@@ -131,14 +123,13 @@
 | AI hallucination in academic context | Strict source-grounding, citation badges, warnings, [Source N] format enforced |
 | Academic integrity concerns | Prominent integrity policy, clear labelling, no essay generation, draft review only analyses |
 | User adoption | Focus on genuine workflow value, not AI gimmicks |
-| API cost sensitivity | BYO API key model, transparent usage tracking, gpt-4o-mini as default |
+| API cost sensitivity | BYO API key model, transparent usage tracking |
 | Provider API changes | Abstraction layer, multi-provider support |
-| Data privacy | Server-side processing, no third-party data sharing beyond provider API |
+| Data privacy | Server-side processing, Convex-managed data |
 
 ## Open Questions
 
 - Pricing model (if any) for future phases
-- Mobile app vs responsive web → Responsive web for now
+- Mobile app vs responsive web — responsive web for now
 - University partnership opportunities
-- Content moderation requirements
-- Rich text editor choice for draft editing
+- Rich text editor choice for draft editing (TipTap vs alternatives)

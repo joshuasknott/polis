@@ -47,7 +47,8 @@ The system WILL:
 
 ## Citation Rules
 
-1. All source-grounded claims must include: author, year, and page range where available
+1. **Default citation style**: Harvard (author-date). Users may select APA, Chicago, or MLA in preferences.
+2. All source-grounded claims must include: author, year, and page range where available
 2. When a source is quoted, the original text must be shown alongside the citation
 3. If the system cannot locate a specific page reference, it must say so explicitly
 4. Paraphrased claims must still reference the source they draw from
@@ -60,6 +61,15 @@ The system WILL:
 - Feedback does NOT generate new content to insert into drafts
 - Feedback references the marking rubric where available
 - Feedback suggests types of evidence needed, not specific fabricated quotes
+
+## Student Responsibility
+
+- The student remains fully responsible for all submitted work
+- AI-generated summaries, suggestions, and feedback are aids — not substitutes for reading and understanding
+- Students must verify all AI outputs against original source texts before use
+- Students should check their university's policy on AI-assisted tools
+- Students should discuss their use of AI tools with tutors if required
+- Harvard citation style is the default; students should follow their department's required style
 
 ## University Policy
 

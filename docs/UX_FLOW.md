@@ -157,7 +157,7 @@ CoThinker: [Source-supported] Lijphart classifies democracies along a
 
 ## Workbench Journey
 
-The Workbench is secondary to the assignment workflow. Stage-appropriate actions should appear in context first, with the standalone Workbench remaining a paused migration surface until Convex-backed runtime actions are rebuilt:
+The Workbench is secondary to the assignment workflow. Stage-appropriate actions appear in context within assignment stages. The standalone Workbench page surfaces paused runtime tools until Convex-backed AI actions are rebuilt:
 
 | Production Stage | Available Tools |
 |-----------------|-----------------|
