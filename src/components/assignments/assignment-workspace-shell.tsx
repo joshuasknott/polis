@@ -51,6 +51,7 @@ interface AssignmentWorkspaceShellProps {
   workingThesis?: string;
   assignmentSources?: SourceFile[];
   assignmentConvexId?: string;
+  moduleConvexId?: string;
 }
 
 function StagePlaceholder({ label, description, icon: Icon }: { label: string; description: string; icon: React.ElementType }) {
@@ -79,6 +80,7 @@ export function AssignmentWorkspaceShell({
   workingThesis,
   assignmentSources = [],
   assignmentConvexId,
+  moduleConvexId,
 }: AssignmentWorkspaceShellProps) {
   const [coThinkerOpen, setCoThinkerOpen] = useState(true);
 
@@ -282,6 +284,8 @@ export function AssignmentWorkspaceShell({
             arguments={assignmentArguments}
             review={review}
             judgements={judgements}
+            assignmentConvexId={assignmentConvexId}
+            moduleConvexId={moduleConvexId}
           />
         )}
       </div>

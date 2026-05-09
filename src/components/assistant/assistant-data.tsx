@@ -8,7 +8,7 @@ import { AssistantContent } from "./assistant-content";
 export function AssistantData() {
   const modules = useQuery(api.modules.list);
   const sources = useQuery(api.sources.list, {});
-  const sessions = useQuery(api.cothinker.listSessions, {});
+  const sessions = useQuery(api.cothinker.listSessionsWithCounts, {});
 
   if (modules === undefined || sources === undefined || sessions === undefined) {
     return (
@@ -21,24 +21,28 @@ export function AssistantData() {
 
   return (
     <AssistantContent
-      modules={modules.map((moduleItem) => ({
-        id: moduleItem._id,
-        title: moduleItem.title,
+      modules={modules.map((m) => ({
+        id: m._id,
+        title: m.title,
       }))}
-      sources={sources.map((source) => ({
-        id: source._id,
-        title: source.title,
-        moduleId: source.moduleId,
+      sources={sources.map((s) => ({
+        id: s._id,
+        title: s.title,
+        moduleId: s.moduleId,
       }))}
       conversations={sessions.map((session) => ({
         id: session._id,
         title: session.title,
         mode: session.stage ?? session.scope,
-        messageCount: 0,
+        messageCount: session.messageCount,
         createdAt: new Date(session.createdAt).toISOString(),
+        moduleId: session.moduleId ?? undefined,
+        assignmentId: session.assignmentId ?? undefined,
+        scope: session.scope,
+        stage: session.stage ?? undefined,
       }))}
       aiConfigured={false}
-      providerName="Runtime AI paused"
+      providerName="Awaiting provider"
     />
   );
 }

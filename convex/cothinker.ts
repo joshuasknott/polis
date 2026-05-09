@@ -235,3 +235,77 @@ export const updateIntervention = mutation({
     return interventionId;
   },
 });
+
+export const getMessageCount = query({
+  args: { sessionId: v.id("coThinkerSessions") },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+    const session = await ctx.db.get(args.sessionId);
+    if (!session || session.tokenIdentifier !== tokenIdentifier) return 0;
+
+    let count = 0;
+    for await (
+      const _row of ctx.db
+        .query("coThinkerMessages")
+        .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+    ) {
+      void _row;
+      count++;
+    }
+    return count;
+  },
+});
+
+export const listSessionsWithCounts = query({
+  args: {
+    moduleId: v.optional(v.id("modules")),
+    assignmentId: v.optional(v.id("assignments")),
+  },
+  handler: async (ctx, args) => {
+    const tokenIdentifier = await getAuthIdentifier(ctx);
+
+    let sessions;
+    if (args.assignmentId) {
+      sessions = await ctx.db
+        .query("coThinkerSessions")
+        .withIndex("by_tokenIdentifier_and_assignment", (q) =>
+          q
+            .eq("tokenIdentifier", tokenIdentifier)
+            .eq("assignmentId", args.assignmentId!),
+        )
+        .order("desc")
+        .take(50);
+    } else if (args.moduleId) {
+      sessions = await ctx.db
+        .query("coThinkerSessions")
+        .withIndex("by_tokenIdentifier_and_module", (q) =>
+          q.eq("tokenIdentifier", tokenIdentifier).eq("moduleId", args.moduleId!),
+        )
+        .order("desc")
+        .take(50);
+    } else {
+      sessions = await ctx.db
+        .query("coThinkerSessions")
+        .withIndex("by_tokenIdentifier", (q) =>
+          q.eq("tokenIdentifier", tokenIdentifier),
+        )
+        .order("desc")
+        .take(100);
+    }
+
+    const results = [];
+    for (const session of sessions) {
+      let messageCount = 0;
+      for await (
+        const _row of ctx.db
+          .query("coThinkerMessages")
+          .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+      ) {
+        void _row;
+        messageCount++;
+      }
+      results.push({ ...session, messageCount });
+    }
+    return results;
+  },
+});

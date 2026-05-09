@@ -12,6 +12,7 @@ import type * as ai from "../ai.js";
 import type * as arguments from "../arguments.js";
 import type * as assignments from "../assignments.js";
 import type * as cothinker from "../cothinker.js";
+import type * as cothinkerAsk from "../cothinker-ask.js";
 import type * as drafts from "../drafts.js";
 import type * as evidence from "../evidence.js";
 import type * as files from "../files.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   arguments: typeof arguments;
   assignments: typeof assignments;
   cothinker: typeof cothinker;
+  cothinkerAsk: typeof cothinkerAsk;
   drafts: typeof drafts;
   evidence: typeof evidence;
   files: typeof files;
