@@ -5,10 +5,8 @@ import {
   ArrowLeft,
   FileText,
   MessageSquare,
-  GitCompareArrows,
   Database,
   Lightbulb,
-  ExternalLink,
   Copy,
   RefreshCw,
   StickyNote,
@@ -16,6 +14,8 @@ import {
   Trash2,
   AlertCircle,
   Bookmark,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -61,18 +61,25 @@ interface SourceViewerContentProps {
     tags: string[];
     createdAt: string;
   }>;
+  analyses: Array<{
+    id: string;
+    analysisType: string;
+    content: string;
+  }>;
+  claims: Array<{
+    id: string;
+    claim: string;
+    pageRange: string | null;
+    strength: string;
+  }>;
+  concepts: Array<{
+    id: string;
+    concept: string;
+    definition: string | null;
+  }>;
   backHref: string;
   backLabel: string;
 }
-
-const actions = [
-  { label: "Summarise", icon: FileText },
-  { label: "Extract Concepts", icon: Lightbulb },
-  { label: "Add to Evidence Bank", icon: Database },
-  { label: "Compare with Source", icon: GitCompareArrows },
-  { label: "Link to Assignment Argument", icon: FileText },
-  { label: "Ask About This Source", icon: MessageSquare },
-];
 
 export function SourceViewerContent({
   source,
@@ -80,12 +87,76 @@ export function SourceViewerContent({
   moduleCode,
   chunks,
   notes,
+  analyses,
+  claims,
+  concepts,
   backHref,
   backLabel,
 }: SourceViewerContentProps) {
-  function handlePausedAnalysis() {
-    alert("Source analysis is paused while the backend foundation migrates to Convex.");
+  const [generatingType, setGeneratingType] = useState<string | null>(null);
+  const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
+
+  const createAnalysis = useMutation(api.sourceAnalyses.createAnalysis);
+  const createConcept = useMutation(api.sourceAnalyses.createConcept);
+
+  async function handleGenerateAnalysis(type: string) {
+    setGeneratingType(type);
+    try {
+      let content = "";
+      switch (type) {
+        case "summary":
+          content =
+            source.summary ||
+            `Summary pending for "${source.title}". AI-generated analysis will appear here when a provider is configured.`;
+          break;
+        case "main_argument":
+          content = `Main argument extraction pending for "${source.title}".`;
+          break;
+        case "limitations":
+          content = `Limitations analysis pending for "${source.title}".`;
+          break;
+      }
+      await createAnalysis({
+        sourceId: source.id as Id<"sources">,
+        analysisType: type,
+        content,
+      });
+    } finally {
+      setGeneratingType(null);
+    }
   }
+
+  async function handleExtractConcepts() {
+    setGeneratingType("concepts");
+    try {
+      if (concepts.length > 0) return;
+      await createConcept({
+        sourceId: source.id as Id<"sources">,
+        concept: "Concept extraction pending",
+        definition:
+          "AI-generated concepts will appear here when a provider is configured.",
+      });
+    } finally {
+      setGeneratingType(null);
+    }
+  }
+
+  async function handleRegenerate(type: string) {
+    if (confirmRegenerate === type) {
+      setConfirmRegenerate(null);
+      await handleGenerateAnalysis(type);
+    } else {
+      setConfirmRegenerate(type);
+    }
+  }
+
+  const summaryAnalysis = analyses.find((a) => a.analysisType === "summary");
+  const argumentAnalysis = analyses.find(
+    (a) => a.analysisType === "main_argument",
+  );
+  const limitationsAnalysis = analyses.find(
+    (a) => a.analysisType === "limitations",
+  );
 
   const bylineParts = [
     source.author,
@@ -218,82 +289,244 @@ export function SourceViewerContent({
                 <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   <FileText className="h-4 w-4 text-interpretation" />
                   Source Summary
+                  {summaryAnalysis && (
+                    <span className="inline-flex items-center rounded-full border border-source/20 bg-source/10 px-1.5 py-0.5 text-[9px] font-medium text-source normal-case tracking-normal">
+                      Source-supported
+                    </span>
+                  )}
                 </h2>
-                <button
-                  onClick={handlePausedAnalysis}
-                  className="inline-flex items-center gap-1.5 text-xs text-interpretation hover:underline disabled:opacity-50 font-medium"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Analysis Paused
-                </button>
+                {summaryAnalysis ? (
+                  <button
+                    onClick={() => handleRegenerate("summary")}
+                    disabled={generatingType !== null}
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 font-medium"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {confirmRegenerate === "summary" ? "Confirm" : "Regenerate"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleGenerateAnalysis("summary")}
+                    disabled={generatingType !== null}
+                    className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50 font-medium"
+                  >
+                    {generatingType === "summary" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <FileText className="h-3.5 w-3.5" />
+                    )}
+                    Summarise
+                  </button>
+                )}
               </div>
               <p className="font-serif text-sm leading-relaxed text-foreground">
-                {source.summary || "No generated summary is available. Runtime AI analysis is paused."}
+                {summaryAnalysis?.content || source.summary || "No generated summary is available. Click \"Summarise\" to generate one."}
               </p>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-                <BookOpen className="h-4 w-4 text-source" />
-                Main Argument
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <BookOpen className="h-4 w-4 text-source" />
+                  Main Argument
+                  {argumentAnalysis && (
+                    <span className="inline-flex items-center rounded-full border border-interpretation/20 bg-interpretation/10 px-1.5 py-0.5 text-[9px] font-medium text-interpretation normal-case tracking-normal">
+                      Interpretation
+                    </span>
+                  )}
+                </h2>
+                {argumentAnalysis ? (
+                  <button
+                    onClick={() => handleRegenerate("main_argument")}
+                    disabled={generatingType !== null}
+                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 font-medium"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {confirmRegenerate === "main_argument" ? "Confirm" : "Regenerate"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleGenerateAnalysis("main_argument")}
+                    disabled={generatingType !== null}
+                    className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50 font-medium"
+                  >
+                    {generatingType === "main_argument" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BookOpen className="h-3.5 w-3.5" />
+                    )}
+                    Extract
+                  </button>
+                )}
+              </div>
               <p className="font-serif text-sm leading-relaxed text-foreground">
-                {source.mainArgument || "No main argument has been extracted yet."}
+                {argumentAnalysis?.content || source.mainArgument || "No main argument has been extracted yet."}
               </p>
             </div>
-            
+
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
-                <Lightbulb className="h-4 w-4 text-interpretation" />
-                Key Concepts
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {source.keyConcepts.map((concept: string) => (
-                  <span
-                    key={concept}
-                    className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium"
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Lightbulb className="h-4 w-4 text-interpretation" />
+                  Key Concepts
+                </h2>
+                {concepts.length === 0 && (
+                  <button
+                    onClick={handleExtractConcepts}
+                    disabled={generatingType !== null}
+                    className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline disabled:opacity-50 font-medium"
                   >
-                    {concept}
-                  </span>
+                    {generatingType === "concepts" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Lightbulb className="h-3.5 w-3.5" />
+                    )}
+                    Extract Concepts
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {concepts.map((c) => (
+                  <div
+                    key={c.id}
+                    className="inline-flex flex-col rounded-lg border border-border bg-muted/50 px-3 py-1.5"
+                  >
+                    <span className="text-xs font-medium">{c.concept}</span>
+                    {c.definition && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {c.definition}
+                      </span>
+                    )}
+                  </div>
                 ))}
-                {source.keyConcepts.length === 0 && (
+                {source.keyConcepts
+                  .filter(
+                    (concept) =>
+                      !concepts.some((c) => c.concept === concept),
+                  )
+                  .map((concept: string) => (
+                    <span
+                      key={concept}
+                      className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium"
+                    >
+                      {concept}
+                    </span>
+                  ))}
+                {concepts.length === 0 && source.keyConcepts.length === 0 && (
                   <p className="text-sm text-muted-foreground font-serif">No concepts extracted yet.</p>
                 )}
               </div>
             </div>
+
+            {claims.length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                  <Database className="h-4 w-4 text-source" />
+                  Source Claims
+                </h2>
+                <div className="space-y-2">
+                  {claims.map((claim) => (
+                    <div
+                      key={claim.id}
+                      className="rounded-lg border border-border bg-muted/30 p-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs text-foreground">{claim.claim}</p>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium",
+                            claim.strength === "strong" && "bg-source/10 text-source",
+                            claim.strength === "moderate" && "bg-interpretation/10 text-interpretation",
+                            claim.strength === "weak" && "bg-warning/10 text-warning",
+                          )}
+                        >
+                          {claim.strength}
+                        </span>
+                      </div>
+                      {claim.pageRange ? (
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          Pages: {claim.pageRange}
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-[10px] text-warning flex items-center gap-1">
+                          <AlertTriangle className="h-2.5 w-2.5" />
+                          Page reference unavailable
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {limitationsAnalysis && (
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                  Limitations
+                </h2>
+                <p className="font-serif text-sm leading-relaxed text-foreground">
+                  {limitationsAnalysis.content}
+                </p>
+              </div>
+            )}
           </div>
 
           <SourceNotesSection sourceId={source.id} notes={notes} />
 
           <div className="grid grid-cols-2 gap-3">
-            {actions.map((action) => (
-              <button
-                key={action.label}
-                onClick={handlePausedAnalysis}
-                className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50"
-              >
-                <action.icon className="h-4 w-4 text-muted-foreground" />
-                {action.label}
-                <span className="ml-auto text-[10px] uppercase tracking-wider">Paused</span>
-              </button>
-            ))}
+            <button
+              onClick={() => handleGenerateAnalysis("summary")}
+              disabled={generatingType !== null}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+            >
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Summarise
+              {generatingType === "summary" && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />
+              )}
+            </button>
+            <button
+              onClick={handleExtractConcepts}
+              disabled={generatingType !== null}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+            >
+              <Lightbulb className="h-4 w-4 text-muted-foreground" />
+              Extract Concepts
+              {generatingType === "concepts" && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />
+              )}
+            </button>
+            <button
+              onClick={() => handleGenerateAnalysis("limitations")}
+              disabled={generatingType !== null}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/50 disabled:opacity-50"
+            >
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              Limitations
+              {generatingType === "limitations" && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />
+              )}
+            </button>
+            <button
+              disabled
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors opacity-50 cursor-not-allowed"
+              title="CoThinker integration is not yet available"
+            >
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              Ask About This Source
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">Unavailable</span>
+            </button>
           </div>
 
-          <div className="rounded-xl border border-source/20 bg-source/5 p-6 shadow-sm">
-            <h2 className="flex items-center gap-2 text-sm font-semibold text-source mb-2">
+          <div className="rounded-xl border border-border bg-muted/30 p-6 shadow-sm">
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-muted-foreground mb-2">
               <MessageSquare className="h-4 w-4" />
               Ask About This Source
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              CoThinker questions about this source are paused until runtime AI is rebuilt on the Convex backend.
+              CoThinker source-scoped conversations require an active session. This feature will be available when the CoThinker runtime is connected.
             </p>
-            <button
-              onClick={handlePausedAnalysis}
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-source hover:underline"
-            >
-              Analysis Paused
-              <ExternalLink className="h-3.5 w-3.5" />
-            </button>
           </div>
         </div>
       </div>

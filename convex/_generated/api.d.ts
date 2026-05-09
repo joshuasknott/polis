@@ -26,6 +26,7 @@ import type * as notes from "../notes.js";
 import type * as observability from "../observability.js";
 import type * as rateLimits from "../rateLimits.js";
 import type * as reviews from "../reviews.js";
+import type * as sourceAnalyses from "../sourceAnalyses.js";
 import type * as sources from "../sources.js";
 import type * as usage from "../usage.js";
 import type * as users from "../users.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   observability: typeof observability;
   rateLimits: typeof rateLimits;
   reviews: typeof reviews;
+  sourceAnalyses: typeof sourceAnalyses;
   sources: typeof sources;
   usage: typeof usage;
   users: typeof users;

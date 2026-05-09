@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage } from "@/lib/types";
 import { IngestStage } from "./ingest-stage";
+import { UnderstandStage } from "./understand-stage";
 import { EvidenceMap } from "@/components/evidence/evidence-map";
 import { JudgeStage } from "@/components/arguments/judge-stage";
 import { ArgumentBuilder } from "@/components/arguments/argument-builder";
@@ -198,10 +199,10 @@ export function AssignmentWorkspaceShell({
         );
       case "understand":
         return (
-          <StagePlaceholder
-            label="Understand"
-            description="Comprehend individual sources: summaries and key concept extraction"
-            icon={Layers}
+          <UnderstandStage
+            assignment={assignment}
+            assignmentSources={assignmentSources}
+            assignmentConvexId={assignmentConvexId}
           />
         );
       case "map":
