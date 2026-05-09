@@ -1,8 +1,8 @@
 # Polis — RAG Architecture
 
-## Migration Note
+## Current Status
 
-The previous PostgreSQL/pgvector implementation has been removed while Polis migrates to Convex. This document describes the intended product architecture, not the current runtime implementation. Retrieval, embeddings, ingestion, and AI chat will be rebuilt after the Convex data foundation is established.
+File ingestion is now implemented on the Convex backend. The upload → extract → chunk pipeline is live. Retrieval, embeddings, and AI chat remain pending.
 
 ## Overview
 
@@ -18,19 +18,40 @@ User Query → Embed Query → Hybrid Retrieval → Construct Prompt → LLM Gen
                                     Keyword Retrieval → Template Response → Display
 ```
 
-## 1. File Ingestion
+## 1. File Ingestion (Implemented)
 
 ### Upload
 - Accept: PDF, DOCX, TXT, MD
-- Maximum file size: 50MB
-- Store original file in local uploads directory
-- Create Source record with metadata
+- Stored via Convex file storage
+- Client-side upload using `generateUploadUrl` mutation
+- Source record created before upload, updated on completion
+
+### Processing Lifecycle
+```
+uploading → queued → extracting → chunking → processed
+                                          → failed
+```
+
+### Processing Pipeline
+1. `sources.createForUpload` — creates source record with status "uploading"
+2. `files.generateUploadUrl` — generates a Convex storage upload URL
+3. Client uploads file directly to Convex storage
+4. `sources.attachStorage` — attaches storage ID, sets status "queued", schedules action
+5. `ingestion.process.processSource` — Node action that:
+   - Reads file from Convex storage
+   - Extracts text (TXT/MD directly, PDF via pdf-parse, DOCX via mammoth)
+   - Chunks text into ~1000-word segments with 150-word overlap
+   - Creates `sourceChunks` documents
+   - Sets source status to "processed" or "failed"
 
 ### Text Extraction
-- **PDF**: Extract text using pdf-parse
-- **DOCX**: Extract using mammoth.js
-- **TXT/MD**: Direct text input
-- Preserve page boundaries where possible
+- **TXT/MD**: Direct UTF-8 decoding
+- **PDF**: `pdf-parse` (wraps pdfjs-dist), preserves page boundaries via form-feed detection
+- **DOCX**: `mammoth` for raw text extraction; page boundaries unavailable (marked as page 1)
+- When page boundaries are unavailable, citation labels use chunk index instead
+
+### Retry
+Failed sources can be retried via `sources.retryProcessing`, which clears old chunks and reschedules the action.
 
 ### AI Analysis (Phase 2)
 - After text extraction and chunking, an AI analysis step generates:

@@ -14,6 +14,8 @@ import {
   StickyNote,
   Plus,
   Trash2,
+  AlertCircle,
+  Bookmark,
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -48,6 +50,10 @@ interface SourceViewerContentProps {
     id: string;
     text: string;
     chunkIndex: number;
+    pageStart: number | null;
+    pageEnd: number | null;
+    citationLabel: string;
+    tokenEstimate: number | null;
   }>;
   notes: Array<{
     id: string;
@@ -87,6 +93,8 @@ export function SourceViewerContent({
     source.pageCount ? `${source.pageCount} pages` : null,
   ].filter(Boolean);
 
+  const isActiveStatus = ["queued", "extracting", "chunking", "uploading"].includes(source.status);
+
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 max-w-full">
       <div className="p-6 border-b border-border bg-card shrink-0 z-10 shadow-sm relative">
@@ -108,14 +116,14 @@ export function SourceViewerContent({
               </span>
               {(moduleTitle || moduleCode) && (
                 <span className="text-xs text-muted-foreground">
-                  {[moduleTitle, moduleCode].filter(Boolean).join(" · ")}
+                  {[moduleTitle, moduleCode].filter(Boolean).join(" \u00b7 ")}
                 </span>
               )}
             </div>
             <h1 className="text-2xl font-bold leading-tight font-serif text-foreground">{source.title}</h1>
             {bylineParts.length > 0 && (
               <p className="mt-1 text-sm text-muted-foreground">
-                {bylineParts.join(" · ")}
+                {bylineParts.join(" \u00b7 ")}
               </p>
             )}
           </div>
@@ -130,15 +138,30 @@ export function SourceViewerContent({
             </div>
           </div>
         </div>
+
         {source.errorMessage && (
-          <div className="mt-3 rounded-lg border border-danger/20 bg-danger/5 p-2 text-xs text-danger">
-            <strong>Error:</strong> {source.errorMessage}
+          <div className="mt-3 rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <strong>Processing Error:</strong> {source.errorMessage}
+              </div>
+              <RetryButton sourceId={source.id} />
+            </div>
+          </div>
+        )}
+
+        {isActiveStatus && (
+          <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3 text-sm text-accent">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Processing source: {getStatusLabel(source.status).toLowerCase()}...</span>
+            </div>
           </div>
         )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Pane: Reading Material */}
         <div className="w-1/2 border-r border-border overflow-y-auto scrollbar-thin bg-background p-8">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-6 font-sans">
             Source Text
@@ -146,14 +169,29 @@ export function SourceViewerContent({
           {chunks.length > 0 ? (
             <div className="space-y-6">
               {chunks.map((chunk) => (
-                <div 
-                  key={chunk.id} 
+                <div
+                  key={chunk.id}
                   className="group relative pl-4 border-l-2 border-transparent hover:border-source transition-colors"
                 >
-                  <p className="absolute -left-6 top-1 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                    {chunk.chunkIndex + 1}
-                  </p>
-                  <p className="font-serif text-[15px] leading-relaxed text-foreground/90">
+                  <div className="absolute -left-6 top-1 flex flex-col items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[10px] text-muted-foreground">
+                      {chunk.chunkIndex + 1}
+                    </span>
+                  </div>
+                  {(chunk.citationLabel || chunk.pageStart != null) && (
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Bookmark className="h-3 w-3 text-source/60" />
+                      <span className="text-[10px] font-medium text-source/80 uppercase tracking-wider">
+                        {chunk.citationLabel || `p. ${chunk.pageStart}`}
+                      </span>
+                      {chunk.tokenEstimate != null && (
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          ~{chunk.tokenEstimate} tokens
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <p className="font-serif text-[15px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
                     {chunk.text}
                   </p>
                 </div>
@@ -162,12 +200,17 @@ export function SourceViewerContent({
           ) : (
             <div className="flex flex-col items-center justify-center h-40 text-center">
               <BookOpen className="h-8 w-8 text-muted-foreground mb-3 opacity-50" />
-              <p className="text-sm text-muted-foreground">No extracted text available for this source.</p>
+              <p className="text-sm text-muted-foreground">
+                {source.status === "failed"
+                  ? "Text extraction failed. See error above for details."
+                  : isActiveStatus
+                    ? "Text is being extracted and chunked..."
+                    : "No extracted text available for this source."}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Right Pane: Analysis & Workspace */}
         <div className="w-1/2 overflow-y-auto scrollbar-thin bg-muted/20 p-8 space-y-6">
           <div className="grid grid-cols-1 gap-6">
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
@@ -255,6 +298,27 @@ export function SourceViewerContent({
         </div>
       </div>
     </div>
+  );
+}
+
+function RetryButton({ sourceId }: { sourceId: string }) {
+  const retry = useMutation(api.sources.retryProcessing);
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <button
+      onClick={async () => {
+        setLoading(true);
+        try {
+          await retry({ sourceId: sourceId as Id<"sources"> });
+        } catch {}
+        setLoading(false);
+      }}
+      disabled={loading}
+      className="shrink-0 rounded-md border border-danger/30 px-2 py-1 text-xs font-medium text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+    >
+      {loading ? "Retrying..." : "Retry"}
+    </button>
   );
 }
 

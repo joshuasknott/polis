@@ -15,7 +15,9 @@
     "convex": "^1.37.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
+    "mammoth": "^1.12.0",
     "next": "16.2.4",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

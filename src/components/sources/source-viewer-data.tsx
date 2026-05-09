@@ -56,7 +56,7 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
       source={{
         ...mappedSource,
         extractedText: "",
-        errorMessage: "",
+        errorMessage: source.errorMessage ?? "",
       }}
       moduleTitle={moduleInfo?.title ?? ""}
       moduleCode={moduleInfo?.code ?? ""}
@@ -66,6 +66,10 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
         id: chunk._id,
         text: chunk.text,
         chunkIndex: chunk.chunkIndex,
+        pageStart: chunk.pageStart ?? null,
+        pageEnd: chunk.pageEnd ?? null,
+        citationLabel: chunk.citationLabel ?? "",
+        tokenEstimate: chunk.tokenEstimate ?? null,
       }))}
       notes={notes.map((note) => ({
         id: note._id,

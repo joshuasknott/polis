@@ -28,7 +28,6 @@ export function SourceLibraryData() {
     mainArgument: "",
     keyConcepts: [] as string[],
   }));
-
   const mappedModules = modules.map((m) => ({
     id: m._id,
     title: m.title,

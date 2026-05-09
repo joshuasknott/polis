@@ -56,7 +56,10 @@ export function ModuleWorkspaceData({ moduleId, activeTab }: ModuleWorkspaceData
     <ModuleWorkspace
       module={modContext}
       folders={folders.map((f) => mapFolder(f, folderSourceCounts[f._id] ?? 0))}
-      sources={sources.map(mapSource)}
+      sources={sources.map((s) => ({
+        ...mapSource(s),
+        errorMessage: s.errorMessage ?? "",
+      }))}
       assignments={assignments.map(mapAssignment)}
     />
   );

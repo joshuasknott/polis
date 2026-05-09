@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import type { LucideIcon } from "lucide-react";
 import {
   BookOpen,
@@ -11,7 +14,9 @@ import {
   Info,
   StickyNote,
   ArrowLeft,
-  CheckSquare
+  CheckSquare,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
@@ -43,6 +48,7 @@ interface ModuleWorkspaceProps {
     tags: string[];
     summary: string;
     pageCount: number;
+    errorMessage: string;
   }>;
   assignments: Array<{
     id: string;
@@ -82,7 +88,6 @@ export function ModuleWorkspace({
 
   return (
     <div className="max-w-5xl mx-auto pb-12">
-      {/* Module Header Area */}
       <div className="mb-10">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
           <Link href="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
@@ -99,7 +104,6 @@ export function ModuleWorkspace({
         )}
       </div>
 
-      {/* Main Content Area */}
       <div className="min-h-[500px]">
         {renderContent()}
       </div>
@@ -147,19 +151,65 @@ function ModuleInfo({ module }: { module: ModuleWorkspaceProps["module"] }) {
   );
 }
 
-function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["module"], folders: ModuleWorkspaceProps["folders"], sources: ModuleWorkspaceProps["sources"] }) {
+function ModuleReadings({ module, folders, sources }: { module: ModuleWorkspaceProps["module"], folders: ModuleWorkspaceProps["folders"], sources: ModuleWorkspaceProps["sources"] }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const createForUpload = useMutation(api.sources.createForUpload);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const attachStorage = useMutation(api.sources.attachStorage);
+  const retry = useMutation(api.sources.retryProcessing);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
-    alert("Uploads are paused while the backend foundation migrates to Convex.");
-    e.target.value = "";
-    setUploading(false);
+    setUploadError(null);
+
+    try {
+      const sourceId = await createForUpload({
+        moduleId: module.id as Id<"modules">,
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        fileName: file.name,
+        fileType: file.type || "application/octet-stream",
+        fileSize: file.size,
+        folderType: "readings",
+      });
+
+      const postUrl = await generateUploadUrl({});
+
+      const uploadResult = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      if (!uploadResult.ok) {
+        throw new Error("File upload failed");
+      }
+
+      const { storageId } = await uploadResult.json();
+
+      await attachStorage({
+        sourceId: sourceId as Id<"sources">,
+        storageId: storageId as Id<"_storage">,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      });
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      e.target.value = "";
+      setUploading(false);
+    }
   }
+
+  const unassignedSources = sources.filter(
+    (s) => !s.folderId || !folders.some((f) => f.id === s.folderId),
+  );
 
   return (
     <div className="space-y-10">
@@ -187,6 +237,12 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
         />
       </div>
 
+      {uploadError && (
+        <div className="rounded-lg border border-danger/20 bg-danger/5 p-3 text-sm text-danger">
+          {uploadError}
+        </div>
+      )}
+
       <div className="space-y-10">
         {folders.map(folder => {
           const folderSources = sources.filter(s => s.folderId === folder.id);
@@ -209,32 +265,26 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
               </h3>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {folderSources.map(source => (
-                  <Link
-                    key={source.id}
-                    href={`/sources/${source.id}`}
-                    className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-foreground/30 hover:shadow-sm transition-all group"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider", getStatusColor(source.status))}>
-                          {getStatusLabel(source.status)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{getSourceTypeLabel(source.type)}</span>
-                      </div>
-                      <h4 className="font-semibold text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-foreground transition-colors">{source.title}</h4>
-                      <p className="text-xs text-muted-foreground">{source.author} ({source.year})</p>
-                    </div>
-                    <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border/50">
-                      <span>{source.pageCount} pages</span>
-                      <ArrowRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
-                    </div>
-                  </Link>
+                  <ReadingSourceCard key={source.id} source={source} onRetry={retry} />
                 ))}
               </div>
             </div>
           );
         })}
       </div>
+
+      {unassignedSources.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="flex items-center text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border pb-3">
+            Unassigned <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{unassignedSources.length}</span>
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {unassignedSources.map(source => (
+              <ReadingSourceCard key={source.id} source={source} onRetry={retry} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {sources.length === 0 && (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center">
@@ -243,6 +293,54 @@ function ModuleReadings({ folders, sources }: { module: ModuleWorkspaceProps["mo
           <p className="mt-1 text-xs text-muted-foreground">
             Upload your first source to start building this module&apos;s library.
           </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReadingSourceCard({ source, onRetry }: {
+  source: ModuleWorkspaceProps["sources"][0];
+  onRetry: (args: { sourceId: Id<"sources"> }) => Promise<unknown>;
+}) {
+  return (
+    <div className="flex flex-col">
+      <Link
+        href={`/sources/${source.id}`}
+        className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-foreground/30 hover:shadow-sm transition-all group flex-1"
+      >
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider", getStatusColor(source.status))}>
+              {getStatusLabel(source.status)}
+            </span>
+            <span className="text-xs text-muted-foreground">{getSourceTypeLabel(source.type)}</span>
+          </div>
+          <h4 className="font-semibold text-sm leading-snug mb-1.5 line-clamp-2 group-hover:text-foreground transition-colors">{source.title}</h4>
+          <p className="text-xs text-muted-foreground">{source.author} ({source.year})</p>
+        </div>
+        <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground pt-4 border-t border-border/50">
+          <span>{source.pageCount} pages</span>
+          <ArrowRight className="h-3.5 w-3.5 group-hover:text-foreground transition-colors" />
+        </div>
+      </Link>
+      {source.status === "failed" && source.errorMessage && (
+        <div className="px-3 pb-2 pt-1">
+          <div className="rounded-lg border border-danger/20 bg-danger/5 p-2 text-xs text-danger">
+            <div className="flex items-start gap-1.5">
+              <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" />
+              <span className="flex-1 line-clamp-1">{source.errorMessage}</span>
+              <button
+                onClick={async () => {
+                  await onRetry({ sourceId: source.id as Id<"sources"> });
+                }}
+                className="shrink-0 rounded px-1 py-0.5 hover:bg-danger/10 transition-colors"
+                title="Retry"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

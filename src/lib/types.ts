@@ -21,7 +21,16 @@ export type SourceType =
   | "report"
   | "news_article";
 
-export type ProcessingStatus = "processed" | "processing" | "needs_review" | "failed";
+export type ProcessingStatus =
+  | "processed"
+  | "processing"
+  | "needs_review"
+  | "failed"
+  | "uploading"
+  | "queued"
+  | "extracting"
+  | "chunking"
+  | "placeholder";
 
 export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
 
