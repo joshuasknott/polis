@@ -1,3 +1,13 @@
+export const PRODUCTION_STAGES = [
+  "ingest",
+  "understand",
+  "map",
+  "judge",
+  "build",
+  "draft",
+  "refine",
+] as const;
+
 export type SourceType =
   | "journal_article"
   | "book_chapter"
@@ -13,14 +23,7 @@ export type SourceType =
 
 export type ProcessingStatus = "processed" | "processing" | "needs_review" | "failed";
 
-export type ProductionStage =
-  | "ingest"
-  | "understand"
-  | "map"
-  | "judge"
-  | "build"
-  | "draft"
-  | "refine";
+export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
 
 export type CoThinkerScope = "whole_module" | "current_folder" | "selected_sources" | "assignment";
 

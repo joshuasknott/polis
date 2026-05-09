@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/shell";
 import { AssignmentWorkspaceShell } from "@/components/assignments/assignment-workspace-shell";
+import { PRODUCTION_STAGES, type ProductionStage } from "@/lib/types";
 import {
   getModuleById,
   getAssignmentsForModule,
@@ -20,7 +21,10 @@ export default async function AssignmentPage({
 }) {
   const { moduleId, assignmentId } = await params;
   const resolvedSearchParams = await searchParams;
-  const stage = typeof resolvedSearchParams.stage === "string" ? resolvedSearchParams.stage : "ingest";
+  const requestedStage = typeof resolvedSearchParams.stage === "string" ? resolvedSearchParams.stage : "ingest";
+  const stage: ProductionStage = PRODUCTION_STAGES.includes(requestedStage as ProductionStage)
+    ? (requestedStage as ProductionStage)
+    : "ingest";
 
   const mod = getModuleById(moduleId);
   if (!mod) notFound();

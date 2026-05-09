@@ -188,8 +188,7 @@ export function ToolsContent() {
       <div className="rounded-xl border border-border bg-muted/30 p-6 text-center">
         <p className="text-sm font-medium">Workbench Tools</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          These workbench tools generate source-grounded outputs when an API key is configured.
-          Without an API key, CoThinker uses template-based keyword retrieval.
+          Standalone workbench actions are paused during the Convex migration. Use assignment stages for contextual source, argument, draft, and refine work.
         </p>
       </div>
     </div>

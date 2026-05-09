@@ -15,7 +15,7 @@ import {
   PanelRightClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review } from "@/lib/types";
+import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage } from "@/lib/types";
 import { IngestStage } from "./ingest-stage";
 import { EvidenceMap } from "@/components/evidence/evidence-map";
 import { JudgeStage } from "@/components/arguments/judge-stage";
@@ -29,15 +29,20 @@ const WORKFLOW_STAGES = [
   { id: "understand", label: "Understand", icon: Layers, description: "Comprehend sources" },
   { id: "map", label: "Map", icon: GitMerge, description: "Connect ideas" },
   { id: "judge", label: "Judge", icon: Scale, description: "Evaluate argument" },
-  { id: "build", label: "Build", icon: Beaker, description: "Structure submission" },
-  { id: "draft", label: "Draft", icon: FileText, description: "Write submission" },
+  { id: "build", label: "Build", icon: Beaker, description: "Structure assignment" },
+  { id: "draft", label: "Draft", icon: FileText, description: "Write with evidence" },
   { id: "refine", label: "Refine", icon: CheckCircle, description: "Polish and validate" },
-] as const;
+] satisfies Array<{
+  id: ProductionStage;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+}>;
 
 interface AssignmentWorkspaceShellProps {
   module: Module;
   assignment: Assignment;
-  activeStage: string;
+  activeStage: ProductionStage;
   allModuleSources?: SourceFile[];
   assignmentArguments?: Argument[];
   draft?: Draft;
@@ -124,7 +129,7 @@ export function AssignmentWorkspaceShell({
         return (
           <StagePlaceholder
             label="Draft Studio"
-            description="Write your submission with source-grounded guidance"
+            description="Write with source-grounded guidance"
             icon={FileText}
           />
         );
@@ -152,7 +157,7 @@ export function AssignmentWorkspaceShell({
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)]">
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-6 xl:flex-row xl:gap-0">
       <div className="min-w-0 flex-1 pb-12">
         <div className="mx-auto max-w-5xl">
           <div className="mb-8">
@@ -263,13 +268,13 @@ export function AssignmentWorkspaceShell({
 
       <div
         className={cn(
-          "shrink-0 overflow-hidden border-l border-border bg-card/50 transition-all duration-200",
-          coThinkerOpen ? "w-80" : "w-0"
+          "shrink-0 overflow-hidden border-border bg-card/50 transition-all duration-200 xl:border-l",
+          coThinkerOpen ? "w-full xl:w-80" : "hidden xl:block xl:w-0"
         )}
       >
         {coThinkerOpen && (
           <CoThinkerPanel
-            stage={activeStage as import("@/lib/types").ProductionStage}
+            stage={activeStage}
             assignment={assignment}
             arguments={assignmentArguments}
             review={review}
