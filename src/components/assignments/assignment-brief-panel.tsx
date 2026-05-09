@@ -113,8 +113,9 @@ function StageReadinessBlock({
 }
 
 export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBriefPanelProps) {
-  const hasDueDate = !!assignment.dueDate && assignment.dueDate.length > 0;
-  const dueDate = hasDueDate ? new Date(assignment.dueDate) : null;
+  const dueDateValue = assignment.dueDate;
+  const hasDueDate = !!dueDateValue && dueDateValue.length > 0;
+  const dueDate = hasDueDate ? new Date(dueDateValue) : null;
   const now = new Date();
   const daysUntilDue = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
   const isOverdue = daysUntilDue !== null && daysUntilDue < 0;

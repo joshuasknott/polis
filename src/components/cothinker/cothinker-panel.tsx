@@ -536,7 +536,7 @@ export function CoThinkerPanel({
   );
 
   const createSession = useMutation(api.cothinker.createSession);
-  const askAction = useAction(api.cothinkerAsk.ask);
+  const askAction = useAction(api.cothinker_ask.ask);
   const removeSession = useMutation(api.cothinker.removeSession);
 
   const sessions = useQuery(

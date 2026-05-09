@@ -580,7 +580,7 @@ export function ArgumentBuilder({ arguments: args, workingThesis, sectionPlans, 
 
       <ThesisBlock thesis={workingThesis ?? ""} assignmentConvexId={assignmentConvexId} />
 
-      <WordBudgetBar sections={sectionPlans} wordLimit={assignment.wordLimit} />
+      <WordBudgetBar sections={sectionPlans} wordLimit={assignment.wordLimit ?? 2000} />
 
       <div>
         <div className="flex items-center justify-between mb-4">

@@ -9,6 +9,9 @@ import type {
   ProductionStage,
   EvidenceRole,
   Judgement,
+  SourceFile,
+  SourceStatus,
+  SourceType,
 } from "./types";
 
 export function mapModule(
@@ -46,16 +49,16 @@ export function mapFolder(folder: Doc<"folders">, sourceCount: number) {
   };
 }
 
-export function mapSource(source: Doc<"sources">) {
+export function mapSource(source: Doc<"sources">): SourceFile & { errorMessage: string } {
   return {
     id: source._id,
     moduleId: source.moduleId,
     folderId: source.folderId ?? null,
     title: source.title,
-    author: source.authors ?? "",
-    year: source.year ?? null,
-    type: source.type,
-    status: source.status,
+    author: source.authors ?? "Author unknown",
+    year: source.year ?? 0,
+    type: source.type as SourceType,
+    status: source.status as SourceStatus,
     tags: [] as string[],
     citation: source.citation ?? "",
     pageCount: 0,
@@ -76,7 +79,7 @@ export function mapFullAssignment(
     moduleId: assignment.moduleId,
     title: assignment.title,
     question: assignment.question ?? "",
-    wordLimit: assignment.wordLimit ?? null,
+    wordLimit: assignment.wordLimit ?? 2000,
     dueDate: assignment.dueDate ?? null,
     rubric: (assignment.rubric ?? []) as Array<{
       name: string;
@@ -102,6 +105,7 @@ export function mapAssignment(assignment: Doc<"assignments"> & { selectedSourceC
     selectedSourceIds: [],
     selectedSourceCount: assignment.selectedSourceCount ?? 0,
     stage: (assignment.stage ?? "ingest") as ProductionStage,
+    status: (assignment.stage ?? "ingest") as ProductionStage,
     createdAt: new Date(assignment.createdAt).toISOString(),
   };
 }

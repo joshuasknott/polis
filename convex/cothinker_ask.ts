@@ -112,9 +112,16 @@ type RetrievedChunk = {
   pageEnd: number | undefined;
 };
 
+type MessageLabel =
+  | "source_supported"
+  | "interpretation"
+  | "user_idea"
+  | "general_context"
+  | "unsupported";
+
 type AskResult = {
   content: string;
-  labels: string[];
+  labels: MessageLabel[];
   warnings: string[];
   followUpSuggestions: string[];
   citedChunks: Array<{
@@ -322,8 +329,8 @@ function parseCitations(
   return cited;
 }
 
-function extractLabels(content: string): string[] {
-  const labels = new Set<string>();
+function extractLabels(content: string): MessageLabel[] {
+  const labels = new Set<MessageLabel>();
   if (/\[Source-supported\]/i.test(content)) labels.add("source_supported");
   if (/\[Interpretation\]/i.test(content)) labels.add("interpretation");
   if (/\[General context\]/i.test(content)) labels.add("general_context");

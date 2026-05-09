@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
-import { evidenceStrength, evidenceRole } from "./lib/validators";
+import { evidenceStrength } from "./lib/validators";
 
 export const listForArgument = query({
   args: { argumentId: v.id("arguments") },
@@ -40,7 +40,7 @@ export const create = mutation({
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(evidenceRole),
+    usage: v.optional(v.string()),
     strength: evidenceStrength,
   },
   handler: async (ctx, args) => {
@@ -99,7 +99,7 @@ export const update = mutation({
     evidenceLinkId: v.id("evidenceLinks"),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(evidenceRole),
+    usage: v.optional(v.string()),
     strength: v.optional(evidenceStrength),
   },
   handler: async (ctx, args) => {

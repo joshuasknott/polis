@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
+import type { ProductionStage } from "@/lib/types";
 import {
   Send,
   BookOpen,
@@ -50,7 +51,7 @@ export function AssistantContent({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedModule, selectedModuleRaw] = useState(modules[0]?.id || "");
-  const [selectedMode, setSelectedMode] = useState("understand");
+  const [selectedMode, setSelectedMode] = useState<ProductionStage>("understand");
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [showNewSession, setShowNewSession] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -58,7 +59,7 @@ export function AssistantContent({
 
   const createSession = useMutation(api.cothinker.createSession);
   const removeSession = useMutation(api.cothinker.removeSession);
-  const askAction = useAction(api.cothinkerAsk.ask);
+  const askAction = useAction(api.cothinker_ask.ask);
 
   const messages = useQuery(
     api.cothinker.listMessages,
@@ -79,12 +80,12 @@ export function AssistantContent({
 
     const sessionArgs: {
       title: string;
-      scope: string;
-      stage: string;
+      scope: "whole_module";
+      stage: ProductionStage;
       moduleId?: Id<"modules">;
     } = {
       title: newTitle.trim(),
-      scope: selectedModule ? "module" : "global",
+      scope: "whole_module",
       stage: selectedMode,
     };
     if (selectedModule) sessionArgs.moduleId = selectedModule as Id<"modules">;
@@ -157,7 +158,7 @@ export function AssistantContent({
           <label className="text-xs font-medium text-muted-foreground">Mode</label>
           <select
             value={selectedMode}
-            onChange={(e) => setSelectedMode(e.target.value)}
+            onChange={(e) => setSelectedMode(e.target.value as ProductionStage)}
             className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm"
           >
             <option value="ingest">Ingest</option>

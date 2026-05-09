@@ -2,26 +2,16 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
   productionStage,
-  sourceType,
-  sourceStatus,
   folderType,
   cothinkerScope,
   messageRole,
   evidenceStrength,
-  evidenceRole,
-  judgementType,
-  judgementSeverity,
   reviewStatus,
-  reviewFindingCategory,
   processingJobType,
-  processingJobStatus,
-  providerName,
   argumentNodeType,
   argumentStatus,
   cothinkerInterventionType,
-  draftBlockType,
   rubricCriterion,
-  messageLabel,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -80,8 +70,8 @@ export default defineSchema({
     title: v.string(),
     authors: v.optional(v.string()),
     year: v.optional(v.number()),
-    type: sourceType,
-    status: sourceStatus,
+    type: v.string(),
+    status: v.string(),
     fileName: v.optional(v.string()),
     fileType: v.optional(v.string()),
     fileSize: v.optional(v.number()),
@@ -184,7 +174,7 @@ export default defineSchema({
     claim: v.string(),
     context: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    strength: v.optional(evidenceStrength),
+    strength: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_source", ["sourceId"]),
 
@@ -233,7 +223,7 @@ export default defineSchema({
     sourceClaimId: v.optional(v.id("sourceClaims")),
     quote: v.optional(v.string()),
     pageRange: v.optional(v.string()),
-    usage: v.optional(evidenceRole),
+    usage: v.optional(v.string()),
     strength: evidenceStrength,
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -260,7 +250,7 @@ export default defineSchema({
   draftBlocks: defineTable({
     tokenIdentifier: v.string(),
     draftId: v.id("drafts"),
-    blockType: draftBlockType,
+    blockType: v.string(),
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.number(),
@@ -273,7 +263,7 @@ export default defineSchema({
   judgementOptions: defineTable({
     tokenIdentifier: v.string(),
     assignmentId: v.id("assignments"),
-    type: judgementType,
+    type: v.string(),
     question: v.string(),
     createdAt: v.number(),
   }).index("by_assignment", ["assignmentId"]),
@@ -282,9 +272,9 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     assignmentId: v.id("assignments"),
     judgementOptionId: v.optional(v.id("judgementOptions")),
-    type: judgementType,
+    type: v.string(),
     content: v.string(),
-    severity: judgementSeverity,
+    severity: v.string(),
     createdAt: v.number(),
   })
     .index("by_assignment", ["assignmentId"])
@@ -307,9 +297,9 @@ export default defineSchema({
   reviewFindings: defineTable({
     tokenIdentifier: v.string(),
     reviewRunId: v.id("reviewRuns"),
-    category: reviewFindingCategory,
+    category: v.string(),
     content: v.string(),
-    severity: v.optional(judgementSeverity),
+    severity: v.optional(v.string()),
     resolved: v.optional(v.boolean()),
     resolvedAt: v.optional(v.number()),
     createdAt: v.number(),
@@ -345,7 +335,7 @@ export default defineSchema({
     role: messageRole,
     content: v.string(),
     citedChunkIds: v.optional(v.array(v.id("sourceChunks"))),
-    labels: v.optional(v.array(messageLabel)),
+    labels: v.optional(v.array(v.string())),
     warnings: v.optional(v.array(v.string())),
     followUpSuggestions: v.optional(v.array(v.string())),
     createdAt: v.number(),
@@ -369,7 +359,7 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     sourceId: v.optional(v.id("sources")),
     type: processingJobType,
-    status: processingJobStatus,
+    status: v.string(),
     errorMessage: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -382,12 +372,8 @@ export default defineSchema({
 
   aiProviderConnections: defineTable({
     tokenIdentifier: v.string(),
-    provider: providerName,
-    status: v.union(
-      v.literal("connected"),
-      v.literal("disconnected"),
-      v.literal("error"),
-    ),
+    provider: v.string(),
+    status: v.string(),
     modelPreference: v.optional(v.string()),
     encryptedCredentialRef: v.optional(v.string()),
     createdAt: v.number(),
@@ -401,7 +387,7 @@ export default defineSchema({
 
   usageEvents: defineTable({
     tokenIdentifier: v.string(),
-    provider: v.optional(providerName),
+    provider: v.optional(v.string()),
     model: v.optional(v.string()),
     type: v.string(),
     tokensIn: v.optional(v.number()),
@@ -425,7 +411,7 @@ export default defineSchema({
     windowStart: v.number(),
     requestCount: v.number(),
     tokenCount: v.number(),
-    provider: v.optional(providerName),
+    provider: v.optional(v.string()),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_tokenIdentifier_and_provider", ["tokenIdentifier", "provider"]),
@@ -433,7 +419,7 @@ export default defineSchema({
   errorEvents: defineTable({
     tokenIdentifier: v.string(),
     source: v.string(),
-    provider: v.optional(providerName),
+    provider: v.optional(v.string()),
     model: v.optional(v.string()),
     errorType: v.string(),
     errorMessage: v.string(),

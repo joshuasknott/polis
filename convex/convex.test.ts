@@ -3,6 +3,7 @@ import { convexTest } from "convex-test";
 import { expect, test, describe, beforeEach } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import type { Id } from "./_generated/dataModel";
 
 const modules = import.meta.glob("./**/*.ts", { eager: false });
 
@@ -148,7 +149,7 @@ describe("modules", () => {
 
 describe("assignments", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
+  let moduleId: Id<"modules">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -279,7 +280,7 @@ describe("assignments", () => {
 
 describe("sources", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
+  let moduleId: Id<"modules">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -355,10 +356,10 @@ describe("sources", () => {
 
 describe("evidence", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
-  let assignmentId: string;
-  let sourceId: string;
-  let argumentId: string;
+  let moduleId: Id<"modules">;
+  let assignmentId: Id<"assignments">;
+  let sourceId: Id<"sources">;
+  let argumentId: Id<"arguments">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -427,8 +428,8 @@ describe("evidence", () => {
 
 describe("drafts", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
-  let assignmentId: string;
+  let moduleId: Id<"modules">;
+  let assignmentId: Id<"assignments">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -507,13 +508,13 @@ describe("drafts", () => {
 
     await asA.mutation(api.drafts.createBlock, {
       draftId,
-      blockType: "paragraph",
+      blockType: "body",
       content: "Block 1",
       sortOrder: 0,
     });
     await asA.mutation(api.drafts.createBlock, {
       draftId,
-      blockType: "paragraph",
+      blockType: "body",
       content: "Block 2",
       sortOrder: 1,
     });
@@ -526,7 +527,7 @@ describe("drafts", () => {
 
 describe("reviews", () => {
   let t: ReturnType<typeof convexTest>;
-  let draftId: string;
+  let draftId: Id<"drafts">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -583,7 +584,7 @@ describe("reviews", () => {
 
 describe("notes", () => {
   let t: ReturnType<typeof convexTest>;
-  let sourceId: string;
+  let sourceId: Id<"sources">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -658,7 +659,7 @@ describe("users", () => {
 
 describe("arguments", () => {
   let t: ReturnType<typeof convexTest>;
-  let assignmentId: string;
+  let assignmentId: Id<"assignments">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -727,7 +728,7 @@ describe("arguments", () => {
 
 describe("cothinker", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
+  let moduleId: Id<"modules">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
@@ -781,7 +782,7 @@ describe("cothinker", () => {
 
 describe("folders", () => {
   let t: ReturnType<typeof convexTest>;
-  let moduleId: string;
+  let moduleId: Id<"modules">;
 
   beforeEach(async () => {
     t = convexTest(schema, modules);
