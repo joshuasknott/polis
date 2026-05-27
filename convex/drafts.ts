@@ -154,17 +154,9 @@ export const saveDraft = mutation({
       updatedAt: now,
     });
 
-    const existing = await ctx.db
-      .query("draftBlocks")
-      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
-      .take(200);
-
-    for (const block of existing) {
-      await ctx.db.delete(block._id);
-    }
-
+    const newBlockIds = [];
     for (const section of args.sections) {
-      await ctx.db.insert("draftBlocks", {
+      const blockId = await ctx.db.insert("draftBlocks", {
         tokenIdentifier,
         draftId: args.draftId,
         blockType: section.blockType,
@@ -174,6 +166,18 @@ export const saveDraft = mutation({
         createdAt: now,
         updatedAt: now,
       });
+      newBlockIds.push(blockId);
+    }
+
+    const existing = await ctx.db
+      .query("draftBlocks")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .take(500);
+
+    for (const block of existing) {
+      if (!newBlockIds.includes(block._id)) {
+        await ctx.db.delete(block._id);
+      }
     }
 
     return args.draftId;

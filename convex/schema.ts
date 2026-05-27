@@ -176,7 +176,9 @@ export default defineSchema({
     pageRange: v.optional(v.string()),
     strength: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_source", ["sourceId"]),
+  })
+    .index("by_source", ["sourceId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   sourceConcepts: defineTable({
     tokenIdentifier: v.string(),
@@ -185,7 +187,9 @@ export default defineSchema({
     definition: v.optional(v.string()),
     relevance: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_source", ["sourceId"]),
+  })
+    .index("by_source", ["sourceId"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   arguments: defineTable({
     tokenIdentifier: v.string(),
@@ -212,7 +216,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_argument", ["argumentId"])
-    .index("by_argument_and_sortOrder", ["argumentId", "sortOrder"]),
+    .index("by_argument_and_sortOrder", ["argumentId", "sortOrder"])
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   evidenceLinks: defineTable({
     tokenIdentifier: v.string(),

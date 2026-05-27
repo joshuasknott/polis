@@ -584,7 +584,7 @@ export const getFullContext = query({
       .withIndex("by_assignment", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
-      .take(200);
+      .take(100);
 
     const selectedSourceIds = new Set(
       assignmentSourceLinks.map((l) => l.sourceId),
@@ -594,38 +594,38 @@ export const getFullContext = query({
     );
 
     const sourceNotes: Doc<"sourceNotes">[] = [];
-    for (const source of moduleSources) {
+    for (const source of selectedSources.slice(0, 30)) {
       const notes = await ctx.db
         .query("sourceNotes")
         .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-        .take(50);
+        .take(20);
       sourceNotes.push(...notes);
     }
 
     const sourceAnalyses: Doc<"sourceAnalyses">[] = [];
-    for (const source of selectedSources) {
+    for (const source of selectedSources.slice(0, 30)) {
       const analyses = await ctx.db
         .query("sourceAnalyses")
         .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-        .take(20);
+        .take(10);
       sourceAnalyses.push(...analyses);
     }
 
     const sourceClaims: Doc<"sourceClaims">[] = [];
-    for (const source of selectedSources) {
+    for (const source of selectedSources.slice(0, 20)) {
       const claims = await ctx.db
         .query("sourceClaims")
         .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-        .take(50);
+        .take(20);
       sourceClaims.push(...claims);
     }
 
     const sourceConcepts: Doc<"sourceConcepts">[] = [];
-    for (const source of selectedSources) {
+    for (const source of selectedSources.slice(0, 20)) {
       const concepts = await ctx.db
         .query("sourceConcepts")
         .withIndex("by_source", (q) => q.eq("sourceId", source._id))
-        .take(50);
+        .take(20);
       sourceConcepts.push(...concepts);
     }
 
@@ -635,26 +635,26 @@ export const getFullContext = query({
         q.eq("assignmentId", args.assignmentId),
       )
       .order("asc")
-      .take(100);
+      .take(50);
 
     const argumentNodes: Doc<"argumentNodes">[] = [];
-    for (const arg of argsList) {
+    for (const arg of argsList.slice(0, 20)) {
       const nodes = await ctx.db
         .query("argumentNodes")
         .withIndex("by_argument_and_sortOrder", (q) =>
           q.eq("argumentId", arg._id),
         )
         .order("asc")
-        .take(50);
+        .take(30);
       argumentNodes.push(...nodes);
     }
 
     const evidence: Doc<"evidenceLinks">[] = [];
-    for (const arg of argsList) {
+    for (const arg of argsList.slice(0, 20)) {
       const links = await ctx.db
         .query("evidenceLinks")
         .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
-        .take(100);
+        .take(30);
       evidence.push(...links);
     }
 
@@ -664,7 +664,7 @@ export const getFullContext = query({
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
-      .take(50);
+      .take(20);
 
     const latestDraft = allDrafts[0] ?? null;
 
@@ -676,7 +676,7 @@ export const getFullContext = query({
           q.eq("draftId", latestDraft._id),
         )
         .order("asc")
-        .take(200);
+        .take(100);
       draftBlocks.push(...blocks);
     }
 
@@ -687,7 +687,7 @@ export const getFullContext = query({
         .query("reviewRuns")
         .withIndex("by_draft", (q) => q.eq("draftId", latestDraft._id))
         .order("desc")
-        .take(10);
+        .take(5);
       reviewRuns.push(...runs);
 
       for (const run of reviewRuns) {
@@ -696,7 +696,7 @@ export const getFullContext = query({
           .withIndex("by_reviewRun", (q) =>
             q.eq("reviewRunId", run._id),
           )
-          .take(100);
+          .take(50);
         reviewFindings.push(...findings);
       }
     }
@@ -706,14 +706,14 @@ export const getFullContext = query({
       .withIndex("by_assignment", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
-      .take(50);
+      .take(30);
 
     const judgementDecisions = await ctx.db
       .query("judgementDecisions")
       .withIndex("by_assignment", (q) =>
         q.eq("assignmentId", args.assignmentId),
       )
-      .take(100);
+      .take(50);
 
     const coThinkerSessions = await ctx.db
       .query("coThinkerSessions")
@@ -721,27 +721,7 @@ export const getFullContext = query({
         q.eq("assignmentId", args.assignmentId),
       )
       .order("desc")
-      .take(20);
-
-    const coThinkerMessages: Doc<"coThinkerMessages">[] = [];
-    const coThinkerInterventions: Doc<"coThinkerInterventions">[] = [];
-    for (const session of coThinkerSessions) {
-      const messages = await ctx.db
-        .query("coThinkerMessages")
-        .withIndex("by_session_and_createdAt", (q) =>
-          q.eq("sessionId", session._id),
-        )
-        .order("asc")
-        .take(200);
-      coThinkerMessages.push(...messages);
-
-      const interventions = await ctx.db
-        .query("coThinkerInterventions")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .order("asc")
-        .take(50);
-      coThinkerInterventions.push(...interventions);
-    }
+      .take(10);
 
     return {
       module: mod,
@@ -765,8 +745,6 @@ export const getFullContext = query({
       judgementOptions,
       judgementDecisions,
       coThinkerSessions,
-      coThinkerMessages,
-      coThinkerInterventions,
     };
   },
 });

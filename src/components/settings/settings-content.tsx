@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery, useAction } from "convex/react";
+import { useQuery, useAction, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -136,14 +136,24 @@ function ProfileSection({
   );
   const [prefSaving, setPrefSaving] = useState(false);
 
+  const updateProfile = useMutation(api.users.updateProfile);
+
   async function saveProfile() {
     setSaving(true);
     setMessage(null);
-    setMessage({
-      type: "success",
-      text: "Profile changes are local until Convex auth is wired",
-    });
-    setSaving(false);
+    try {
+      await updateProfile({
+        name: name || undefined,
+        university: university || undefined,
+        course: course || undefined,
+        yearOfStudy: yearOfStudy ? parseInt(yearOfStudy, 10) : undefined,
+      });
+      setMessage({ type: "success", text: "Profile updated successfully" });
+    } catch {
+      setMessage({ type: "error", text: "Failed to save profile" });
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function changePassword() {
@@ -154,18 +164,30 @@ function ProfileSection({
       setPasswordSaving(false);
       return;
     }
-    void currentPassword;
+    if (newPassword.length < 8) {
+      setPasswordMessage({ type: "error", text: "Password must be at least 8 characters" });
+      setPasswordSaving(false);
+      return;
+    }
     setPasswordMessage({
       type: "error",
-      text: "Password auth is paused during the Convex migration",
+      text: "Password changes are managed through Clerk. Use the account settings in the user menu.",
     });
     setPasswordSaving(false);
   }
 
   async function savePreferences() {
     setPrefSaving(true);
-    void defaultAiMode;
-    void citationStyle;
+    try {
+      await updateProfile({
+        preferences: {
+          defaultAiMode,
+          citationStyle,
+        },
+      });
+    } catch {
+      // preferences stored in user profile
+    }
     setPrefSaving(false);
   }
 
