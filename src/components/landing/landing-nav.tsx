@@ -65,10 +65,16 @@ export function LandingNav() {
           ))}
         </nav>
 
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <Link
-            href="/auth/signin"
+            href="/sign-up"
             className="text-sm font-medium text-[#445f7c] hover:text-[#0f284d] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f284d] focus-visible:ring-offset-2 rounded-sm"
+          >
+            Sign up
+          </Link>
+          <Link
+            href="/sign-in"
+            className="inline-flex items-center justify-center rounded-lg bg-[#0f284d] px-4 py-2 text-sm font-medium text-white hover:bg-[#1a3a6a] transition-colors"
           >
             Sign in
           </Link>

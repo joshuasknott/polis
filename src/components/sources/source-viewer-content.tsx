@@ -504,15 +504,14 @@ export function SourceViewerContent({
                 <Loader2 className="h-3.5 w-3.5 animate-spin ml-auto" />
               )}
             </button>
-            <button
-              disabled
-              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium text-muted-foreground transition-colors opacity-50 cursor-not-allowed"
-              title="CoThinker integration is not yet available"
+            <Link
+              href={`/assistant?sourceId=${source.id}&moduleId=${source.moduleId}`}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent/5"
             >
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               Ask About This Source
-              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">Unavailable</span>
-            </button>
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground">CoThinker</span>
+            </Link>
           </div>
 
           <div className="rounded-xl border border-border bg-muted/30 p-6 shadow-sm">
@@ -521,7 +520,7 @@ export function SourceViewerContent({
               Ask About This Source
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              CoThinker source-scoped conversations require an active session. This feature will be available when the CoThinker runtime is connected.
+              Use CoThinker to ask questions about this source. The AI will ground responses in the extracted text and cite specific passages.
             </p>
           </div>
         </div>

@@ -140,3 +140,47 @@ export const getProcessingStatus = query({
     };
   },
 });
+
+export const cleanupStaleJobs = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+
+    const staleProcessing = await ctx.db
+      .query("processingJobs")
+      .withIndex("by_status_and_type", (q) =>
+        q.eq("status", "processing"),
+      )
+      .take(100);
+
+    let cleaned = 0;
+    for (const job of staleProcessing) {
+      if (job.createdAt < oneHourAgo) {
+        await ctx.db.patch(job._id, {
+          status: "failed",
+          errorMessage: "Processing timed out",
+          updatedAt: Date.now(),
+        });
+        cleaned++;
+      }
+    }
+
+    const stalePending = await ctx.db
+      .query("processingJobs")
+      .withIndex("by_status", (q) => q.eq("status", "pending"))
+      .take(100);
+
+    for (const job of stalePending) {
+      if (job.createdAt < oneHourAgo) {
+        await ctx.db.patch(job._id, {
+          status: "failed",
+          errorMessage: "Job timed out waiting to be processed",
+          updatedAt: Date.now(),
+        });
+        cleaned++;
+      }
+    }
+
+    return { cleaned };
+  },
+});
