@@ -192,37 +192,9 @@ export const remove = mutation({
       throw new Error("Not found");
     }
 
-    const chunks = await ctx.db
-      .query("sourceChunks")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(500);
-    for (const chunk of chunks) {
-      await ctx.db.delete(chunk._id);
-    }
-
-    const notes = await ctx.db
-      .query("sourceNotes")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(200);
-    for (const note of notes) {
-      await ctx.db.delete(note._id);
-    }
-
-    if (source.storageId) {
-      try {
-        await ctx.storage.delete(source.storageId);
-      } catch {}
-    }
-
-    const jobs = await ctx.db
-      .query("processingJobs")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(50);
-    for (const job of jobs) {
-      await ctx.db.delete(job._id);
-    }
-
-    await ctx.db.delete(args.sourceId);
+    await ctx.runMutation(internal.cleanup.deleteSourceData, {
+      sourceId: args.sourceId,
+    });
     return args.sourceId;
   },
 });

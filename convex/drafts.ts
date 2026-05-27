@@ -2,6 +2,7 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
 import { draftBlockType } from "./lib/validators";
+import { internal } from "./_generated/api";
 
 export const list = query({
   args: { assignmentId: v.id("assignments") },
@@ -188,7 +189,9 @@ export const remove = mutation({
       throw new Error("Not found");
     }
 
-    await ctx.db.delete(args.draftId);
+    await ctx.runMutation(internal.cleanup.deleteDraftData, {
+      draftId: args.draftId,
+    });
     return args.draftId;
   },
 });

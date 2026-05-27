@@ -1,73 +1,74 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const BATCH = 100;
+
+async function deleteAll(
+  ctx: any,
+  table: string,
+  indexName: string,
+  key: string,
+  value: any,
+): Promise<number> {
+  let deleted = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const docs = await ctx.db
+      .query(table)
+      .withIndex(indexName, (q: any) => q.eq(key, value))
+      .take(BATCH);
+    if (docs.length === 0) {
+      hasMore = false;
+      break;
+    }
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
+      deleted++;
+    }
+    hasMore = docs.length === BATCH;
+  }
+  return deleted;
+}
+
 export const deleteModuleData = internalMutation({
   args: { moduleId: v.id("modules") },
   handler: async (ctx, args) => {
-    const BATCH = 50;
-
-    const folders = await ctx.db
-      .query("folders")
-      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
-      .take(BATCH);
-    for (const f of folders) {
-      await ctx.db.delete(f._id);
-    }
+    await deleteAll(ctx, "folders", "by_module", "moduleId", args.moduleId);
 
     const sources = await ctx.db
       .query("sources")
       .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
       .take(BATCH);
     for (const s of sources) {
-      const chunks = await ctx.db
-        .query("sourceChunks")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const c of chunks) {
-        await ctx.db.delete(c._id);
-      }
-
-      const notes = await ctx.db
-        .query("sourceNotes")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const n of notes) {
-        await ctx.db.delete(n._id);
-      }
-
-      const analyses = await ctx.db
-        .query("sourceAnalyses")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const a of analyses) {
-        await ctx.db.delete(a._id);
-      }
-
-      const claims = await ctx.db
-        .query("sourceClaims")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const cl of claims) {
-        await ctx.db.delete(cl._id);
-      }
-
-      const concepts = await ctx.db
-        .query("sourceConcepts")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const co of concepts) {
-        await ctx.db.delete(co._id);
-      }
-
-      const jobs = await ctx.db
-        .query("processingJobs")
-        .withIndex("by_source", (q) => q.eq("sourceId", s._id))
-        .take(BATCH);
-      for (const j of jobs) {
-        await ctx.db.delete(j._id);
-      }
-
+      await deleteAll(ctx, "sourceChunks", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "sourceNotes", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "sourceAnalyses", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "sourceClaims", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "sourceConcepts", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "processingJobs", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "assignmentSources", "by_source", "sourceId", s._id);
+      await deleteAll(ctx, "evidenceLinks", "by_source", "sourceId", s._id);
       await ctx.db.delete(s._id);
+    }
+    let hasMoreSources = sources.length === BATCH;
+    while (hasMoreSources) {
+      const more = await ctx.db
+        .query("sources")
+        .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+        .take(BATCH);
+      if (more.length === 0) break;
+      for (const s of more) {
+        await deleteAll(ctx, "sourceChunks", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "sourceNotes", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "sourceAnalyses", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "sourceClaims", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "sourceConcepts", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "processingJobs", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "assignmentSources", "by_source", "sourceId", s._id);
+        await deleteAll(ctx, "evidenceLinks", "by_source", "sourceId", s._id);
+        await ctx.db.delete(s._id);
+      }
+      hasMoreSources = more.length === BATCH;
     }
 
     const assignments = await ctx.db
@@ -75,111 +76,32 @@ export const deleteModuleData = internalMutation({
       .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
       .take(BATCH);
     for (const a of assignments) {
-      const assignmentSources = await ctx.db
-        .query("assignmentSources")
-        .withIndex("by_assignment", (q) => q.eq("assignmentId", a._id))
-        .take(BATCH);
-      for (const as2 of assignmentSources) {
-        await ctx.db.delete(as2._id);
-      }
-
-      const arguments_ = await ctx.db
-        .query("arguments")
-        .withIndex("by_assignment", (q) => q.eq("assignmentId", a._id))
-        .take(BATCH);
-      for (const arg of arguments_) {
-        const nodes = await ctx.db
-          .query("argumentNodes")
-          .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
-          .take(BATCH);
-        for (const n of nodes) {
-          await ctx.db.delete(n._id);
-        }
-
-        const evidence = await ctx.db
-          .query("evidenceLinks")
-          .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
-          .take(BATCH);
-        for (const e of evidence) {
-          await ctx.db.delete(e._id);
-        }
-
-        await ctx.db.delete(arg._id);
-      }
-
-      const judgementOpts = await ctx.db
-        .query("judgementOptions")
-        .withIndex("by_assignment", (q) => q.eq("assignmentId", a._id))
-        .take(BATCH);
-      for (const jo of judgementOpts) {
-        await ctx.db.delete(jo._id);
-      }
-
-      const judgementDecs = await ctx.db
-        .query("judgementDecisions")
-        .withIndex("by_assignment", (q) => q.eq("assignmentId", a._id))
-        .take(BATCH);
-      for (const jd of judgementDecs) {
-        await ctx.db.delete(jd._id);
-      }
-
-      const drafts = await ctx.db
-        .query("drafts")
-        .withIndex("by_assignment", (q) => q.eq("assignmentId", a._id))
-        .take(BATCH);
-      for (const d of drafts) {
-        const blocks = await ctx.db
-          .query("draftBlocks")
-          .withIndex("by_draft", (q) => q.eq("draftId", d._id))
-          .take(BATCH);
-        for (const b of blocks) {
-          await ctx.db.delete(b._id);
-        }
-
-        const reviews = await ctx.db
-          .query("reviewRuns")
-          .withIndex("by_draft", (q) => q.eq("draftId", d._id))
-          .take(BATCH);
-        for (const r of reviews) {
-          const findings = await ctx.db
-            .query("reviewFindings")
-            .withIndex("by_reviewRun", (q) => q.eq("reviewRunId", r._id))
-            .take(BATCH);
-          for (const f of findings) {
-            await ctx.db.delete(f._id);
-          }
-          await ctx.db.delete(r._id);
-        }
-
-        await ctx.db.delete(d._id);
-      }
-
+      await deleteAssignmentChildren(ctx, a._id);
       await ctx.db.delete(a._id);
     }
-
-    const coThinkerSessions = await ctx.db
-      .query("coThinkerSessions")
-      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
-      .take(BATCH);
-    for (const s of coThinkerSessions) {
-      const messages = await ctx.db
-        .query("coThinkerMessages")
-        .withIndex("by_session", (q) => q.eq("sessionId", s._id))
+    let hasMoreAssignments = assignments.length === BATCH;
+    while (hasMoreAssignments) {
+      const more = await ctx.db
+        .query("assignments")
+        .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
         .take(BATCH);
-      for (const m of messages) {
-        await ctx.db.delete(m._id);
+      if (more.length === 0) break;
+      for (const a of more) {
+        await deleteAssignmentChildren(ctx, a._id);
+        await ctx.db.delete(a._id);
       }
-
-      const interventions = await ctx.db
-        .query("coThinkerInterventions")
-        .withIndex("by_session", (q) => q.eq("sessionId", s._id))
-        .take(BATCH);
-      for (const i of interventions) {
-        await ctx.db.delete(i._id);
-      }
-
-      await ctx.db.delete(s._id);
+      hasMoreAssignments = more.length === BATCH;
     }
+
+    await deleteAll(ctx, "coThinkerSessions", "by_module", "moduleId", args.moduleId);
+
+    await deleteAll(
+      ctx,
+      "coThinkerSessions",
+      "by_module_and_createdAt",
+      "moduleId",
+      args.moduleId,
+    );
 
     await ctx.db.delete(args.moduleId);
     return args.moduleId;
@@ -189,73 +111,22 @@ export const deleteModuleData = internalMutation({
 export const deleteSourceData = internalMutation({
   args: { sourceId: v.id("sources") },
   handler: async (ctx, args) => {
-    const BATCH = 50;
-
     const source = await ctx.db.get(args.sourceId);
     if (!source) return args.sourceId;
 
-    const assignmentSources = await ctx.db
-      .query("assignmentSources")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const as2 of assignmentSources) {
-      await ctx.db.delete(as2._id);
-    }
+    await deleteAll(ctx, "assignmentSources", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "evidenceLinks", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "sourceChunks", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "sourceNotes", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "sourceAnalyses", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "sourceClaims", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "sourceConcepts", "by_source", "sourceId", args.sourceId);
+    await deleteAll(ctx, "processingJobs", "by_source", "sourceId", args.sourceId);
 
-    const evidenceLinks = await ctx.db
-      .query("evidenceLinks")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const e of evidenceLinks) {
-      await ctx.db.delete(e._id);
-    }
-
-    const chunks = await ctx.db
-      .query("sourceChunks")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const c of chunks) {
-      await ctx.db.delete(c._id);
-    }
-
-    const notes = await ctx.db
-      .query("sourceNotes")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const n of notes) {
-      await ctx.db.delete(n._id);
-    }
-
-    const analyses = await ctx.db
-      .query("sourceAnalyses")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const a of analyses) {
-      await ctx.db.delete(a._id);
-    }
-
-    const claims = await ctx.db
-      .query("sourceClaims")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const cl of claims) {
-      await ctx.db.delete(cl._id);
-    }
-
-    const concepts = await ctx.db
-      .query("sourceConcepts")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const co of concepts) {
-      await ctx.db.delete(co._id);
-    }
-
-    const jobs = await ctx.db
-      .query("processingJobs")
-      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
-      .take(BATCH);
-    for (const j of jobs) {
-      await ctx.db.delete(j._id);
+    if (source.storageId) {
+      try {
+        await ctx.storage.delete(source.storageId);
+      } catch {}
     }
 
     await ctx.db.delete(args.sourceId);
@@ -266,127 +137,84 @@ export const deleteSourceData = internalMutation({
 export const deleteAssignmentData = internalMutation({
   args: { assignmentId: v.id("assignments") },
   handler: async (ctx, args) => {
-    const BATCH = 50;
-
     const assignment = await ctx.db.get(args.assignmentId);
     if (!assignment) return args.assignmentId;
 
-    const assignmentSources = await ctx.db
-      .query("assignmentSources")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const as2 of assignmentSources) {
-      await ctx.db.delete(as2._id);
-    }
-
-    const arguments_ = await ctx.db
-      .query("arguments")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const arg of arguments_) {
-      const nodes = await ctx.db
-        .query("argumentNodes")
-        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
-        .take(BATCH);
-      for (const n of nodes) {
-        await ctx.db.delete(n._id);
-      }
-
-      const evidence = await ctx.db
-        .query("evidenceLinks")
-        .withIndex("by_argument", (q) => q.eq("argumentId", arg._id))
-        .take(BATCH);
-      for (const e of evidence) {
-        await ctx.db.delete(e._id);
-      }
-
-      await ctx.db.delete(arg._id);
-    }
-
-    const judgementOpts = await ctx.db
-      .query("judgementOptions")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const jo of judgementOpts) {
-      await ctx.db.delete(jo._id);
-    }
-
-    const judgementDecs = await ctx.db
-      .query("judgementDecisions")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const jd of judgementDecs) {
-      await ctx.db.delete(jd._id);
-    }
-
-    const drafts = await ctx.db
-      .query("drafts")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const d of drafts) {
-      const blocks = await ctx.db
-        .query("draftBlocks")
-        .withIndex("by_draft", (q) => q.eq("draftId", d._id))
-        .take(BATCH);
-      for (const b of blocks) {
-        await ctx.db.delete(b._id);
-      }
-
-      const reviews = await ctx.db
-        .query("reviewRuns")
-        .withIndex("by_draft", (q) => q.eq("draftId", d._id))
-        .take(BATCH);
-      for (const r of reviews) {
-        const findings = await ctx.db
-          .query("reviewFindings")
-          .withIndex("by_reviewRun", (q) => q.eq("reviewRunId", r._id))
-          .take(BATCH);
-        for (const f of findings) {
-          await ctx.db.delete(f._id);
-        }
-        await ctx.db.delete(r._id);
-      }
-
-      await ctx.db.delete(d._id);
-    }
-
-    const coThinkerSessions = await ctx.db
-      .query("coThinkerSessions")
-      .withIndex("by_assignment", (q) =>
-        q.eq("assignmentId", args.assignmentId),
-      )
-      .take(BATCH);
-    for (const s of coThinkerSessions) {
-      const messages = await ctx.db
-        .query("coThinkerMessages")
-        .withIndex("by_session", (q) => q.eq("sessionId", s._id))
-        .take(BATCH);
-      for (const m of messages) {
-        await ctx.db.delete(m._id);
-      }
-
-      const interventions = await ctx.db
-        .query("coThinkerInterventions")
-        .withIndex("by_session", (q) => q.eq("sessionId", s._id))
-        .take(BATCH);
-      for (const i of interventions) {
-        await ctx.db.delete(i._id);
-      }
-
-      await ctx.db.delete(s._id);
-    }
-
+    await deleteAssignmentChildren(ctx, args.assignmentId);
     await ctx.db.delete(args.assignmentId);
     return args.assignmentId;
   },
 });
+
+export const deleteArgumentData = internalMutation({
+  args: { argumentId: v.id("arguments") },
+  handler: async (ctx, args) => {
+    await deleteAll(ctx, "argumentNodes", "by_argument", "argumentId", args.argumentId);
+    await deleteAll(ctx, "evidenceLinks", "by_argument", "argumentId", args.argumentId);
+    await ctx.db.delete(args.argumentId);
+    return args.argumentId;
+  },
+});
+
+export const deleteDraftData = internalMutation({
+  args: { draftId: v.id("drafts") },
+  handler: async (ctx, args) => {
+    await deleteAll(ctx, "draftBlocks", "by_draft", "draftId", args.draftId);
+
+    const reviews = await ctx.db
+      .query("reviewRuns")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .take(BATCH);
+    for (const r of reviews) {
+      await deleteAll(ctx, "reviewFindings", "by_reviewRun", "reviewRunId", r._id);
+      await ctx.db.delete(r._id);
+    }
+
+    await ctx.db.delete(args.draftId);
+    return args.draftId;
+  },
+});
+
+async function deleteAssignmentChildren(ctx: any, assignmentId: any) {
+  await deleteAll(ctx, "assignmentSources", "by_assignment", "assignmentId", assignmentId);
+  await deleteAll(ctx, "sectionPlans", "by_assignment", "assignmentId", assignmentId);
+  await deleteAll(ctx, "judgementOptions", "by_assignment", "assignmentId", assignmentId);
+  await deleteAll(ctx, "judgementDecisions", "by_assignment", "assignmentId", assignmentId);
+
+  const arguments_ = await ctx.db
+    .query("arguments")
+    .withIndex("by_assignment", (q: any) => q.eq("assignmentId", assignmentId))
+    .take(BATCH);
+  for (const arg of arguments_) {
+    await deleteAll(ctx, "argumentNodes", "by_argument", "argumentId", arg._id);
+    await deleteAll(ctx, "evidenceLinks", "by_argument", "argumentId", arg._id);
+    await ctx.db.delete(arg._id);
+  }
+
+  const drafts = await ctx.db
+    .query("drafts")
+    .withIndex("by_assignment", (q: any) => q.eq("assignmentId", assignmentId))
+    .take(BATCH);
+  for (const d of drafts) {
+    await deleteAll(ctx, "draftBlocks", "by_draft", "draftId", d._id);
+
+    const reviews = await ctx.db
+      .query("reviewRuns")
+      .withIndex("by_draft", (q: any) => q.eq("draftId", d._id))
+      .take(BATCH);
+    for (const r of reviews) {
+      await deleteAll(ctx, "reviewFindings", "by_reviewRun", "reviewRunId", r._id);
+      await ctx.db.delete(r._id);
+    }
+
+    await ctx.db.delete(d._id);
+  }
+
+  await deleteAll(
+    ctx,
+    "coThinkerSessions",
+    "by_assignment",
+    "assignmentId",
+    assignmentId,
+  );
+}

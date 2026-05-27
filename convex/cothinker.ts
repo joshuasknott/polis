@@ -142,10 +142,34 @@ export const removeSession = mutation({
       throw new Error("Not found");
     }
 
+    await deleteAll(ctx, "coThinkerMessages", "by_session", "sessionId", args.sessionId);
+    await deleteAll(ctx, "coThinkerInterventions", "by_session", "sessionId", args.sessionId);
     await ctx.db.delete(args.sessionId);
     return args.sessionId;
   },
 });
+
+async function deleteAll(
+  ctx: any,
+  table: string,
+  indexName: string,
+  key: string,
+  value: any,
+) {
+  const BATCH = 100;
+  let hasMore = true;
+  while (hasMore) {
+    const docs = await ctx.db
+      .query(table)
+      .withIndex(indexName, (q: any) => q.eq(key, value))
+      .take(BATCH);
+    if (docs.length === 0) break;
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
+    }
+    hasMore = docs.length === BATCH;
+  }
+}
 
 export const listMessages = query({
   args: {

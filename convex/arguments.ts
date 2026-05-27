@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import { internal } from "./_generated/api";
 import {
   argumentNodeType,
   argumentStatus,
@@ -91,7 +92,9 @@ export const remove = mutation({
       throw new Error("Not found");
     }
 
-    await ctx.db.delete(args.argumentId);
+    await ctx.runMutation(internal.cleanup.deleteArgumentData, {
+      argumentId: args.argumentId,
+    });
     return args.argumentId;
   },
 });

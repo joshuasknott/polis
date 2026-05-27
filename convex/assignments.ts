@@ -8,6 +8,7 @@ import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
 import { productionStage } from "./lib/validators";
+import { internal } from "./_generated/api";
 
 export const list = query({
   args: {
@@ -261,7 +262,9 @@ export const remove = mutation({
       throw new Error("Not found");
     }
 
-    await ctx.db.delete(args.assignmentId);
+    await ctx.runMutation(internal.cleanup.deleteAssignmentData, {
+      assignmentId: args.assignmentId,
+    });
     return args.assignmentId;
   },
 });

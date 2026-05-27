@@ -2,7 +2,7 @@ import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import {
   reviewStatus,
   reviewFindingCategory,
@@ -235,10 +235,33 @@ export const removeRun = mutation({
       throw new Error("Not found");
     }
 
+    await deleteAll(ctx, "reviewFindings", "by_reviewRun", "reviewRunId", args.reviewRunId);
     await ctx.db.delete(args.reviewRunId);
     return args.reviewRunId;
   },
 });
+
+async function deleteAll(
+  ctx: any,
+  table: string,
+  indexName: string,
+  key: string,
+  value: any,
+) {
+  const BATCH = 100;
+  let hasMore = true;
+  while (hasMore) {
+    const docs = await ctx.db
+      .query(table)
+      .withIndex(indexName, (q: any) => q.eq(key, value))
+      .take(BATCH);
+    if (docs.length === 0) break;
+    for (const doc of docs) {
+      await ctx.db.delete(doc._id);
+    }
+    hasMore = docs.length === BATCH;
+  }
+}
 
 export const createFinding = mutation({
   args: {
