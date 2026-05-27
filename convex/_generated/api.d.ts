@@ -41,6 +41,7 @@ import type * as rateLimits from "../rateLimits.js";
 import type * as retrieval from "../retrieval.js";
 import type * as reviews from "../reviews.js";
 import type * as sourceAnalyses from "../sourceAnalyses.js";
+import type * as sourceAnalysisAI from "../sourceAnalysisAI.js";
 import type * as sources from "../sources.js";
 import type * as usage from "../usage.js";
 import type * as users from "../users.js";
@@ -85,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   retrieval: typeof retrieval;
   reviews: typeof reviews;
   sourceAnalyses: typeof sourceAnalyses;
+  sourceAnalysisAI: typeof sourceAnalysisAI;
   sources: typeof sources;
   usage: typeof usage;
   users: typeof users;

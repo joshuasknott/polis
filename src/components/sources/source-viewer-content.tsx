@@ -20,7 +20,7 @@ import {
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -95,32 +95,25 @@ export function SourceViewerContent({
 }: SourceViewerContentProps) {
   const [generatingType, setGeneratingType] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const createAnalysis = useMutation(api.sourceAnalyses.createAnalysis);
   const createConcept = useMutation(api.sourceAnalyses.createConcept);
+  const analyseSource = useAction(api.sourceAnalysisAI.analyseSource);
 
   async function handleGenerateAnalysis(type: string) {
     setGeneratingType(type);
+    setAiError(null);
     try {
-      let content = "";
-      switch (type) {
-        case "summary":
-          content =
-            source.summary ||
-            `Summary pending for "${source.title}". AI-generated analysis will appear here when a provider is configured.`;
-          break;
-        case "main_argument":
-          content = `Main argument extraction pending for "${source.title}".`;
-          break;
-        case "limitations":
-          content = `Limitations analysis pending for "${source.title}".`;
-          break;
-      }
-      await createAnalysis({
+      const result = await analyseSource({
         sourceId: source.id as Id<"sources">,
-        analysisType: type,
-        content,
+        analysisTypes: [type as "summary" | "main_argument" | "limitations" | "concepts" | "claims"],
       });
+      if (!result?.success) {
+        setAiError(result?.error ?? "Analysis failed");
+      }
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
       setGeneratingType(null);
     }
@@ -128,14 +121,17 @@ export function SourceViewerContent({
 
   async function handleExtractConcepts() {
     setGeneratingType("concepts");
+    setAiError(null);
     try {
-      if (concepts.length > 0) return;
-      await createConcept({
+      const result = await analyseSource({
         sourceId: source.id as Id<"sources">,
-        concept: "Concept extraction pending",
-        definition:
-          "AI-generated concepts will appear here when a provider is configured.",
+        analysisTypes: ["concepts"],
       });
+      if (!result?.success) {
+        setAiError(result?.error ?? "Concept extraction failed");
+      }
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Concept extraction failed");
     } finally {
       setGeneratingType(null);
     }

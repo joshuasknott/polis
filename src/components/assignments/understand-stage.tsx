@@ -17,7 +17,7 @@ import {
   StickyNote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import type { SourceFile, Assignment } from "@/lib/types";
@@ -55,6 +55,7 @@ function SourceAnalysisCard({
 
   const createAnalysis = useMutation(api.sourceAnalyses.createAnalysis);
   const markSkipped = useMutation(api.sourceAnalyses.markSourceAnalysed);
+  const analyseSource = useAction(api.sourceAnalysisAI.analyseSource);
   const [generating, setGenerating] = useState<string | null>(null);
 
   const isProcessed = source.status === "processed" || source.status === "needs_review";
@@ -73,7 +74,21 @@ function SourceAnalysisCard({
     if (!assignmentConvexId) return;
     setGenerating(type);
     try {
-      const content = buildPlaceholderContent(type, source);
+      const result = await analyseSource({
+        sourceId: source.id as Id<"sources">,
+        analysisTypes: [type],
+      });
+      if (!result?.success) {
+        const content = buildFallbackContent(type, source);
+        await createAnalysis({
+          sourceId: source.id as Id<"sources">,
+          assignmentId: assignmentConvexId as Id<"assignments">,
+          analysisType: type,
+          content,
+        });
+      }
+    } catch {
+      const content = buildFallbackContent(type, source);
       await createAnalysis({
         sourceId: source.id as Id<"sources">,
         assignmentId: assignmentConvexId as Id<"assignments">,
@@ -103,14 +118,14 @@ function SourceAnalysisCard({
     });
   }
 
-  function buildPlaceholderContent(type: AnalysisType, src: SourceFile): string {
+  function buildFallbackContent(type: AnalysisType, src: SourceFile): string {
     switch (type) {
       case "summary":
-        return src.summary || `Summary pending for "${src.title}". AI-generated analysis will appear here when a provider is configured.`;
+        return src.summary || `Summary not available for "${src.title}". Connect an AI provider in Settings for automatic analysis.`;
       case "main_argument":
-        return `Main argument extraction pending for "${src.title}". This will identify the central thesis and supporting reasoning.`;
+        return `Main argument extraction unavailable for "${src.title}". Connect an AI provider for automatic analysis.`;
       case "limitations":
-        return `Limitations analysis pending for "${src.title}". This will identify methodological constraints and scope boundaries.`;
+        return `Limitations analysis unavailable for "${src.title}". Connect an AI provider for automatic analysis.`;
     }
   }
 

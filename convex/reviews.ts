@@ -614,7 +614,9 @@ export const runReview = action({
     );
     if (!context) throw new Error("Review context not found");
 
-    const result = generateTemplateReview(context);
+    const aiResult = await tryAIReview(ctx, context);
+
+    const result = aiResult ?? generateTemplateReview(context);
 
     const runId: Id<"reviewRuns"> = await ctx.runMutation(
       api.reviews.createRunWithFindings,
@@ -629,3 +631,117 @@ export const runReview = action({
     return runId;
   },
 });
+
+async function tryAIReview(
+  ctx: any,
+  context: ReviewContext,
+): Promise<{ findings: ReviewFinding[]; overallFeedback: string; rubricAlignment: string } | null> {
+  const providerStatus = await ctx.runQuery(api.ai.getProviderStatus, {});
+  if (!providerStatus.configured) return null;
+
+  const { assignment, draft, arguments: argsList, evidence, sources } = context;
+  const content = draft.content ?? "";
+  if (content.trim().length < 50) return null;
+
+  const evidenceSummary = evidence
+    .slice(0, 20)
+    .map((ev: any) => {
+      const src = sources.find((s: any) => s._id === ev.sourceId);
+      return `- "${ev.quote ?? "No quote"}" from ${src?.title ?? "Unknown"} ${ev.pageRange ? `(${ev.pageRange})` : ""} [${ev.strength ?? "unrated"} strength]`;
+    })
+    .join("\n");
+
+  const rubricText = (assignment.rubric ?? [])
+    .map((r: any) => `${r.name} (${r.weight}%): ${r.description}`)
+    .join("\n");
+
+  const argumentSummary = argsList
+    .slice(0, 10)
+    .map((a: any) => `Argument: "${a.claim}"${a.synthesis ? ` — Synthesis: ${a.synthesis}` : ""}`)
+    .join("\n");
+
+  const reviewPrompt = `You are an academic draft reviewer. Review the following student draft and produce structured feedback.
+
+## Assignment
+Title: ${assignment.title}
+${assignment.question ? `Question: ${assignment.question}` : ""}
+${assignment.wordLimit ? `Word limit: ${assignment.wordLimit}` : ""}
+
+${rubricText ? `## Rubric\n${rubricText}` : ""}
+
+## Draft Content (${draft.wordCount ?? 0} words)
+${content.slice(0, 10000)}
+
+## Arguments
+${argumentSummary || "No structured arguments"}
+
+## Evidence Base
+${evidenceSummary || "No evidence linked"}
+
+## Instructions
+Produce a review with:
+1. Overall feedback (2-3 sentences)
+2. Rubric alignment (how the draft addresses each rubric criterion)
+3. Specific findings, categorised as: strength, weakness, missing_evidence, citation_safety, unsupported_claim, revision_priority, or suggestion
+4. For each finding, assign severity: info, warning, or critical
+
+Format your response EXACTLY as:
+---OVERALL---
+[overall feedback here]
+---RUBRIC---
+[rubric alignment here]
+---FINDINGS---
+[category]|[severity]|[content]
+[category]|[severity]|[content]
+...
+
+Do NOT write or rewrite any part of the draft. Only analyse and suggest improvements.`;
+
+  try {
+    const response = await ctx.runAction(api.ai.chat, {
+      messages: [{ role: "user", content: reviewPrompt }],
+      stage: "refine",
+      provider: providerStatus.provider ?? undefined,
+      model: providerStatus.model ?? undefined,
+    });
+
+    if (!response?.content) return null;
+
+    const parsed = parseAIReviewResponse(response.content);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function parseAIReviewResponse(
+  text: string,
+): { findings: ReviewFinding[]; overallFeedback: string; rubricAlignment: string } | null {
+  const overallMatch = text.match(/---OVERALL---\s*([\s\S]*?)\s*---RUBRIC---/);
+  const rubricMatch = text.match(/---RUBRIC---\s*([\s\S]*?)\s*---FINDINGS---/);
+  const findingsMatch = text.match(/---FINDINGS---\s*([\s\S]*?)$/);
+
+  if (!overallMatch || !findingsMatch) return null;
+
+  const overallFeedback = overallMatch[1].trim();
+  const rubricAlignment = rubricMatch?.[1]?.trim() ?? "No rubric alignment provided.";
+  const findingsText = findingsMatch[1].trim();
+
+  const findings: ReviewFinding[] = findingsText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.includes("|"))
+    .map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
+      return {
+        category: parts[0] || "suggestion",
+        severity: parts[1] || "info",
+        content: parts.slice(2).join("|") || line,
+      };
+    })
+    .filter((f) => f.content.length > 0);
+
+  if (findings.length === 0) return null;
+
+  return { findings, overallFeedback, rubricAlignment };
+}
