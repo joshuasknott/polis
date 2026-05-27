@@ -44,7 +44,7 @@ npm run convex:codegen # Generate Convex client bindings
 - **Frontend**: Next.js App Router pages with React components. Data fetched via Convex hooks.
 - **Backend**: Convex functions (`convex/`). Auth-gated via `getAuthIdentifier(ctx)` which calls `ctx.auth.getUserIdentity()`.
 - **Auth**: Clerk handles sign-in/sign-up/session. `convex/auth.config.ts` validates Clerk JWTs. `ConvexProviderWithClerk` in `src/app/convex-provider.tsx`.
-- **Database**: Convex (27 tables). Schema at `convex/schema.ts`. No Prisma, no PostgreSQL.
+- **Database**: Convex (29 tables). Schema at `convex/schema.ts`. No Prisma, no PostgreSQL.
 - **Storage**: Convex storage (`ctx.storage`). File upload via `generateUploadUrl` → client upload → `attachStorage`.
 - **AI**: All AI calls will be Convex actions (Node.js runtime). Server-side only. No client-side API calls.
 
@@ -133,7 +133,13 @@ convex/
   _generated/            # Auto-generated Convex bindings
   lib/
     auth.ts              # getAuthIdentifier helper
-  schema.ts              # Convex schema (27 tables)
+    retrieval.ts         # Shared retrieval utilities
+    integrity.ts         # Academic integrity helpers
+    citation.ts          # Citation format helpers
+  ingestion/
+    process.ts           # File extraction (PDF/DOCX)
+    lib.ts               # Text chunking
+  schema.ts              # Convex schema (29 tables)
   auth.config.ts         # Clerk JWT validation config
   modules.ts             # Module CRUD + workspace bundle
   folders.ts             # Folder CRUD
@@ -143,10 +149,26 @@ convex/
   arguments.ts           # Argument + argument node CRUD
   evidence.ts            # Evidence link CRUD
   drafts.ts              # Draft + draft block CRUD
-  reviews.ts             # Review run + finding CRUD
+  reviews.ts             # Review run + finding CRUD + runReview AI action
   cothinker.ts           # CoThinker session + message + intervention CRUD
+  cothinker_ask.ts       # CoThinker AI runtime with retrieval
   files.ts               # Upload URL generation
-  ai.ts                  # Placeholder (AI provider actions planned)
+  ai.ts                  # AI chat action (z.ai/Gemini)
+  ai_keys.ts             # API key storage + encryption + resolution
+  ai_providers.ts        # Provider selection and configuration
+  ai_prompts.ts          # System prompt templates
+  ai_crypto.ts           # Encryption/decryption for API keys
+  ai_zai.ts              # z.ai/GLM provider action
+  ai_gemini.ts           # Google Gemini provider action
+  rateLimits.ts          # Rate limiting via usage tracking
+  observability.ts       # Error tracking and logging
+  cleanup.ts             # Cascade delete actions
+  retrieval.ts           # Keyword search across source chunks
+  citation.ts            # Citation CRUD
+  citationSafety.ts      # Citation integrity checks
+  sourceAnalyses.ts      # Source analysis CRUD
+  sourceAnalysisAI.ts    # AI-powered source analysis
+  judgements.ts          # Judgement CRUD (manual)
   usage.ts               # Usage event query
   users.ts               # User profile CRUD
 

@@ -1,6 +1,6 @@
 # Polis — MVP Scope
 
-**Last updated**: 2026-05-09
+**Last updated**: 2026-05-27
 
 ## Phase 0: Static Prototype (Complete)
 
@@ -79,7 +79,7 @@
 
 ### Foundation (Complete)
 
-- [x] Convex schema (27 tables) covering full product model
+- [x] Convex schema (29 tables) covering full product model
 - [x] Clerk auth integrated with Convex
 - [x] Full CRUD for all entities
 - [x] File upload via Convex storage
@@ -93,16 +93,16 @@
 - [x] Define production architecture
 - [x] Define implementation contracts
 - [x] Update data model, RAG, AI provider docs
-- [ ] Update AGENTS.md
+- [x] Update AGENTS.md
 
 ### Backend Runtime (Next)
 
-- [ ] File extraction + chunking actions on Convex
+- [x] File extraction + chunking actions on Convex
 - [ ] Vector embeddings + Convex vector search
-- [ ] AI provider actions (z.ai primary, Gemini secondary)
-- [ ] CoThinker chat with retrieval
-- [ ] Source analysis generation
-- [ ] Draft review AI
+- [x] AI provider actions (z.ai primary, Gemini secondary)
+- [x] CoThinker chat with retrieval
+- [x] Source analysis generation
+- [x] Draft review AI
 - [ ] Judgement generation
 
 ### UI Wiring (Next)
@@ -113,8 +113,8 @@
 
 ### Production Readiness (Later)
 
-- [ ] Cleanup cascade actions
-- [ ] Rate limiting
+- [x] Cleanup cascade actions
+- [x] Rate limiting
 - [ ] Processing pipeline monitoring
 - [ ] Error handling and failure states
 - [ ] Mobile refinements

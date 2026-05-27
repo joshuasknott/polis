@@ -13,6 +13,10 @@ export function AssistantData() {
     api.modules.list,
     isLoaded && isSignedIn ? {} : "skip",
   );
+  const providerStatus = useQuery(
+    api.ai.getProviderStatus,
+    isLoaded && isSignedIn ? {} : "skip",
+  );
   const sources = useQuery(api.sources.list, queryArgs as Parameters<typeof useQuery>[1]);
   const sessions = useQuery(api.cothinker.listSessionsWithCounts, queryArgs as Parameters<typeof useQuery>[1]);
 
@@ -47,8 +51,8 @@ export function AssistantData() {
         scope: session.scope,
         stage: session.stage ?? undefined,
       }))}
-      aiConfigured={false}
-      providerName="Awaiting provider"
+      aiConfigured={providerStatus?.configured ?? false}
+      providerName={providerStatus?.provider ?? "Not configured"}
     />
   );
 }

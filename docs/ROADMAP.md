@@ -1,6 +1,6 @@
 # Polis — Roadmap
 
-**Last updated**: 2026-05-09
+**Last updated**: 2026-05-27
 
 ## Current: Phase 4 — Production Architecture & Runtime
 
@@ -20,12 +20,12 @@
 
 ### Backend Runtime (Agent Branches)
 
-- [ ] File extraction + chunking actions (`feat/convex-extraction`)
+- [x] File extraction + chunking actions (`feat/convex-extraction`)
 - [ ] Vector embeddings + Convex vector search (`feat/convex-embeddings`)
-- [ ] AI provider actions: z.ai + Gemini (`feat/convex-ai-providers`)
-- [ ] CoThinker chat runtime with retrieval (`feat/convex-cothinker-runtime`)
-- [ ] Source analysis actions (`feat/convex-source-analysis`)
-- [ ] Draft review AI action (`feat/convex-draft-review`)
+- [x] AI provider actions: z.ai + Gemini (`feat/convex-ai-providers`)
+- [x] CoThinker chat runtime with retrieval (`feat/convex-cothinker-runtime`)
+- [x] Source analysis actions (`feat/convex-source-analysis`)
+- [x] Draft review AI action (`feat/convex-draft-review`)
 - [ ] Judgement generation actions (`feat/convex-judgements`)
 
 ### UI Wiring (Agent Branches)
@@ -36,9 +36,9 @@
 
 ### Infrastructure
 
-- [ ] Update AGENTS.md to reflect Convex + Clerk stack (`chore/update-agents-md`)
-- [ ] Cleanup cascade actions for entity deletion
-- [ ] Rate limiting via usage event tracking
+- [x] Update AGENTS.md to reflect Convex + Clerk stack (`chore/update-agents-md`)
+- [x] Cleanup cascade actions for entity deletion
+- [x] Rate limiting via usage event tracking
 - [ ] Processing pipeline monitoring
 
 ---
@@ -54,7 +54,7 @@
 - [x] Removed old Next API routes for the previous backend behaviour
 - [x] Installed Convex and added foundational schema/functions
 - [x] Clerk auth integrated via JWT templates
-- [x] 27-table Convex schema covering the full product model
+- [x] 29-table Convex schema covering the full product model
 - [x] Full CRUD for modules, folders, sources, notes, assignments, arguments, evidence, drafts, reviews, CoThinker
 - [x] File upload via Convex storage
 - [x] UI mappers bridging Convex docs to existing component types

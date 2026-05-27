@@ -1,6 +1,6 @@
 # Polis — Current Architecture
 
-**Last updated**: 2026-05-09
+**Last updated**: 2026-05-27
 **Status**: Authoritative — this document supersedes stale references in AGENTS.md and older phase docs.
 
 ## Runtime Stack
@@ -10,11 +10,11 @@
 | Frontend | Next.js 16 App Router, React 19, Tailwind CSS v4 | Active |
 | Backend | Convex (schema, queries, mutations, actions, storage) | Active |
 | Auth | Clerk (sign-in, sign-up, JWT templates → Convex identity) | Active |
-| AI (primary) | z.ai / GLM (ZhipuAI) | Planned — no runtime integration yet |
-| AI (secondary) | Google Gemini (free API key) | Planned — no runtime integration yet |
+| AI (primary) | z.ai / GLM (ZhipuAI) | Active — actions in convex/ |
+| AI (secondary) | Google Gemini (free API key) | Active — actions in convex/ |
 | Dev tools | GPT Plus Codex, GitHub Copilot Student | Development only — not runtime providers |
 | File storage | Convex storage (`ctx.storage`) | Active |
-| Embeddings/Retrieval | Convex vector search | Not yet built |
+| Embeddings/Retrieval | Convex vector search | Keyword retrieval live; vector search planned |
 
 ## What Is Live
 
@@ -25,11 +25,11 @@ The following are wired end-to-end with Convex + Clerk:
 - **Modules**: `modules` table, `convex/modules.ts` — list, get, create, update, remove, listWithCounts, getWorkspaceBundle. Default folders created on module creation.
 - **Folders**: `folders` table, `convex/folders.ts` — list, get, create, update, remove. Indexed by module and tokenIdentifier.
 - **Sources**: `sources` table, `convex/sources.ts` — list, get, createPlaceholder, update, remove, attachStorage, listAnalyses, listChunks. Placeholder sources exist without files; `attachStorage` links a Convex storage ID after upload.
-- **Source chunks**: `sourceChunks` table. Schema exists. No extraction action yet.
+- **Source chunks**: `sourceChunks` table, `convex/ingestion/lib.ts` — text chunking from extracted content.
 - **Source notes**: `sourceNotes` table, `convex/notes.ts` — listForSource, create, update, remove.
 - **Assignments**: `assignments` table, `convex/assignments.ts` — list, get, create, update, updateStage, remove, listSources, addSource, removeSource, getWorkspaceBundle. Stage defaults to `"ingest"`.
 - **Assignment-source links**: `assignmentSources` join table.
-- **Source analyses**: `sourceAnalyses` table. Schema exists. No analysis action yet.
+- **Source analyses**: `sourceAnalyses` table, `convex/sourceAnalyses.ts` + `convex/sourceAnalysisAI.ts` — CRUD and AI-powered analysis.
 - **Source claims**: `sourceClaims` table. Schema exists. No extraction action yet.
 - **Source concepts**: `sourceConcepts` table. Schema exists. No extraction action yet.
 - **Arguments**: `arguments` table, `convex/arguments.ts` — list, get, create, update, remove, listNodes, createNode, updateNode, removeNode.
@@ -41,38 +41,35 @@ The following are wired end-to-end with Convex + Clerk:
 - **CoThinker sessions**: `coThinkerSessions` table, `convex/cothinker.ts` — listSessions, getSession, createSession, updateSession, removeSession. Scoped to module/assignment/source.
 - **CoThinker messages**: `coThinkerMessages` table — listMessages, addMessage. Includes citedChunkIds, labels, warnings, followUpSuggestions.
 - **CoThinker interventions**: `coThinkerInterventions` table — listInterventions, addIntervention, updateIntervention.
-- **Processing jobs**: `processingJobs` table. Schema exists. No processing action yet.
-- **AI provider connections**: `aiProviderConnections` table. Schema exists. `convex/ai.ts` has a placeholder query only.
-- **Usage events**: `usageEvents` table, `convex/usage.ts` — listEvents query. No event-writing action yet.
+- **Processing jobs**: `processingJobs` table. Schema exists. No processing pipeline yet.
+- **AI provider connections**: `aiProviderConnections` table, `convex/ai_keys.ts` + `convex/ai_providers.ts` — encrypted key storage, validation, per-user resolution, provider selection.
+- **AI chat**: `convex/ai.ts` — `chat` action calling z.ai or Gemini with system prompt and message history.
+- **Usage events**: `usageEvents` table, `convex/usage.ts` — listEvents query. Events written by `ai_keys.internalLogUsage`.
+- **Rate limiting**: `convex/rateLimits.ts` — usage-based rate limit checks before AI calls.
+- **Observability**: `convex/observability.ts` — error tracking and logging for AI actions.
 - **File upload**: `convex/files.ts` — `generateUploadUrl` mutation for Convex storage.
+- **File extraction**: `convex/ingestion/process.ts` — text extraction from PDF/DOCX after upload.
+- **Text chunking**: `convex/ingestion/lib.ts` — split extracted text into `sourceChunks`.
+- **Source analysis AI**: `convex/sourceAnalysisAI.ts` — auto-generate summaries, concepts, claims from sources.
+- **Retrieval**: `convex/retrieval.ts` — keyword search across source chunks.
+- **Citation safety**: `convex/citationSafety.ts` — citation integrity checks and badge logic.
+- **CoThinker runtime**: `convex/cothinker_ask.ts` — AI-powered CoThinker responses with retrieval grounding.
+- **Draft review AI**: `convex/reviews.ts` — `runReview` action with AI analysis + template fallback.
+- **Judgements**: `convex/judgements.ts` — manual CRUD for gap analysis and evidence sufficiency.
+- **Cleanup cascades**: `convex/cleanup.ts` — recursive `deleteAll` for entity deletion with cascading removes.
 
 ## What Is Not Live (Paused/Planned)
 
 These capabilities have schema support but no runtime implementation:
 
-- **File extraction**: No action to extract text from PDF/DOCX after upload.
-- **Text chunking**: No action to split extracted text into `sourceChunks`.
 - **Embedding generation**: No action to generate or store vector embeddings.
 - **Vector search**: No Convex vector index or hybrid retrieval pipeline.
-- **AI provider calls**: No action that calls z.ai, Gemini, OpenAI, or any LLM. `convex/ai.ts` returns a placeholder.
-- **Source analysis**: No action to auto-generate summaries, concepts, claims, or main arguments.
-- **CoThinker runtime**: Sessions, messages, and interventions can be created manually, but no AI action generates responses.
-- **Draft review AI**: Review runs and findings can be created manually, but no AI action analyses drafts.
-- **Judgement generation**: No AI action for gap analysis, evidence sufficiency, counterargument checks.
-- **Rate limiting**: No implementation.
-- **Usage tracking**: Events can be queried but nothing writes them.
-- **API key management**: Schema exists for `aiProviderConnections`, but no encryption, validation, or resolution logic.
+- **Judgement AI generation**: Judgements have manual CRUD only; no AI action for automated gap analysis or counterargument checks.
 
 ## Historical References (Do Not Trust)
 
 The following references in existing docs describe the old Prisma/Auth.js/PostgreSQL stack and are **historical only**:
 
-- AGENTS.md "Tech Stack" section lists PostgreSQL + Prisma 7, Auth.js v5, @aws-sdk/client-s3, pdf-parse, mammoth, @google/generative-ai.
-- AGENTS.md "Architecture" section references `src/lib/services/`, `src/lib/ai/`, `src/lib/auth.ts`, `src/lib/db.ts`, `src/lib/crypto.ts`.
-- AGENTS.md "Commands" section references `db:generate`, `db:push`, `db:migrate`, `db:seed`, `db:studio`.
-- AGENTS.md "File Structure" references `prisma/schema.prisma`, `src/lib/services/*`, `src/lib/ai/*`, `src/types/next-auth`.
-- `docs/AI_PROVIDER_STRATEGY.md` references OpenAI/Anthropic/Gemini as "Active" providers with `src/lib/ai/*` implementation files.
-- `docs/RAG_ARCHITECTURE.md` references pgvector, PostgreSQL, `POST /api/tools/*` endpoints.
 - `docs/ROADMAP.md` Phase 1-3 deliverables reference Prisma, Auth.js, PostgreSQL, pgvector.
 - `docs/MVP_SCOPE.md` Phase 3 references OAuth, per-user BYO keys, S3 storage, rate limiting.
 
@@ -96,10 +93,15 @@ These are superseded by this document and the updated versions of those docs on 
 ```
 convex/
   _generated/            # Auto-generated Convex bindings
-  ai/                    # (planned) AI provider actions
   lib/
     auth.ts              # getAuthIdentifier helper
-  schema.ts              # Convex schema (27 tables)
+    retrieval.ts         # Shared retrieval utilities
+    integrity.ts         # Academic integrity helpers
+    citation.ts          # Citation format helpers
+  ingestion/
+    process.ts           # File extraction (PDF/DOCX)
+    lib.ts               # Text chunking
+  schema.ts              # Convex schema (29 tables)
   auth.config.ts         # Clerk JWT validation config
   modules.ts             # Module CRUD + workspace bundle
   folders.ts             # Folder CRUD
@@ -109,10 +111,26 @@ convex/
   arguments.ts           # Argument + argument node CRUD
   evidence.ts            # Evidence link CRUD
   drafts.ts              # Draft + draft block CRUD
-  reviews.ts             # Review run + finding CRUD
+  reviews.ts             # Review run + finding CRUD + runReview AI action
   cothinker.ts           # CoThinker session + message + intervention CRUD
+  cothinker_ask.ts       # CoThinker AI runtime with retrieval
   files.ts               # Upload URL generation
-  ai.ts                  # Placeholder query
+  ai.ts                  # AI chat action (z.ai/Gemini)
+  ai_keys.ts             # API key storage + encryption + resolution
+  ai_providers.ts        # Provider selection and configuration
+  ai_prompts.ts          # System prompt templates
+  ai_crypto.ts           # Encryption/decryption for API keys
+  ai_zai.ts              # z.ai/GLM provider action
+  ai_gemini.ts           # Google Gemini provider action
+  rateLimits.ts          # Rate limiting via usage tracking
+  observability.ts       # Error tracking and logging
+  cleanup.ts             # Cascade delete actions
+  retrieval.ts           # Keyword search across source chunks
+  citation.ts            # Citation CRUD
+  citationSafety.ts      # Citation integrity checks
+  sourceAnalyses.ts      # Source analysis CRUD
+  sourceAnalysisAI.ts    # AI-powered source analysis
+  judgements.ts          # Judgement CRUD (manual)
   usage.ts               # Usage event query
   users.ts               # User profile CRUD
 
