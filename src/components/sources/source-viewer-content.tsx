@@ -95,25 +95,16 @@ export function SourceViewerContent({
 }: SourceViewerContentProps) {
   const [generatingType, setGeneratingType] = useState<string | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState<string | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
 
-  const createAnalysis = useMutation(api.sourceAnalyses.createAnalysis);
-  const createConcept = useMutation(api.sourceAnalyses.createConcept);
   const analyseSource = useAction(api.sourceAnalysisAI.analyseSource);
 
   async function handleGenerateAnalysis(type: string) {
     setGeneratingType(type);
-    setAiError(null);
     try {
-      const result = await analyseSource({
+      await analyseSource({
         sourceId: source.id as Id<"sources">,
         analysisTypes: [type as "summary" | "main_argument" | "limitations" | "concepts" | "claims"],
       });
-      if (!result?.success) {
-        setAiError(result?.error ?? "Analysis failed");
-      }
-    } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Analysis failed");
     } finally {
       setGeneratingType(null);
     }
@@ -121,17 +112,13 @@ export function SourceViewerContent({
 
   async function handleExtractConcepts() {
     setGeneratingType("concepts");
-    setAiError(null);
     try {
-      const result = await analyseSource({
+      await analyseSource({
         sourceId: source.id as Id<"sources">,
         analysisTypes: ["concepts"],
       });
-      if (!result?.success) {
-        setAiError(result?.error ?? "Concept extraction failed");
-      }
-    } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Concept extraction failed");
+    } catch {
+      // Analysis errors are reflected in the UI via query state
     } finally {
       setGeneratingType(null);
     }

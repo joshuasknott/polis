@@ -149,18 +149,14 @@ export const removeSession = mutation({
   },
 });
 
-async function deleteAll(
-  ctx: any,
-  table: string,
-  indexName: string,
-  key: string,
-  value: any,
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deleteAll(ctx: any, table: string, indexName: string, key: string, value: any) {
   const BATCH = 100;
   let hasMore = true;
   while (hasMore) {
     const docs = await ctx.db
       .query(table)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .withIndex(indexName, (q: any) => q.eq(key, value))
       .take(BATCH);
     if (docs.length === 0) break;

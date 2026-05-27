@@ -2,7 +2,7 @@ import { query, mutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
-import { api, internal } from "./_generated/api";
+import { api } from "./_generated/api";
 import {
   reviewStatus,
   reviewFindingCategory,
@@ -241,18 +241,14 @@ export const removeRun = mutation({
   },
 });
 
-async function deleteAll(
-  ctx: any,
-  table: string,
-  indexName: string,
-  key: string,
-  value: any,
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function deleteAll(ctx: any, table: string, indexName: string, key: string, value: any) {
   const BATCH = 100;
   let hasMore = true;
   while (hasMore) {
     const docs = await ctx.db
       .query(table)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .withIndex(indexName, (q: any) => q.eq(key, value))
       .take(BATCH);
     if (docs.length === 0) break;
@@ -632,10 +628,8 @@ export const runReview = action({
   },
 });
 
-async function tryAIReview(
-  ctx: any,
-  context: ReviewContext,
-): Promise<{ findings: ReviewFinding[]; overallFeedback: string; rubricAlignment: string } | null> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function tryAIReview(ctx: any, context: ReviewContext): Promise<{ findings: ReviewFinding[]; overallFeedback: string; rubricAlignment: string } | null> {
   const providerStatus = await ctx.runQuery(api.ai.getProviderStatus, {});
   if (!providerStatus.configured) return null;
 
@@ -645,18 +639,22 @@ async function tryAIReview(
 
   const evidenceSummary = evidence
     .slice(0, 20)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((ev: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const src = sources.find((s: any) => s._id === ev.sourceId);
       return `- "${ev.quote ?? "No quote"}" from ${src?.title ?? "Unknown"} ${ev.pageRange ? `(${ev.pageRange})` : ""} [${ev.strength ?? "unrated"} strength]`;
     })
     .join("\n");
 
-  const rubricText = (assignment.rubric ?? [])
-    .map((r: any) => `${r.name} (${r.weight}%): ${r.description}`)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rubricText = (assignment.rubric ?? [] as any[])
+    .map((r: { name: string; weight: number; description: string }) => `${r.name} (${r.weight}%): ${r.description}`)
     .join("\n");
 
   const argumentSummary = argsList
     .slice(0, 10)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((a: any) => `Argument: "${a.claim}"${a.synthesis ? ` — Synthesis: ${a.synthesis}` : ""}`)
     .join("\n");
 

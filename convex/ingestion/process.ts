@@ -119,6 +119,7 @@ async function extractPdf(
   buffer: Buffer,
 ): Promise<{ text: string; pages: PageSegment[] }> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pdfParseMod = await import("pdf-parse") as any;
     const PDFParse = pdfParseMod.PDFParse ?? pdfParseMod.default;
     const parser = new PDFParse({ data: new Uint8Array(buffer) });

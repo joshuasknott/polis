@@ -1,21 +1,22 @@
-import { internalMutation } from "./_generated/server";
+import { internalMutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 
 const BATCH = 100;
 
 async function deleteAll(
-  ctx: any,
+  ctx: MutationCtx,
   table: string,
   indexName: string,
   key: string,
-  value: any,
+  value: string,
 ): Promise<number> {
   let deleted = 0;
   let hasMore = true;
   while (hasMore) {
-    const docs = await ctx.db
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const docs = await (ctx.db as any)
       .query(table)
-      .withIndex(indexName, (q: any) => q.eq(key, value))
+      .withIndex(indexName, (q: { eq: (k: string, v: string) => unknown }) => q.eq(key, value))
       .take(BATCH);
     if (docs.length === 0) {
       hasMore = false;
@@ -175,7 +176,7 @@ export const deleteDraftData = internalMutation({
   },
 });
 
-async function deleteAssignmentChildren(ctx: any, assignmentId: any) {
+async function deleteAssignmentChildren(ctx: MutationCtx, assignmentId: string) {
   await deleteAll(ctx, "assignmentSources", "by_assignment", "assignmentId", assignmentId);
   await deleteAll(ctx, "sectionPlans", "by_assignment", "assignmentId", assignmentId);
   await deleteAll(ctx, "judgementOptions", "by_assignment", "assignmentId", assignmentId);
@@ -183,6 +184,7 @@ async function deleteAssignmentChildren(ctx: any, assignmentId: any) {
 
   const arguments_ = await ctx.db
     .query("arguments")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .withIndex("by_assignment", (q: any) => q.eq("assignmentId", assignmentId))
     .take(BATCH);
   for (const arg of arguments_) {
@@ -193,6 +195,7 @@ async function deleteAssignmentChildren(ctx: any, assignmentId: any) {
 
   const drafts = await ctx.db
     .query("drafts")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .withIndex("by_assignment", (q: any) => q.eq("assignmentId", assignmentId))
     .take(BATCH);
   for (const d of drafts) {
@@ -200,6 +203,7 @@ async function deleteAssignmentChildren(ctx: any, assignmentId: any) {
 
     const reviews = await ctx.db
       .query("reviewRuns")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .withIndex("by_draft", (q: any) => q.eq("draftId", d._id))
       .take(BATCH);
     for (const r of reviews) {

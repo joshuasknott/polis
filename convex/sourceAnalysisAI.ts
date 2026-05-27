@@ -3,7 +3,6 @@
 import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
 import {
   PROVIDERS,
   type ProviderId,
@@ -60,7 +59,7 @@ export const analyseSource = action({
 
     const fullText = chunks
       .slice(0, 30)
-      .map((c: any) => c.text)
+      .map((c: { text: string }) => c.text)
       .join("\n\n");
 
     if (fullText.trim().length < 50) {
@@ -95,6 +94,7 @@ export const analyseSource = action({
       };
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const results: Record<string, any> = {};
 
     if (types.includes("summary")) {
@@ -265,6 +265,7 @@ Format as a numbered list. Label: [Source-supported]`;
       tokensIn: Math.ceil(fullText.length / 4),
       tokensOut: Math.ceil(
         Object.values(results).reduce(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (sum: number, r: any) => sum + (r?.length ?? 0),
           0,
         ) / 4,
@@ -275,10 +276,8 @@ Format as a numbered list. Label: [Source-supported]`;
   },
 });
 
-async function resolveProviderKey(
-  ctx: any,
-  tokenIdentifier: string,
-): Promise<{
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveProviderKey(ctx: any, tokenIdentifier: string): Promise<{
   apiKey: string | null;
   model: string;
   provider: ProviderId;
