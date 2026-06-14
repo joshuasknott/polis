@@ -86,12 +86,12 @@ export const processSource = internalAction({
   },
 });
 
-interface PageSegment {
+export interface PageSegment {
   text: string;
   pageNumber: number;
 }
 
-async function extractText(
+export async function extractText(
   buffer: Buffer,
   fileType: string,
 ): Promise<{ text: string; pages: PageSegment[] }> {

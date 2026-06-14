@@ -3,6 +3,17 @@ import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
 import { getAuthIdentifier } from "./lib/auth";
 import { api } from "./_generated/api";
+import type {
+  ProvenanceWarning,
+  ProvenanceLabel,
+} from "../src/lib/integrity/provenance";
+import {
+  summarizeProvenance,
+  renderProvenanceSummary,
+  validateProvenanceClaim,
+  type ClaimProvenanceInput,
+  type ProvenanceValidationContext,
+} from "../src/lib/integrity/provenance";
 
 export const getCitationContext = query({
   args: {
@@ -61,7 +72,20 @@ export const getCitationContext = query({
       if (source) sources.push(source);
     }
 
-    return { draft, evidence, chunks, sources };
+    const provenanceRecords = await ctx.db
+      .query("claimProvenance")
+      .withIndex("by_draft", (q) => q.eq("draftId", args.draftId))
+      .take(500);
+
+    return {
+      draft,
+      evidence,
+      chunks,
+      sources,
+      assignmentSourceIds: sources.map((s) => s._id as string),
+      assignmentModuleId: assignment.moduleId,
+      provenanceRecords,
+    };
   },
 });
 
@@ -76,7 +100,14 @@ function verifyCitations(context: {
   evidence: Doc<"evidenceLinks">[];
   chunks: Doc<"sourceChunks">[];
   sources: Doc<"sources">[];
-}): { findings: CitationFinding[]; summary: string } {
+  assignmentSourceIds?: string[];
+  assignmentModuleId?: string;
+  provenanceRecords?: Doc<"claimProvenance">[];
+}): {
+  findings: CitationFinding[];
+  summary: string;
+  provenanceSummary: string;
+} {
   const { evidence, chunks, sources } = context;
   const findings: CitationFinding[] = [];
   const chunksBySource = new Map<string, Doc<"sourceChunks">[]>();
@@ -199,6 +230,142 @@ function verifyCitations(context: {
       ? "No quoted evidence to verify. Ensure all direct quotes are linked through the evidence bank."
       : `Citation safety check: ${verifiedQuotes.length} of ${totalChecked} quote${totalChecked !== 1 ? "s" : ""} verified${unverifiedQuotes.length > 0 ? `, ${unverifiedQuotes.length} require manual verification` : ""}.`;
 
+  const provenance = summariseProvenanceRecords(context);
+
+  return {
+    findings: [...findings, ...provenance.findings],
+    summary,
+    provenanceSummary: provenance.summary,
+  };
+}
+
+interface ProvenanceSummaryResult {
+  findings: CitationFinding[];
+  summary: string;
+}
+
+function summariseProvenanceRecords(context: {
+  draft: Doc<"drafts">;
+  evidence: Doc<"evidenceLinks">[];
+  chunks: Doc<"sourceChunks">[];
+  sources: Doc<"sources">[];
+  assignmentSourceIds?: string[];
+  assignmentModuleId?: string;
+  provenanceRecords?: Doc<"claimProvenance">[];
+}): ProvenanceSummaryResult {
+  const records = context.provenanceRecords ?? [];
+  if (records.length === 0) {
+    return {
+      findings: [],
+      summary: "No provenance records attached to this draft.",
+    };
+  }
+
+  const chunksById = new Map<string, Doc<"sourceChunks">>(
+    context.chunks.map((c) => [c._id as string, c]),
+  );
+  const sourcesById = new Map<string, Doc<"sources">>(
+    context.sources.map((s) => [s._id as string, s]),
+  );
+
+  const validationResults = records.map((r) => {
+    const chunkId = r.sourceChunkId ?? null;
+    const sourceId = r.sourceId ?? null;
+    const chunk = chunkId ? (chunksById.get(chunkId as string) ?? null) : null;
+    const source = sourceId
+      ? (sourcesById.get(sourceId as string) ?? null)
+      : null;
+
+    const claim: ClaimProvenanceInput = {
+      claimText: r.claimText,
+      label: r.label as ProvenanceLabel,
+      sourceId: sourceId ?? null,
+      sourceChunkId: chunkId ?? null,
+      quote: r.quote ?? null,
+      claimedPageStart: r.claimedPageStart ?? null,
+      claimedPageEnd: r.claimedPageEnd ?? null,
+      isCatalogRecommendation: r.isCatalogRecommendation ?? false,
+      evidenceStrength: (r.evidenceStrength ?? null) as
+        | "strong"
+        | "moderate"
+        | "weak"
+        | null,
+    };
+
+    const validationContext: ProvenanceValidationContext = {
+      chunk: chunk
+        ? {
+            _id: chunk._id as string,
+            sourceId: chunk.sourceId as string,
+            pageStart: chunk.pageStart ?? null,
+            pageEnd: chunk.pageEnd ?? null,
+            text: chunk.text,
+          }
+        : null,
+      source: source
+        ? {
+            _id: source._id as string,
+            tokenIdentifier: source.tokenIdentifier,
+            moduleId: source.moduleId as string,
+            authors: source.authors ?? null,
+            year: source.year ?? null,
+            title: source.title,
+          }
+        : null,
+      currentUserId: context.draft.tokenIdentifier,
+      moduleId: context.assignmentModuleId ?? null,
+      assignmentSourceIds: context.assignmentSourceIds ?? [],
+    };
+
+    return validateProvenanceClaim(claim, validationContext);
+  });
+
+  const originalLabels = records.map((r) => r.label as ProvenanceLabel);
+  const summaryObj = summarizeProvenance(validationResults, originalLabels);
+  const summary = renderProvenanceSummary(summaryObj);
+
+  const findings: CitationFinding[] = [];
+  const seenCodes = new Set<string>();
+  for (const record of records) {
+    const stored = (record.validationWarnings ?? []) as ProvenanceWarning[];
+    for (const w of stored) {
+      if (w.severity === "critical") {
+        const key = `${w.code}:${record._id}`;
+        if (seenCodes.has(key)) continue;
+        seenCodes.add(key);
+        const preview =
+          record.claimText.length > 80
+            ? record.claimText.slice(0, 77) + "\u2026"
+            : record.claimText;
+        findings.push({
+          category: "citation_safety",
+          content: `[${w.code}] ${w.message} (claim: "${preview}")`,
+          severity: "warning",
+        });
+      }
+    }
+  }
+
+  for (const code of [
+    "FAKE_CITATION_REJECTED",
+    "CITATION_MISMATCH",
+    "POSSIBLE_MISATTRIBUTION",
+    "CATALOG_RECOMMENDATION_AS_EVIDENCE",
+    "MISSING_PAGE_METADATA",
+    "SOURCE_NOT_IN_ASSESSMENT",
+    "WEAK_EVIDENCE",
+    "UNSUPPORTED_CLAIM",
+  ] as const) {
+    const count = summaryObj.warningCountsByCode[code] ?? 0;
+    if (count === 0) continue;
+    if (findings.some((f) => f.content.startsWith(`[${code}]`))) continue;
+    findings.push({
+      category: "citation_safety",
+      content: `${count} "${code}" warning${count === 1 ? "" : "s"} across provenance records.`,
+      severity: code === "FAKE_CITATION_REJECTED" ? "warning" : "info",
+    });
+  }
+
   return { findings, summary };
 }
 
@@ -233,16 +400,24 @@ export const runCitationSafetyCheck = action({
 
     const result = verifyCitations(context);
 
+    const overallFeedback = result.provenanceSummary
+      ? `${result.summary} ${result.provenanceSummary}`
+      : result.summary;
+
     const runId: Id<"reviewRuns"> = await ctx.runMutation(
       api.reviews.createRunWithFindings,
       {
         draftId: args.draftId,
-        overallFeedback: result.summary,
+        overallFeedback,
         rubricAlignment: "",
         findings: result.findings,
       },
     );
 
-    return { runId, summary: result.summary };
+    return {
+      runId,
+      summary: overallFeedback,
+      provenanceSummary: result.provenanceSummary,
+    };
   },
 });

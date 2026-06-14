@@ -1,139 +1,74 @@
-# Polis — Roadmap
+# Polis Roadmap
 
-**Last updated**: 2026-05-27
+**Last updated**: 2026-06-14
 
-## Current: Phase 4 — Production Architecture & Runtime
+## Active: Phase 5 - AI-Native Module OS
 
 **Status**: In progress
-**Goal**: Rebuild all runtime capabilities on Convex + Clerk, connect the full product model to live data, and ship source-grounded AI.
 
-### Architecture Contracts (This Branch)
+**Goal**: Make Polis a workspace-first module operating system. A student creates a workspace, imports everything they already have, and works through assessments with embedded, source-backed AI across Plan, Write, and Review.
 
-- [x] Reconcile current reality: Convex + Clerk active, Prisma/Auth.js/PostgreSQL historical
-- [x] Define production architecture in `docs/CURRENT_ARCHITECTURE.md`
-- [x] Define implementation contracts in `docs/IMPLEMENTATION_CONTRACTS.md`
-- [x] Update data model documentation for Convex schema
-- [x] Define RAG architecture for Convex
-- [x] Define AI provider strategy: z.ai primary, Gemini secondary
-- [x] Define academic integrity guarantees for AI actions
-- [x] Define branch dependency map for parallel agents
+### Completed UX Foundation
 
-### Backend Runtime (Agent Branches)
+- [x] Product-led marketing site focused on source-backed workspaces.
+- [x] Dashboard is workspace-first and has no sidenav.
+- [x] Timeline is merged into Workspaces instead of being a separate top-level destination.
+- [x] Workspace creation asks for name, semester, and year only.
+- [x] Semester is a free-text field.
+- [x] Workspace shell appears after opening a workspace.
+- [x] User-facing copy now centers Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review.
 
-- [x] File extraction + chunking actions (`feat/convex-extraction`)
-- [ ] Vector embeddings + Convex vector search (`feat/convex-embeddings`)
-- [x] AI provider actions: z.ai + Gemini (`feat/convex-ai-providers`)
-- [x] CoThinker chat runtime with retrieval (`feat/convex-cothinker-runtime`)
-- [x] Source analysis actions (`feat/convex-source-analysis`)
-- [x] Draft review AI action (`feat/convex-draft-review`)
-- [ ] Judgement generation actions (`feat/convex-judgements`)
+### Workspace Setup
 
-### UI Wiring (Agent Branches)
+- [x] Create workspace from name, semester, and year.
+- [ ] Bulk import flow: drop everything for the module.
+- [ ] AI-assisted source classification with user confirmation.
+- [ ] Assessment and module-fact extraction from briefs, rubrics, and handbooks.
+- [ ] Workspace home shows import review, assessment deadlines, timeline, and source coverage.
 
-- [ ] Assignment workspace connected to live Convex data (`feat/ui-assignment-workspace`)
-- [ ] CoThinker panel connected to live runtime (`feat/ui-cothinker`)
-- [ ] Module workspace refinements for live data
+### Embedded AI
 
-### Infrastructure
+- [ ] In-context assistant inside workspace and assessment.
+- [ ] In-context tools surfaced inside Plan / Write / Review.
+- [ ] Phase-aware directive cards.
 
-- [x] Update AGENTS.md to reflect Convex + Clerk stack (`chore/update-agents-md`)
-- [x] Cleanup cascade actions for entity deletion
-- [x] Rate limiting via usage event tracking
-- [ ] Processing pipeline monitoring
+### Writing Help
 
----
+- [ ] Drafting on request, source-backed where claimed.
+- [ ] Paraphrase and restructure.
+- [ ] Critique against rubric and evidence.
+- [ ] Citation insertion from verified source data.
+- [ ] Revision and restructuring in Review.
+- [ ] Soft warnings for unsupported claims; hard errors only for fabrication, fake citations, fake pages, or misattribution.
 
-## Done: Convex Foundation Migration
+### Integrity UX
 
-**Status**: Complete (foundation only)
-**Goal**: Replace the pre-existing Prisma/PostgreSQL/Auth.js backend with a clean Convex backend.
+- [ ] Hard rejection of fabricated citations, pages, and misattribution at the validation layer.
+- [ ] Visible labels on AI claims.
+- [ ] Explicit student-responsibility messaging.
 
-### Foundation Delivered
+## Phase 4 - Production Architecture & Runtime
 
-- [x] Removed Prisma/PostgreSQL package scripts and backend files
-- [x] Removed old Next API routes for the previous backend behaviour
-- [x] Installed Convex and added foundational schema/functions
-- [x] Clerk auth integrated via JWT templates
-- [x] 29-table Convex schema covering the full product model
-- [x] Full CRUD for modules, folders, sources, notes, assignments, arguments, evidence, drafts, reviews, CoThinker
-- [x] File upload via Convex storage
-- [x] UI mappers bridging Convex docs to existing component types
+**Status**: Foundation in place, runtime wiring continuing.
 
----
+- [x] Convex + Clerk architecture documented.
+- [x] Convex schema and implementation contracts documented.
+- [x] z.ai/GLM primary and Gemini secondary provider strategy documented.
+- [x] AI provider actions in Convex.
+- [x] CoThinker chat runtime with retrieval.
+- [x] Source analysis actions.
+- [x] Draft review AI action.
+- [x] Cleanup cascade actions.
+- [x] Rate limiting via usage event tracking.
+- [ ] Vector embeddings and Convex vector search.
+- [ ] Judgement generation actions.
+- [ ] Processing pipeline monitoring.
 
-## Done: Phase 0 — Static Prototype
+## Reference Docs
 
-**Status**: Complete
-**Goal**: Polished frontend prototype with mock data
-
-### Deliverables
-
-- [x] Next.js project setup with TypeScript and Tailwind
-- [x] Landing page
-- [x] Dashboard with module cards
-- [x] Module workspace with folder navigation
-- [x] Source library and viewer
-- [x] CoThinker panel with mock responses
-- [x] Assignment workspace
-- [x] Workbench page
-- [x] Settings page
-- [x] Documentation set
-- [x] Type definitions and mock data
-
----
-
-## Done: Phase 1-3 (Historical — Prisma/PostgreSQL Stack)
-
-**Status**: Complete, then superseded by Convex migration
-**Goal**: Working foundation with database, auth, uploads, ingestion, retrieval, and AI
-
-These phases were delivered on the old Prisma/PostgreSQL/Auth.js stack. Their deliverables are historical references. The capabilities they built (file processing, RAG, AI providers) need to be rebuilt on Convex as part of Phase 4.
-
-### Phase 1 Deliverables (Historical)
-
-- [x] PostgreSQL database with Prisma ORM
-- [x] User authentication (Auth.js v5)
-- [x] File upload and text extraction
-- [x] Basic chunking and retrieval
-- [x] Source-grounded CoThinker
-
-### Phase 2 Deliverables (Historical)
-
-- [x] Real AI provider integration (OpenAI, Anthropic)
-- [x] Vector embeddings with pgvector
-- [x] Hybrid retrieval
-- [x] Citation safety checking
-- [x] Draft review
-
-### Phase 3 Deliverables (Historical)
-
-- [x] Per-user BYO API key management
-- [x] OAuth providers
-- [x] Background file processing
-- [x] Cloud file storage
-- [x] Usage analytics
-- [x] Rate limiting
-- [x] Google Gemini provider
-
----
-
-## Risks
-
-| Risk | Mitigation |
-|------|------------|
-| AI hallucination in academic context | Strict source-grounding, citation badges, warnings, `[Source N]` format enforced |
-| Academic integrity concerns | Prominent integrity policy, clear labelling, no essay generation, draft review analyses only |
-| User adoption | Focus on genuine workflow value, not AI gimmicks |
-| API cost sensitivity | z.ai primary (cost-effective), Gemini free tier fallback, transparent usage tracking |
-| Provider API changes | Abstraction layer, multi-provider support |
-| Data privacy | Server-side processing (Convex actions), no third-party data sharing beyond provider API |
-| Convex vector search maturity | Start with keyword fallback, add vector search incrementally |
-
-## Open Questions
-
-- Pricing model (if any) for future phases
-- Mobile app vs responsive web → Responsive web for now
-- University partnership opportunities
-- Content moderation requirements
-- Rich text editor choice for draft editing
-- Convex vector search dimensionality and index strategy
+- `docs/PRODUCT_VISION.md`
+- `docs/MVP_SCOPE.md`
+- `docs/CURRENT_ARCHITECTURE.md`
+- `docs/IMPLEMENTATION_CONTRACTS.md`
+- `docs/UX_FLOW.md`
+- `docs/ACADEMIC_INTEGRITY.md`

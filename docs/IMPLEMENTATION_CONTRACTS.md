@@ -1,7 +1,11 @@
 # Polis — Implementation Contracts
 
-**Last updated**: 2026-05-09
+**Last updated**: 2026-06-14
 **Purpose**: Canonical contracts that all implementation agents must follow. This document defines contexts, stage artifacts, backend boundaries, academic integrity guarantees, and the branch dependency map.
+
+## Terminology
+
+This document uses **internal data-model names** (Module, Assignment, Argument, Draft, CoThinker, Workbench) because it is the contract for code. The product uses user-facing names: Workspace, Assessment, Evidence Map, Plan / Write / Review, in-context Assistant, in-context Tools. See `docs/PRODUCT_VISION.md` for the full mapping. Code, schema, table names, and field names stay on internal names unless a migration explicitly changes them.
 
 ---
 
@@ -50,6 +54,23 @@ A versioned piece of written work for an assignment, composed of draft blocks. S
 Ingest → Understand → Map → Judge → Build → Draft → Refine
 ```
 
+This is the **internal** stage enum used by code, AI prompts, and completion signals. The **user-facing** flow is simpler:
+
+```
+Create workspace → Import → Classify → Extract → Dashboard → Plan → Write → Review
+```
+
+Mapping:
+
+| User-facing | Internal stage(s) |
+|-------------|-------------------|
+| Create workspace / Import / Classify / Extract / Dashboard | Workspace setup (module + sources + auto-detected assignments); primarily `ingest` |
+| **Plan** | `understand → map → judge → build` |
+| **Write** | `draft` |
+| **Review** | `refine` |
+
+The first four internal stages are largely absorbed into workspace setup and Plan preparation. The user sees Plan / Write / Review; the system tracks the granular internal stage for AI prompting, completion signals, and stage-aware behaviour.
+
 ### Stage Transition Rules
 - Assignments start at `"ingest"` on creation.
 - Stage transitions are user-initiated (explicit action or stage-complete trigger).
@@ -73,6 +94,13 @@ The live context available to any feature operating within a module. Assembled b
 | Source concepts | `sourceConcepts` | By source index |
 | Source claims | `sourceClaims` | By source index |
 | Assignments | `assignments` | `modules.getWorkspaceBundle` |
+| Import batches | `importBatches` | `imports.listBatches` |
+| Imported files | `importedFiles` | `imports.listFiles` / `imports.getBatchWithFiles` |
+| Module facts | `moduleFacts` | `extraction.listModuleFacts` |
+| Assessment specs | `assessmentSpecs` | `extraction.listAssessmentSpecs` |
+| Extracted rubric criteria | `extractedRubricCriteria` | `extraction.getAssessmentSpec` |
+| Weekly topics | `weeklyTopics` | `extraction.listWeeklyTopics` |
+| Required readings | `requiredReadings` | `extraction.listRequiredReadings` |
 | CoThinker sessions | `coThinkerSessions` | `cothinker.listSessions` |
 | Recent activity | Derived from `_creationTime` / `updatedAt` | Various |
 
@@ -111,15 +139,21 @@ Each production stage produces specific artifacts. Every agent building stage fe
 
 ### Ingest
 
+Workspace setup and import. The student creates a workspace (Module) from a module name, imports everything they have, and Polis classifies files into the Source Base and extracts assessments and module facts. Internally this populates `modules`, `sources`, `folders`, and creates `assignments` rows from extracted briefs.
+
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
 | Source uploads | `sources` + `assignmentSources` | Schema ready | `files.generateUploadUrl` → client upload → `sources.attachStorage` |
-| Brief/rubric | `assignments.question`, `assignments.rubric` | Live | Set on assignment creation or update |
+| Brief/rubric | `assignments.question`, `assignments.rubric` | Live | Set on assignment creation/update; future: auto-extracted from imported briefs |
 | Processing state | `processingJobs` | Schema ready | Needs extraction action |
+| Source classification | `sources.type` (`SourceType`) | Schema ready | AI-suggested, user-confirmed |
+| Module facts | `modules.themes`, `modules.concepts`, `modules.learningOutcomes` | Schema ready | Future: auto-extracted from handbook |
 
-**Completion signal**: At least one source selected for the assignment, brief/question set.
+**Completion signal**: At least one source in the workspace, and at least one assignment with a brief/question set.
 
 ### Understand
+
+User-facing: part of **Plan**. Reading-level comprehension of individual sources.
 
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
@@ -134,6 +168,8 @@ Each production stage produces specific artifacts. Every agent building stage fe
 
 ### Map
 
+User-facing: part of **Plan**. Connecting ideas across sources into an Evidence Map.
+
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
 | Evidence candidates | `evidenceLinks` (with `usage: "candidate"`) | Live | User or AI can create |
@@ -145,6 +181,8 @@ Each production stage produces specific artifacts. Every agent building stage fe
 **Completion signal**: At least one argument with linked evidence exists.
 
 ### Judge
+
+User-facing: part of **Plan**. Evaluating argument strength before and during writing.
 
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
@@ -158,6 +196,8 @@ Each production stage produces specific artifacts. Every agent building stage fe
 
 ### Build
 
+User-facing: part of **Plan**. Structuring the assessment — thesis, sections, evidence allocation.
+
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
 | Working thesis | `arguments` (claim + synthesis) | Live | User creates |
@@ -170,6 +210,8 @@ Each production stage produces specific artifacts. Every agent building stage fe
 
 ### Draft
 
+User-facing: **Write**. The student produces the submission. Polis provides powerful writing help on request — drafting, paraphrasing, restructuring, citation insertion, critique — bounded by source-truth and labelling (see §8).
+
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
 | Versioned draft | `drafts` | Live | Auto-incrementing version |
@@ -180,6 +222,8 @@ Each production stage produces specific artifacts. Every agent building stage fe
 **Completion signal**: Draft has content and word count > 0.
 
 ### Refine
+
+User-facing: **Review**. The student validates and polishes. Polis runs structured reviews, citation safety checks, and offers revision/paraphrase/restructure help on request.
 
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
@@ -296,33 +340,46 @@ upload → extractText → chunkText → generateEmbeddings → summarizeSource
 
 ## 8. Academic Integrity Guarantees
 
-These guarantees are non-negotiable. Every AI action must enforce them.
+These guarantees are non-negotiable. Every AI action must enforce them. Full policy: `docs/ACADEMIC_INTEGRITY.md`.
+
+### Direction
+
+Polis provides **powerful writing help** — drafting, paraphrasing, critique, restructuring, revision. Integrity is enforced through **source-truth and labelling**, not by refusing to write. Student responsibility is explicit.
+
+Two guardrail tiers:
+
+- **Hard (validation truth).** Fake citations, invented authors, invented page numbers, misattribution, and fabricated source/catalog records are never produced and never treated as valid. These are errors.
+- **Soft (honest signalling).** Insufficient evidence, unsupported claims, thin coverage, missing page provenance, out-of-scope sources produce visible warnings and labels. They do not block the user.
 
 ### Hard Rules
 
-1. **No fake citations.** The AI must never generate author names, publication titles, or years that do not exist in the user's uploaded source base.
+1. **No fabricated citations, authors, page numbers, or catalog records.** The AI must never generate author names, publication titles, years, page numbers, or source records that do not exist in the user's uploaded Source Base.
 2. **No invented page numbers.** Every page reference in AI output must trace to an extracted chunk with a real `pageStart`/`pageEnd`.
-3. **Clear labels on every claim.** AI responses must label each substantive claim as:
+3. **No misattribution.** The AI must not claim a source says something it does not say.
+4. **Source-backed means source-backed.** Any text labelled `source_supported` must trace to a real retrieved chunk with a valid citation.
+5. **Clear labels on every claim.** AI responses must label each substantive claim as:
    - `source_supported` — Directly backed by a source chunk, with `[Source N]` citation.
    - `interpretation` — The model's reading of a source; reasonable but not explicit.
    - `general_context` — Background knowledge, not from any uploaded source.
-   - `unsupported` — Claim lacks sufficient evidence in the current source base.
-4. **Insufficient evidence warnings.** When retrieval returns fewer than 3 relevant chunks, or the AI detects the evidence base is thin, the response must include a warning.
-5. **No essay generation.** The AI must never produce content that could be submitted as a student's own work. Draft review analyses and suggests; it does not rewrite.
-6. **Harvard citation style.** Default citation format: `(Author, Year, p. X)`.
-7. **User responsibility.** The student remains fully responsible for their submitted work. AI output is advisory.
+   - `unsupported` — Claim lacks sufficient evidence in the current Source Base.
+6. **Soft warnings for insufficient evidence.** When retrieval returns fewer than 3 relevant chunks, or the AI detects the evidence base is thin, the response must include a visible warning. The user may proceed.
+7. **Harvard citation style (default).** Default citation format: `(Author, Year, p. X)`.
+8. **Student responsibility.** The student remains fully responsible for their submitted work. AI output is assistance, not authorship transfer.
+
+### Writing Help Permissions
+
+Polis may draft, paraphrase, restructure, critique, and revise on request, including in Write and Review. The prior "no essay generation / draft review analyses only" rule is **superseded**. Writing is bounded by source-truth and labelling, not by refusal.
 
 ### Enforcement Points
 
 | Guarantee | Enforced At | Mechanism |
 |-----------|------------|-----------|
-| No fake citations | AI action (response processor) | Citation validation against retrieved chunk set |
-| No invented pages | AI action (response processor) | Page range validation against chunk metadata |
+| No fake citations / pages / misattribution | AI action (response processor) | Validation against retrieved chunk set; invalid items rejected (hard error) |
+| Source-backed labelling | AI action (response processor) | `source_supported` claims must trace to real chunks; else relabelled or rejected |
 | Clear labels | AI action (prompt + response processor) | Prompt instruction + label extraction |
-| Evidence warnings | AI action (response processor) | Chunk count threshold + AI-flagged warnings |
-| No essay generation | AI action (prompt) | System prompt prohibition + response review |
+| Insufficient evidence warnings | AI action (response processor) | Chunk count threshold + AI-flagged warnings (soft warning) |
 | Harvard style | AI action (prompt) | Citation format instruction |
-| User responsibility | UI + docs | Disclaimer in CoThinker panel + academic integrity page |
+| User responsibility | UI + docs | Disclaimer in assistant panel + academic integrity page |
 
 ---
 

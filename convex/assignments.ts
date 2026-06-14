@@ -506,25 +506,48 @@ export const getWorkspaceBundle = query({
       .order("desc")
       .first();
 
+    const draftBlocks: Doc<"draftBlocks">[] = [];
+    const reviewRuns: Doc<"reviewRuns">[] = [];
+    const reviewFindings: Doc<"reviewFindings">[] = [];
     let latestReview: {
       run: Doc<"reviewRuns">;
       findings: Doc<"reviewFindings">[];
     } | null = null;
     if (latestDraft) {
-      const reviewRun = await ctx.db
+      const blocks = await ctx.db
+        .query("draftBlocks")
+        .withIndex("by_draft_and_sortOrder", (q) =>
+          q.eq("draftId", latestDraft._id),
+        )
+        .order("asc")
+        .take(100);
+      draftBlocks.push(...blocks);
+
+      const runs = await ctx.db
         .query("reviewRuns")
         .withIndex("by_draft", (q) => q.eq("draftId", latestDraft._id))
         .order("desc")
-        .first();
+        .take(5);
+      reviewRuns.push(...runs);
 
-      if (reviewRun) {
+      for (const run of reviewRuns) {
         const findings = await ctx.db
           .query("reviewFindings")
           .withIndex("by_reviewRun", (q) =>
-            q.eq("reviewRunId", reviewRun._id),
+            q.eq("reviewRunId", run._id),
           )
           .take(100);
-        latestReview = { run: reviewRun, findings };
+        reviewFindings.push(...findings);
+      }
+
+      const latestReviewRun = reviewRuns[0];
+      if (latestReviewRun) {
+        latestReview = {
+          run: latestReviewRun,
+          findings: reviewFindings.filter(
+            (finding) => finding.reviewRunId === latestReviewRun._id,
+          ),
+        };
       }
     }
 
@@ -543,6 +566,9 @@ export const getWorkspaceBundle = query({
       judgementDecisions,
       sectionPlans,
       latestDraft: latestDraft ?? null,
+      draftBlocks,
+      reviewRuns,
+      reviewFindings,
       latestReview,
     };
   },

@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/layout/shell";
 import { AssignmentWorkspaceData } from "@/components/assignments/assignment-workspace-data";
-import { PRODUCTION_STAGES, type ProductionStage } from "@/lib/types";
+import { ASSESSMENT_TABS, type AssessmentTab } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +13,13 @@ export default async function AssignmentPage({
 }) {
   const { moduleId, assignmentId } = await params;
   const resolvedSearchParams = await searchParams;
-  const requestedStage =
-    typeof resolvedSearchParams.stage === "string" ? resolvedSearchParams.stage : "ingest";
-  const stage: ProductionStage = PRODUCTION_STAGES.includes(requestedStage as ProductionStage)
-    ? (requestedStage as ProductionStage)
-    : "ingest";
+  const requestedTab =
+    typeof resolvedSearchParams.tab === "string" ? resolvedSearchParams.tab : "brief";
+  const activeTab: AssessmentTab = ASSESSMENT_TABS.includes(
+    requestedTab as AssessmentTab,
+  )
+    ? (requestedTab as AssessmentTab)
+    : "brief";
 
   const modContext = {
     id: moduleId,
@@ -33,7 +35,7 @@ export default async function AssignmentPage({
       <AssignmentWorkspaceData
         moduleId={moduleId}
         assignmentId={assignmentId}
-        activeStage={stage}
+        activeTab={activeTab}
       />
     </AppShell>
   );

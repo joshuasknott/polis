@@ -1,192 +1,171 @@
-# Polis — UX Flow
+# Polis UX Flow
 
-## Main User Journey
+**Last updated**: 2026-06-14
 
-### First Visit
-1. User lands on the **Landing Page**
-2. Reads value proposition: "Turn scattered readings into structured arguments"
-3. Sees workflow explanation (Ingest → Understand → Map → Judge → Build → Draft → Refine)
-4. Clicks "Get Started" → navigates to **Dashboard**
+## Terminology
 
-### Dashboard
-1. Welcome message with user context (university, course, year)
-2. Module cards showing active modules with source counts and activity
-3. Active assignments with deadlines and current production stage
-4. Recent CoThinker conversations
-5. Quick actions (Create Module, Upload Source, New Assignment)
+This document uses user-facing language. Internal data-model names are kept stable in code.
 
-## Module Journey
+| User-facing | Internal |
+| --- | --- |
+| Workspace | Module |
+| Assessment | Assignment |
+| Source Base | Sources in a module |
+| Evidence Map | Arguments + evidence links |
+| Plan | Understand, Map, Judge, Build |
+| Write | Draft |
+| Review | Refine |
+| In-context Assistant | CoThinker |
+| In-context Tools | Workbench actions |
 
-### Creating a Module
-1. Click "Create Module" from Dashboard
-2. Enter module title, code, academic year, semester, description
-3. Default folder structure is created automatically
-4. Module card appears on Dashboard
+## Top-Level Flow
 
-### Working in a Module
-1. Click module card → **Module Workspace**
-2. Left panel: folder tree navigation
-3. Centre panel: folder contents or overview
-4. Right panel: CoThinker
-
-### Module Workspace Layout
-```
-┌──────────────┬────────────────────────────┬──────────────────┐
-│  Module Nav  │     Main Content Area      │  CoThinker       │
-│              │                            │                  │
-│  Folders     │  Source List / Source View  │  Scope Selector  │
-│  Workbench   │  Assignment Overview       │  Chat Messages   │
-│  Assignments │  Argument Map              │  Citations       │
-│              │                            │  Warnings        │
-└──────────────┴────────────────────────────┴──────────────────┘
+```text
+Landing page -> Dashboard -> Create workspace -> Import -> Workspace -> Plan / Write / Review
 ```
 
-## Source Journey
+The workspace is the home base. Assessments live inside a workspace. Timeline information is part of the Workspaces dashboard and workspace home, not a separate top-level destination.
 
-### Adding Sources
-1. Navigate to module → Readings folder
-2. Click upload area (future: real upload; prototype: mock files)
-3. Source is processed: text extracted, chunked, embedded
-4. Source appears in folder with metadata
+## Landing Page
 
-### Viewing a Source
-1. Click source from list → **Source Viewer**
-2. Header: title, author, year, type badge, citation
-3. Tabs or sections: Summary, Main Argument, Key Concepts, Evidence, Limitations
-4. Actions: Summarise, Extract Concepts, Add to Evidence Bank, Compare, Link to Argument
+1. User sees the direct product promise: "Your module, organized into a source-backed workspace."
+2. The first viewport shows a realistic workspace preview.
+3. Primary action: **Start your workspace**.
+4. Secondary action: **See how Polis works**.
+5. The page explains workspace, assessment, evidence map, Write/Review, and source-backed AI with soft warnings.
 
-### Understanding a Source (Understand stage)
-1. Open CoThinker with source selected
-2. Ask "What is the main argument of this reading?"
-3. Receive source-grounded answer with citations
-4. See "Supported by sources" badges
-5. Follow up with "How could I use this in my assignment?"
+## Dashboard
 
-## Assignment Journey
+The dashboard is a workspace launcher, not the full app shell.
 
-### Creating an Assignment
-1. From module workspace → Assignments folder
-2. Click "New Assignment"
-3. Enter coursework question, word limit, due date
-4. Select or upload marking rubric
-5. Select relevant sources
-6. Assignment enters the **Ingest** stage
+1. No sidenav is shown on the dashboard.
+2. User sees **Workspaces** and can create/open a workspace.
+3. Cross-workspace deadline timeline appears inside Workspaces.
+4. Workspace cards show source count, assessment count, and recent activity.
+5. Quick action: **New Workspace**.
 
-### Production Workflow
+## Creating a Workspace
 
-#### Ingest → Understand
-1. Review selected sources in the assignment workspace
-2. Use CoThinker to summarise individual readings
-3. Extract key concepts and arguments
-4. Stage advances to **Understand** when sources are processed
+1. Click **New Workspace** from the dashboard.
+2. Enter:
+   - Workspace name
+   - Year
+   - Semester
+3. Semester is free text. It is not a dropdown.
+4. The workspace is created.
 
-#### Map
-1. Use the literature matrix or theory comparison tools
-2. Build connections between sources
-3. Identify themes and patterns across readings
-4. Begin linking evidence to potential claims
+Internal: creates a `modules` row. Optional metadata such as code, colour, and description can be edited later.
 
-#### Judge
-1. Run gap analysis on the current evidence base
-2. Identify counterarguments to emerging claims
-3. Check evidence sufficiency for each planned section
-4. Receive Judgements flagging weak areas
+## Workspace Layout
 
-#### Build
-1. **Assignment Workspace** opens
-2. View coursework question and rubric
-3. Construct structured Arguments with linked evidence
-4. Allocate word budget to sections
-5. CoThinker helps refine thesis and structure
+Once the user opens a workspace, the workspace shell appears.
 
-#### Draft
-1. Write draft in the assignment workspace or paste from external editor
-2. CoThinker provides contextual feedback:
-   - Unsupported claims flagged
-   - Missing citations highlighted
-   - Structure suggestions
-3. Evidence links show available evidence by argument
-
-#### Refine
-1. Submit draft for review
-2. Receive structured Review:
-   - Strengths
-   - Weaknesses
-   - Missing evidence
-   - Unsupported claims
-   - Revision priorities
-   - Rubric alignment assessment
-3. Iterate on draft
-4. Run citation safety check
-
-## CoThinker Journey
-
-### Asking Questions
-1. Open CoThinker panel (right side of assignment workspace) or the global CoThinker page
-2. Select scope: module / assignment (with live Convex data)
-3. CoThinker adapts to the current production stage
-4. Create or resume a persisted conversation
-5. Type question
-6. Receive answer with:
-   - Source citations where applicable
-   - "Supported by sources" badges
-   - "Interpretation" labels where applicable
-   - Warnings if evidence is insufficient
-   - Follow-up suggestions
-
-### Persistent Sessions
-- Conversations are persisted in Convex and can be resumed
-- Session list shows message count, stage, and scope
-- Assignment-scoped sessions appear in the CoThinker panel
-- Global sessions appear on the /assistant page
-
-### Stage-Aware Directive Cards
-- Ingest: coverage and brief/rubric questions
-- Understand: source summary and concept prompts
-- Map: theme and evidence link prompts
-- Judge: gap and counterargument prompts
-- Build: structure and thesis prompts
-- Draft: writing feedback and citation reminders
-- Refine: unsupported claims, rubric alignment, citation safety
-
-### Integrity
-- If no evidence, CoThinker says so explicitly
-- No fabricated citations
-- Labels for source-supported, interpretation, unsupported, general context
-- Warnings for insufficient evidence
-- No essay generation
-
-### Example Interaction
-```
-User: "What is the difference between Lijphart's consensus model and
-       Tsebelis's veto player theory?"
-
-CoThinker: [Source-supported] Lijphart classifies democracies along a
-           majoritarian-consensus dimension using 10 institutional variables...
-           (Lijphart, 1999, pp. 2-3)
-
-           [Source-supported] Tsebelis identifies "veto players" whose
-           agreement is necessary for policy change... (Tsebelis, 2002, p. 19)
-
-           [Interpretation] These frameworks complement each other:
-           Lijphart for classification, Tsebelis for mechanism.
-
-           ⚠️ Warning: Your source base does not include a direct comparison
-           of these two theorists. Consider adding a comparative source.
-
-           Follow-up: "How does Tsebelis explain policy change in consensus
-           systems?"
+```text
+Workspace sidenav | Workspace content | In-context assistant/actions
 ```
 
-## Workbench Journey
+Workspace navigation includes:
 
-The Workbench is secondary to the assignment workflow. Stage-appropriate actions appear in context within assignment stages. The standalone Workbench page surfaces paused runtime tools until Convex-backed AI actions are rebuilt:
+- Home
+- Imports
+- Assessments
+- Knowledge Base
+- Workspace Settings
 
-| Production Stage | Available Tools |
-|-----------------|-----------------|
-| Understand | Reading Summary, Key Concept Extractor |
-| Map | Theory Comparison, Literature Matrix, Evidence Bank |
-| Judge | Counterargument Finder, Research Gap Finder, Argument Map |
-| Build | Argument Builder, Section Planner |
-| Draft | Draft Editor |
-| Refine | Draft Review, Citation Safety Check |
+CoThinker and Workbench are embedded capabilities. They are not standalone destinations.
+
+## Workspace Home
+
+The workspace home gives the user the current state of the module:
+
+1. Suggested next actions.
+2. Imports needing review.
+3. Assessment deadlines and weights.
+4. Deadline timeline for that workspace.
+5. Source coverage and missing context.
+
+## Importing Material
+
+1. The student imports readings, lecture notes, assignment briefs, rubrics, slides, source images, and their own notes.
+2. Files upload through Convex storage.
+3. Polis extracts and chunks text.
+4. Polis classifies material into the Source Base.
+5. The student can review or correct classifications.
+
+Internal flow:
+
+```text
+generateUploadUrl -> client upload -> attachStorage -> extract text -> chunk text -> classify/analyse
+```
+
+## Assessment Flow
+
+Most assessments should come from imported briefs, handbooks, or rubrics. Students can also create assessments manually inside a workspace.
+
+An assessment moves through:
+
+```text
+Plan -> Write -> Review
+```
+
+### Plan
+
+Goal: turn the Source Base into a structured plan and Evidence Map.
+
+1. Review selected and suggested sources.
+2. Understand relevant readings.
+3. Map claims, counterarguments, and evidence links.
+4. Judge evidence strength and identify gaps.
+5. Build thesis, section plan, and word budget.
+
+### Write
+
+Goal: produce source-aware coursework.
+
+The assistant can:
+
+- Draft passages on request.
+- Paraphrase and restructure selected text.
+- Critique structure and argument.
+- Suggest revisions.
+- Insert citations only from verified source data.
+
+Claims are labelled as source-supported, interpretation, general context, unsupported, or needing evidence.
+
+### Review
+
+Goal: validate and polish.
+
+Review checks include:
+
+- Unsupported claims.
+- Missing evidence.
+- Citation safety.
+- Rubric alignment.
+- Structural weaknesses.
+- Revision priorities.
+
+Insufficient evidence produces a soft warning. Fake citations, fake page numbers, and misattribution are hard failures.
+
+## In-Context Assistant
+
+The assistant adapts to current context:
+
+- Workspace
+- Assessment
+- Source
+- Current phase: Plan, Write, or Review
+
+Responses must label source support clearly. Source-backed claims must trace to real retrieved source chunks.
+
+## In-Context Tools
+
+Tools appear where they are useful:
+
+| Phase | Tools |
+| --- | --- |
+| Plan | Reading summary, concept extraction, literature matrix, evidence bank, counterargument finder, argument builder |
+| Write | Draft editor, paraphrase, restructure, citation inserter |
+| Review | Draft review, citation safety, readiness checklist |
+
+The standalone Workbench destination is deprecated.

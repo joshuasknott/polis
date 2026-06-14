@@ -1,5 +1,25 @@
 # Polis — Data Model
 
+**Last updated**: 2026-06-14
+
+## Terminology
+
+This document uses **internal data-model names** (Module, Assignment, Argument, Draft, CoThinker, Workbench) because it describes schema and code. The product uses user-facing names when talking to students:
+
+| User-facing | Internal (this document) |
+|-------------|--------------------------|
+| Workspace | Module |
+| Assessment | Assignment |
+| Source Base | The collection of sources in a module |
+| Evidence Map | Arguments + evidence links |
+| Plan | Build stage (and Understand/Map/Judge preparation) |
+| Write | Draft stage |
+| Review | Refine stage |
+| In-context Assistant | CoThinker |
+| In-context Tools | Workbench actions |
+
+Internal names are authoritative for code, schema, table names, and field names. See `docs/PRODUCT_VISION.md` for the product thesis.
+
 ## Current Backend Status
 
 Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active foundational schema now lives in `convex/schema.ts`; this document is the authoritative product-level model reference and will be reconciled as Convex-backed features are rebuilt.
@@ -10,15 +30,25 @@ Polis is migrating from the old Prisma/PostgreSQL backend to Convex. The active 
 Module → Assignment → Argument → Draft
 ```
 
+User-facing, this is presented as **Workspace → Assessment → Evidence Map → Write/Review**. The internal model is unchanged.
+
 ## Production Stages
 
-Every assignment progresses through:
+Every assignment progresses internally through:
 
 ```
 Ingest → Understand → Map → Judge → Build → Draft → Refine
 ```
 
 Represented as `ProductionStage` union in `convex/lib/validators.ts` and `src/lib/types.ts`.
+
+The user sees a simpler three-phase flow inside an assessment: **Plan → Write → Review**. Mapping:
+
+- **Plan** absorbs Understand → Map → Judge → Build
+- **Write** = Draft
+- **Review** = Refine
+
+Workspace setup (Create workspace → Import → Classify → Extract → Dashboard) happens at the module level and populates Ingest.
 
 ## Core Invariant
 
@@ -128,7 +158,7 @@ A text segment extracted from a source for retrieval purposes.
 SourceNote {
   id: string
   sourceId: string → SourceFile
-  userId: string → User
+  tokenIdentifier: string
   content: string
   createdAt: string
   tags: string[]
@@ -335,6 +365,196 @@ CoThinkerIntervention {
 
 **CoThinkerInterventionType**: `evidence_prompt | counterargument_prompt | citation_warning | source_gap_warning`
 
+## Import Model
+
+The import-first module operating system ingests batches of files, classifies them, and extracts structured facts before the user reviews and applies them to the module.
+
+### ImportBatch
+```
+ImportBatch {
+  id: string
+  moduleId: string → Module
+  name: string | null
+  status: ImportBatchStatus
+  totalFiles: number
+  processedFiles: number | null
+  autoAcceptedFiles: number | null
+  needsReviewFiles: number | null
+  failedFiles: number | null
+  errorMessage: string | null
+  createdAt: number
+  updatedAt: number
+}
+```
+Groups a set of uploaded files into a single import operation. Tracks aggregate progress across all files in the batch.
+
+**ImportBatchStatus**: `pending | processing | completed | partial | failed`
+
+### ImportedFile
+```
+ImportedFile {
+  id: string
+  batchId: string → ImportBatch
+  moduleId: string → Module
+  sourceId: string | null → SourceFile     // set when converted to a source
+  storageId: string | null → _storage
+  fileName: string | null
+  fileType: string | null
+  fileSize: number | null
+  extractionStatus: ImportFileExtractionStatus
+  extractionError: string | null
+  labels: ClassificationLabel[] | null      // all applicable labels from AI
+  primaryLabel: ClassificationLabel | null   // single best-fit label
+  confidence: number | null                  // 0.0–1.0 classification confidence
+  rationale: string | null                   // AI reasoning for classification
+  classificationStatus: ImportFileClassificationStatus
+  classificationError: string | null
+  modelUsed: string | null
+  providerUsed: string | null
+  reviewedLabel: ClassificationLabel | null  // user-confirmed label
+  reviewedAt: number | null
+  createdAt: number
+  updatedAt: number
+}
+```
+An individual file within an import batch. Tracks extraction and classification as separate pipelines. The file is converted to a SourceFile via `imports.applyFileToModule`, which sets `sourceId`.
+
+**ClassificationLabel**: `handbook | syllabus | assignment_brief | rubric | slides | reading | draft | notes | integrity_guidance | reading_list | other`
+
+**ImportFileExtractionStatus**: `pending | extracting | extracted | unsupported | skipped | failed`
+
+**ImportFileClassificationStatus**: `pending | classifying | auto_accepted | needs_review | accepted | rejected | failed`
+
+Files above the auto-accept confidence threshold are labelled `auto_accepted`; lower-confidence files are `needs_review` until the user accepts or rejects.
+
+## Extraction Model
+
+Structured data extracted from imported files. Every extracted fact carries provenance tracing it back to the source file, page range, quote, and AI run.
+
+### ModuleFact
+```
+ModuleFact {
+  id: string
+  moduleId: string → Module
+  batchId: string | null → ImportBatch
+  importedFileId: string | null → ImportedFile
+  field: ModuleFactField
+  value: string
+  status: ExtractionStatus
+  provenance: ExtractionProvenance
+  createdAt: number
+  updatedAt: number
+}
+```
+A single extracted fact about the module (title, code, themes, learning outcomes, etc.). List-type fields (`themes`, `concepts`, `learning_outcomes`) store one row per item. Applying a fact writes the value to the module and marks the fact `applied`.
+
+**ModuleFactField**: `title | code | academic_year | semester | description | themes | concepts | learning_outcomes | integrity_guidance | submission_format | referencing_rules`
+
+**ExtractionStatus**: `extracted | applied | rejected | superseded`
+
+### AssessmentSpec
+```
+AssessmentSpec {
+  id: string
+  moduleId: string → Module
+  assignmentId: string | null → Assignment    // set when applied
+  batchId: string | null → ImportBatch
+  importedFileId: string | null → ImportedFile
+  title: string
+  question: string | null
+  deadline: string | null                      // ISO date
+  weight: number | null                         // percentage
+  wordLimit: number | null
+  referencingRule: string | null
+  status: AssessmentSpecStatus
+  provenance: ExtractionProvenance
+  createdAt: number
+  updatedAt: number
+}
+```
+An extracted assessment brief specification. Applying a spec creates or updates an Assignment with the extracted fields and rubric criteria.
+
+**AssessmentSpecStatus**: `extracted | applied | rejected | needs_review`
+
+### ExtractedRubricCriterion
+```
+ExtractedRubricCriterion {
+  id: string
+  assessmentSpecId: string → AssessmentSpec
+  name: string
+  description: string | null
+  weight: number | null
+  sortOrder: number
+  status: AssessmentSpecStatus
+  provenance: ExtractionProvenance | null
+  createdAt: number
+  updatedAt: number
+}
+```
+An individual rubric criterion extracted from an assessment brief. Child of `AssessmentSpec`. When the spec is applied, non-rejected criteria are written to the assignment's `rubric` array.
+
+### WeeklyTopic
+```
+WeeklyTopic {
+  id: string
+  moduleId: string → Module
+  weekNumber: number | null
+  title: string
+  description: string | null
+  sortOrder: number
+  sourceId: string | null → SourceFile
+  batchId: string | null → ImportBatch
+  importedFileId: string | null → ImportedFile
+  status: ExtractionStatus | null
+  provenance: ExtractionProvenance | null
+  createdAt: number
+  updatedAt: number
+}
+```
+A weekly topic in the module schedule. Can be extracted from a syllabus or manually created. Optional `sourceId` links to a source file.
+
+### RequiredReading
+```
+RequiredReading {
+  id: string
+  moduleId: string → Module
+  weekNumber: number | null
+  title: string
+  authors: string | null
+  year: number | null
+  citation: string | null
+  url: string | null
+  sourceId: string | null → SourceFile
+  batchId: string | null → ImportBatch
+  importedFileId: string | null → ImportedFile
+  sortOrder: number
+  status: ExtractionStatus | null
+  provenance: ExtractionProvenance | null
+  createdAt: number
+  updatedAt: number
+}
+```
+A required or recommended reading. Optional `sourceId` links to an imported source.
+
+### ExtractionProvenance
+```
+ExtractionProvenance {
+  source: "imported_file" | "source" | "manual"
+  batchId: string | null → ImportBatch
+  importedFileId: string | null → ImportedFile
+  sourceId: string | null → SourceFile
+  sourceChunkId: string | null → SourceChunk
+  extractor: string                            // e.g. "ai:zai:glm-4", "manual"
+  extractionRunId: string | null
+  pageStart: number | null
+  pageEnd: number | null
+  quote: string | null                         // supporting text from source
+  confidence: number | null                     // 0.0–1.0
+  extractedAt: number                           // timestamp
+}
+```
+Embedded in every extracted fact, spec, topic, and reading. Provides full traceability from AI output back to the source document and specific page range.
+
 ## Supporting Types
 
 ### RubricCriterion
@@ -361,7 +581,7 @@ CitedChunk {
 ```
 AIProviderConnection {
   id: string
-  userId: string → User
+  tokenIdentifier: string
   provider: ProviderName
   encryptedApiKey: string (AES-256-GCM encrypted)
   status: "connected" | "disconnected" | "error"
@@ -403,12 +623,28 @@ Module 1→* Folder
 Module 1→* SourceFile
 Module 1→* Assignment
 Module 1→* CoThinker
+Module 1→* ImportBatch
+Module 1→* ModuleFact
+Module 1→* AssessmentSpec
+Module 1→* WeeklyTopic
+Module 1→* RequiredReading
 
 Folder 1→* SourceFile (optional grouping)
 
 SourceFile 1→* SourceChunk
 SourceFile 1→* SourceNote
 SourceFile 1→* ProcessingJob
+
+ImportBatch 1→* ImportedFile
+ImportBatch 1→* ModuleFact (optional origin)
+ImportBatch 1→* AssessmentSpec (optional origin)
+ImportBatch 1→* WeeklyTopic (optional origin)
+ImportBatch 1→* RequiredReading (optional origin)
+
+ImportedFile *→0..1 SourceFile (via sourceId when converted)
+
+AssessmentSpec 1→* ExtractedRubricCriterion
+AssessmentSpec *→0..1 Assignment (via assignmentId when applied)
 
 Assignment *→1 Module
 Assignment 1→* Argument
@@ -447,6 +683,11 @@ The following invariants are enforced at the mutation level:
 8. CoThinker session assignmentId must reference an assignment in the same module
 9. CoThinker session sourceId must reference a source in the same module
 10. Cited chunks in CoThinker messages must belong to sources in the session's module
+11. ImportedFile batchId must reference a batch in the same module
+12. ModuleFact moduleId must match the batch's moduleId when batchId is set
+13. AssessmentSpec moduleId must match the batch's moduleId when batchId is set
+14. Applying an AssessmentSpec to an Assignment requires same-module ownership
+15. ExtractedRubricCriterion assessmentSpecId must belong to the same spec
 
 ## Assignment Context Assembly
 
@@ -472,9 +713,10 @@ The following invariants are enforced at the mutation level:
 
 Internal helpers in `convex/cleanup.ts` provide batched cascading deletes:
 
-- `deleteModuleData` — deletes a module and all descendant data
-- `deleteSourceData` — deletes a source and all descendant data
-- `deleteAssignmentData` — deletes an assignment and all descendant data
+- `deleteModuleData` — deletes a module and all descendant data (including import batches, module facts, assessment specs, weekly topics, required readings)
+- `deleteSourceData` — deletes a source and all descendant data; unlinks importedFiles, requiredReadings referencing the source
+- `deleteAssignmentData` — deletes an assignment and all descendant data; unlinks assessmentSpecs referencing the assignment
+- `deleteImportBatchData` — deletes a batch and all its files, extracted facts, specs, rubric criteria, topics, and readings
 
 These are internal mutations not exposed to the client.
 
@@ -483,5 +725,5 @@ These are internal mutations not exposed to the client.
 - **Engine**: Convex
 - **Active schema**: `convex/schema.ts`
 - **Validators**: `convex/lib/validators.ts`
-- **Current scope**: foundational tables plus assignment, argument, evidence, draft, review, judgement, and CoThinker functions
+- **Current scope**: foundational tables plus assignment, argument, evidence, draft, review, judgement, CoThinker, import batch/file, module fact, assessment spec, weekly topic, and required reading functions
 - **Pending**: live UI wiring to Convex data, full retrieval pipeline, and runtime AI provider selection on the Convex backend

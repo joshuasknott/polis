@@ -3,10 +3,10 @@
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Sidebar } from "./sidebar";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import type { ModuleContext } from "./shell";
+import { PolisMark } from "@/components/brand/polis-mark";
 
 export function TopBar({ moduleContext }: { moduleContext?: ModuleContext }) {
   const { isSignedIn, isLoaded } = useUser();
@@ -29,7 +29,7 @@ export function TopBar({ moduleContext }: { moduleContext?: ModuleContext }) {
           <UserButton />
         ) : isLoaded ? (
           <SignInButton mode="modal">
-            <button className="inline-flex items-center rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90 transition-opacity">
+            <button className="inline-flex min-h-8 items-center rounded-lg bg-accent px-3 py-2 text-xs font-medium text-accent-foreground hover:opacity-90 transition-opacity">
               Sign in
             </button>
           </SignInButton>
@@ -45,15 +45,8 @@ export function MobileNav({ moduleContext }: { moduleContext?: ModuleContext }) 
   return (
     <div className="lg:hidden">
       <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-card px-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image 
-            src="/brand/polis-wordmark.svg" 
-            alt="Polis" 
-            width={90} 
-            height={24} 
-            className="h-5 w-auto" 
-            priority
-          />
+        <Link href="/dashboard" className="-m-2 flex items-center gap-2 p-2 text-foreground" aria-label="Polis dashboard">
+          <PolisMark iconClassName="h-5 w-5" textClassName="h-4" priority />
         </Link>
         <button
           onClick={() => setOpen(!open)}

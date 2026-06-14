@@ -1,16 +1,9 @@
 "use client";
 
-import { Sidebar } from "./sidebar";
+import { Sidebar, type ModuleNavContext } from "./sidebar";
 import { TopBar, MobileNav } from "./topbar";
 
-export interface ModuleContext {
-  id: string;
-  title: string;
-  code: string;
-  colour?: string;
-  description?: string;
-  activeTab?: string;
-}
+export type ModuleContext = ModuleNavContext;
 
 export function AppShell({
   children,

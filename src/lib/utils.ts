@@ -113,3 +113,98 @@ export function daysUntil(dateString: string): number {
 export function wordCount(text: string): number {
   return text.trim().split(/\s+/).length;
 }
+
+export type DeadlineUrgency = "overdue" | "imminent" | "soon" | "upcoming" | "none";
+
+export function getDeadlineUrgency(dateString: string | null | undefined): DeadlineUrgency {
+  if (!dateString) return "none";
+  const target = new Date(dateString);
+  if (Number.isNaN(target.getTime())) return "none";
+  const diffDays = Math.ceil((target.getTime() - Date.now()) / 86400000);
+  if (diffDays < 0) return "overdue";
+  if (diffDays <= 3) return "imminent";
+  if (diffDays <= 14) return "soon";
+  return "upcoming";
+}
+
+export function getDeadlineUrgencyClasses(urgency: DeadlineUrgency): string {
+  switch (urgency) {
+    case "overdue":
+      return "bg-danger/10 text-danger border-danger/30";
+    case "imminent":
+      return "bg-warning/15 text-warning border-warning/40";
+    case "soon":
+      return "bg-accent/10 text-accent border-accent/25";
+    case "upcoming":
+      return "bg-muted text-muted-foreground border-border";
+    default:
+      return "bg-muted text-muted-foreground border-border";
+  }
+}
+
+export function getDeadlineLabel(urgency: DeadlineUrgency, dateString: string | null | undefined): string {
+  if (!dateString) return "No due date";
+  const target = new Date(dateString);
+  if (Number.isNaN(target.getTime())) return "No due date";
+  const diffDays = Math.ceil((target.getTime() - Date.now()) / 86400000);
+  const formatted = formatDate(dateString);
+  if (urgency === "overdue") {
+    return `Overdue · ${formatted}`;
+  }
+  if (diffDays === 0) return `Due today · ${formatted}`;
+  if (diffDays === 1) return `Due tomorrow · ${formatted}`;
+  if (diffDays <= 14) return `Due in ${diffDays}d · ${formatted}`;
+  return formatted;
+}
+
+export function getRubricWeightTotal(
+  rubric: Array<{ weight: number }> | null | undefined,
+): number {
+  if (!rubric || rubric.length === 0) return 0;
+  return rubric.reduce((sum, criterion) => sum + (criterion.weight || 0), 0);
+}
+
+export function getSourceCoverageLabel(selected: number, total: number): string {
+  if (total === 0) return "No sources in workspace";
+  if (selected === 0) return "No sources selected";
+  const pct = Math.round((selected / total) * 100);
+  return `${selected} of ${total} sources (${pct}%)`;
+}
+
+export function getSourceCoverageTone(selected: number, total: number): "low" | "medium" | "good" | "none" {
+  if (total === 0 || selected === 0) return "none";
+  const pct = selected / total;
+  if (pct <= 0.1) return "low";
+  if (pct <= 0.3) return "medium";
+  return "good";
+}
+
+export function formatBytes(bytes: number | null | undefined): string {
+  if (!bytes || bytes <= 0) return "—";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+export function groupByDateKey(dateString: string): string {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toISOString().slice(0, 10);
+}
+
+export function formatBatchLabel(dateKey: string): string {
+  if (dateKey === "unknown") return "Unsorted imports";
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  return date.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}

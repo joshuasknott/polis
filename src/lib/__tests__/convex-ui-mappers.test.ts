@@ -10,6 +10,8 @@ import {
   mapArgument,
   mapDraft,
   mapReview,
+  mapClaimProvenance,
+  mapProvenanceSummary,
 } from "../convex-ui-mappers";
 
 describe("mapModule", () => {
@@ -323,10 +325,87 @@ describe("mapReview", () => {
       ],
     );
 
-    expect(result.id).toBe("r1");
-    expect(result.strengths).toEqual(["Strong argument", "Good structure"]);
-    expect(result.weaknesses).toEqual(["Needs more evidence"]);
-    expect(result.overallFeedback).toBe("Good work");
-    expect(result.rubricAlignment).toBe("aligned");
+  expect(result.id).toBe("r1");
+  expect(result.strengths).toEqual(["Strong argument", "Good structure"]);
+  expect(result.weaknesses).toEqual(["Needs more evidence"]);
+  expect(result.overallFeedback).toBe("Good work");
+  expect(result.rubricAlignment).toBe("aligned");
+});
+
+describe("mapClaimProvenance", () => {
+  it("maps a provenance record to UI shape", () => {
+    const now = Date.now();
+    const result = mapClaimProvenance({
+      _id: "cp1" as any,
+      _creationTime: now,
+      tokenIdentifier: "ti1",
+      draftId: "d1" as any,
+      draftBlockId: "b1" as any,
+      claimText: "Some claim",
+      spanStart: 0,
+      spanEnd: 11,
+      label: "quoted",
+      effectiveLabel: "quoted",
+      sourceId: "s1" as any,
+      sourceChunkId: "c1" as any,
+      evidenceLinkId: "el1" as any,
+      quote: "Some claim",
+      claimedPageStart: 12,
+      isCatalogRecommendation: false,
+      evidenceStrength: "strong",
+      validationWarnings: [
+        { code: "WEAK_EVIDENCE", severity: "info", message: "Weak." },
+      ],
+      notes: "manually verified",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    expect(result.id).toBe("cp1");
+    expect(result.label).toBe("quoted");
+    expect(result.effectiveLabel).toBe("quoted");
+    expect(result.isCatalogRecommendation).toBe(false);
+    expect(result.validationWarnings).toHaveLength(1);
+    expect(result.claimedPageStart).toBe(12);
   });
+
+  it("falls back effectiveLabel to label when not stored", () => {
+    const now = Date.now();
+    const result = mapClaimProvenance({
+      _id: "cp2" as any,
+      _creationTime: now,
+      tokenIdentifier: "ti1",
+      draftId: "d1" as any,
+      claimText: "x",
+      label: "unsupported",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    expect(result.effectiveLabel).toBe("unsupported");
+    expect(result.validationWarnings).toEqual([]);
+  });
+});
+
+describe("mapProvenanceSummary", () => {
+  it("maps raw summary and fills missing label buckets", () => {
+    const result = mapProvenanceSummary({
+      total: 4,
+      byLabel: { quoted: 2, paraphrased: 1, source_supported: 1 },
+      byEffectiveLabel: { quoted: 2, paraphrased: 1, unsupported: 1 },
+      rejectedCitations: 1,
+      totalWarnings: 2,
+      criticalCount: 1,
+      warningCount: 1,
+      infoCount: 0,
+      warningCountsByCode: { FAKE_CITATION_REJECTED: 1, WEAK_EVIDENCE: 1 },
+    });
+
+    expect(result.total).toBe(4);
+    expect(result.byLabel.quoted).toBe(2);
+    expect(result.byLabel.interpretation).toBe(0);
+    expect(result.byEffectiveLabel.unsupported).toBe(1);
+    expect(result.warningCountsByCode.FAKE_CITATION_REJECTED).toBe(1);
+  });
+});
 });

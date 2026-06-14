@@ -88,8 +88,8 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
       }}
       moduleTitle={moduleInfo?.title ?? ""}
       moduleCode={moduleInfo?.code ?? ""}
-      backHref={moduleInfo ? `/modules/${moduleInfo._id}?tab=readings` : "/sources"}
-      backLabel={moduleInfo ? "Back to Module Readings" : "Back to Sources"}
+      backHref={moduleInfo ? `/modules/${moduleInfo._id}?tab=knowledge-base` : "/sources"}
+      backLabel={moduleInfo ? "Back to Knowledge Base" : "Back to Sources"}
       chunks={chunks.map((chunk) => ({
         id: chunk._id,
         text: chunk.text,

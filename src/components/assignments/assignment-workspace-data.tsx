@@ -4,7 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/nextjs";
-import type { ProductionStage } from "@/lib/types";
+import type { AssessmentTab } from "@/lib/types";
 import { AssignmentWorkspaceShell } from "./assignment-workspace-shell";
 import {
   mapModule,
@@ -13,6 +13,7 @@ import {
   mapArgument,
   mapEvidenceLink,
   mapDraft,
+  mapDraftBlock,
   mapReview,
   mapJudgement,
 } from "@/lib/convex-ui-mappers";
@@ -20,19 +21,22 @@ import {
 interface AssignmentWorkspaceDataProps {
   moduleId: string;
   assignmentId: string;
-  activeStage: ProductionStage;
+  activeTab: AssessmentTab;
 }
 
 export function AssignmentWorkspaceData({
   moduleId,
   assignmentId,
-  activeStage,
+  activeTab,
 }: AssignmentWorkspaceDataProps) {
   const { isLoaded, isSignedIn } = useAuth();
   const bundle = useQuery(
     api.assignments.getWorkspaceBundle,
     isLoaded && isSignedIn
-      ? { moduleId: moduleId as Id<"modules">, assignmentId: assignmentId as Id<"assignments"> }
+      ? {
+          moduleId: moduleId as Id<"modules">,
+          assignmentId: assignmentId as Id<"assignments">,
+        }
       : "skip",
   );
 
@@ -50,8 +54,10 @@ export function AssignmentWorkspaceData({
   if (bundle === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="rounded-2xl border border-border bg-card p-10 text-center max-w-sm">
-          <p className="text-base font-medium text-foreground mb-1">Assignment not found</p>
+        <div className="max-w-sm rounded-2xl border border-border bg-card p-10 text-center">
+          <p className="mb-1 text-base font-medium text-foreground">
+            Assignment not found
+          </p>
           <p className="text-sm text-muted-foreground">
             This assignment may have been removed or you may not have access to it.
           </p>
@@ -77,12 +83,18 @@ export function AssignmentWorkspaceData({
     bundle.moduleSources.map((s) => [s._id as string, s.title]),
   );
 
-  const evidenceByArgId = new Map<string, ReturnType<typeof mapEvidenceLink>[]>();
+  const evidenceByArgId = new Map<
+    string,
+    ReturnType<typeof mapEvidenceLink>[]
+  >();
   for (const link of bundle.evidence) {
     const argId = link.argumentId as string;
     if (!evidenceByArgId.has(argId)) evidenceByArgId.set(argId, []);
     evidenceByArgId.get(argId)!.push(
-      mapEvidenceLink(link, sourceTitleMap.get(link.sourceId as string) ?? "Unknown source"),
+      mapEvidenceLink(
+        link,
+        sourceTitleMap.get(link.sourceId as string) ?? "Unknown source",
+      ),
     );
   }
 
@@ -94,15 +106,31 @@ export function AssignmentWorkspaceData({
   }
 
   const assignmentArguments = bundle.arguments.map((arg) =>
-    mapArgument(arg, evidenceByArgId.get(arg._id as string) ?? [], counterNodesByArgId.get(arg._id as string) ?? []),
+    mapArgument(
+      arg,
+      evidenceByArgId.get(arg._id as string) ?? [],
+      counterNodesByArgId.get(arg._id as string) ?? [],
+    ),
   );
 
   const draft = bundle.latestDraft ? mapDraft(bundle.latestDraft) : undefined;
 
-  const review =
-    bundle.latestReview
-      ? mapReview(bundle.latestReview.run, bundle.latestReview.findings)
+  const draftSegments = (bundle.draftBlocks ?? []).map(mapDraftBlock);
+
+  const latestReviewRun =
+    bundle.reviewRuns && bundle.reviewRuns.length > 0
+      ? bundle.reviewRuns[0]
       : undefined;
+  const review =
+    latestReviewRun
+      ? mapReview(
+          latestReviewRun,
+          (bundle.reviewFindings ?? []).filter(
+            (f) => f.reviewRunId === latestReviewRun._id,
+          ),
+        )
+      : undefined;
+  const reviewRunId = latestReviewRun?._id;
 
   const assignmentSources = allModuleSources.filter((s) =>
     selectedSourceIdSet.has(s.id),
@@ -133,11 +161,13 @@ export function AssignmentWorkspaceData({
     <AssignmentWorkspaceShell
       module={fullModule}
       assignment={mappedAssignment}
-      activeStage={activeStage}
+      activeTab={activeTab}
       allModuleSources={allModuleSources}
       assignmentArguments={assignmentArguments}
       draft={draft}
+      draftSegments={draftSegments}
       review={review}
+      reviewRunId={reviewRunId}
       judgements={judgements}
       workingThesis={workingThesis}
       assignmentSources={assignmentSources}

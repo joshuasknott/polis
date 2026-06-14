@@ -4,6 +4,8 @@ import type {
   Argument,
   EvidenceLink,
   Draft,
+  DraftBlockType,
+  DraftSegment,
   Review,
   EvidenceStrength,
   ProductionStage,
@@ -12,6 +14,10 @@ import type {
   SourceFile,
   SourceStatus,
   SourceType,
+  ClaimProvenance,
+  ProvenanceLabel,
+  ProvenanceSummary,
+  ProvenanceWarning,
 } from "./types";
 
 export function mapModule(
@@ -70,6 +76,40 @@ export function mapSource(source: Doc<"sources">): SourceFile & { errorMessage: 
   };
 }
 
+export interface WorkspaceSourceItem extends SourceFile {
+  errorMessage: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  classificationLabel: SourceType;
+  reviewStatus: SourceStatus;
+  needsReview: boolean;
+  isProcessing: boolean;
+  hasError: boolean;
+  uploadedAtMs: number;
+}
+
+export function mapWorkspaceSource(source: Doc<"sources">): WorkspaceSourceItem {
+  const status = source.status as SourceStatus;
+  return {
+    ...mapSource(source),
+    fileName: source.fileName ?? "",
+    fileType: source.fileType ?? "",
+    fileSize: source.fileSize ?? 0,
+    classificationLabel: source.type as SourceType,
+    reviewStatus: status,
+    needsReview: status === "needs_review",
+    isProcessing:
+      status === "uploading" ||
+      status === "queued" ||
+      status === "extracting" ||
+      status === "chunking" ||
+      status === "processing",
+    hasError: status === "failed",
+    uploadedAtMs: source.createdAt,
+  };
+}
+
 export function mapFullAssignment(
   assignment: Doc<"assignments">,
   selectedSourceIds: string[],
@@ -106,6 +146,68 @@ export function mapAssignment(assignment: Doc<"assignments"> & { selectedSourceC
     selectedSourceCount: assignment.selectedSourceCount ?? 0,
     stage: (assignment.stage ?? "ingest") as ProductionStage,
     status: (assignment.stage ?? "ingest") as ProductionStage,
+    createdAt: new Date(assignment.createdAt).toISOString(),
+  };
+}
+
+export interface CommandCenterAssignment {
+  id: string;
+  moduleId: string;
+  title: string;
+  question: string;
+  wordLimit: number;
+  dueDate: string;
+  rubric: Array<{ name: string; description: string; weight: number }>;
+  rubricWeightTotal: number;
+  selectedSourceCount: number;
+  stage: ProductionStage;
+  hasQuestion: boolean;
+  hasRubric: boolean;
+  hasDueDate: boolean;
+  hasWordLimit: boolean;
+  hasSources: boolean;
+  missingContext: string[];
+  createdAt: string;
+}
+
+export function mapCommandCenterAssignment(
+  assignment: Doc<"assignments"> & { selectedSourceCount?: number },
+): CommandCenterAssignment {
+  const rubric = (assignment.rubric ?? []) as Array<{
+    name: string;
+    description: string;
+    weight: number;
+  }>;
+  const hasQuestion = !!(assignment.question && assignment.question.trim().length > 0);
+  const hasRubric = rubric.length > 0;
+  const hasDueDate = !!assignment.dueDate;
+  const hasWordLimit = !!(assignment.wordLimit && assignment.wordLimit > 0);
+  const hasSources = (assignment.selectedSourceCount ?? 0) > 0;
+
+  const missingContext: string[] = [];
+  if (!hasQuestion) missingContext.push("Add the coursework question");
+  if (!hasDueDate) missingContext.push("Set a deadline");
+  if (!hasWordLimit) missingContext.push("Confirm the word limit");
+  if (!hasRubric) missingContext.push("Attach the marking rubric");
+  if (!hasSources) missingContext.push("Select relevant sources");
+
+  return {
+    id: assignment._id,
+    moduleId: assignment.moduleId,
+    title: assignment.title,
+    question: assignment.question ?? "",
+    wordLimit: assignment.wordLimit ?? 0,
+    dueDate: assignment.dueDate ?? "",
+    rubric,
+    rubricWeightTotal: rubric.reduce((sum, criterion) => sum + (criterion.weight || 0), 0),
+    selectedSourceCount: assignment.selectedSourceCount ?? 0,
+    stage: (assignment.stage ?? "ingest") as ProductionStage,
+    hasQuestion,
+    hasRubric,
+    hasDueDate,
+    hasWordLimit,
+    hasSources,
+    missingContext,
     createdAt: new Date(assignment.createdAt).toISOString(),
   };
 }
@@ -153,6 +255,24 @@ export function mapDraft(draft: Doc<"drafts">): Draft {
     wordCount: draft.wordCount ?? 0,
     createdAt: new Date(draft.createdAt).toISOString(),
     updatedAt: new Date(draft.updatedAt).toISOString(),
+  };
+}
+
+export function mapDraftBlock(block: Doc<"draftBlocks">): DraftSegment {
+  return {
+    id: block._id,
+    draftId: block.draftId,
+    blockType: (block.blockType as DraftBlockType) ?? "body",
+    content: block.content ?? "",
+    argumentId: block.argumentId ?? null,
+    sortOrder: block.sortOrder ?? 0,
+    label: (block.label as ProvenanceLabel) ?? null,
+    sourceId: block.sourceId ?? null,
+    sourceChunkId: block.sourceChunkId ?? null,
+    evidenceLinkId: block.evidenceLinkId ?? null,
+    quote: block.quote ?? null,
+    pageRange: block.pageRange ?? null,
+    aiGenerated: block.aiGenerated ?? false,
   };
 }
 
@@ -205,5 +325,72 @@ export function mapSectionPlan(plan: Doc<"sectionPlans">) {
     counterargumentPlan: plan.counterargumentPlan ?? "",
     rebuttalPlan: plan.rebuttalPlan ?? "",
     sortOrder: plan.sortOrder,
+  };
+}
+
+export function mapClaimProvenance(
+  record: Doc<"claimProvenance">,
+): ClaimProvenance {
+  return {
+    id: record._id,
+    draftId: record.draftId,
+    draftBlockId: record.draftBlockId ?? null,
+    claimText: record.claimText,
+    spanStart: record.spanStart ?? null,
+    spanEnd: record.spanEnd ?? null,
+    label: record.label as ProvenanceLabel,
+    effectiveLabel: (record.effectiveLabel ?? record.label) as ProvenanceLabel,
+    sourceId: record.sourceId ?? null,
+    sourceChunkId: record.sourceChunkId ?? null,
+    evidenceLinkId: record.evidenceLinkId ?? null,
+    requiredReadingId: record.requiredReadingId ?? null,
+    quote: record.quote ?? null,
+    claimedPageStart: record.claimedPageStart ?? null,
+    claimedPageEnd: record.claimedPageEnd ?? null,
+    isCatalogRecommendation: record.isCatalogRecommendation ?? false,
+    evidenceStrength: (record.evidenceStrength ?? null) as EvidenceStrength | null,
+    validationWarnings: (record.validationWarnings ?? []) as ProvenanceWarning[],
+    notes: record.notes ?? null,
+    createdAt: new Date(record.createdAt).toISOString(),
+    updatedAt: new Date(record.updatedAt).toISOString(),
+  };
+}
+
+export function mapProvenanceSummary(
+  raw: Omit<ProvenanceSummary, "byLabel" | "byEffectiveLabel"> & {
+    byLabel: Record<string, number>;
+    byEffectiveLabel: Record<string, number>;
+  },
+): ProvenanceSummary {
+  const empty = () => ({
+    quoted: 0,
+    paraphrased: 0,
+    source_supported: 0,
+    interpretation: 0,
+    generated: 0,
+    unsupported: 0,
+  });
+  const byLabel = empty();
+  const byEffectiveLabel = empty();
+  for (const key of Object.keys(raw.byLabel)) {
+    if (key in byLabel) {
+      (byLabel as Record<string, number>)[key] = raw.byLabel[key];
+    }
+  }
+  for (const key of Object.keys(raw.byEffectiveLabel)) {
+    if (key in byEffectiveLabel) {
+      (byEffectiveLabel as Record<string, number>)[key] = raw.byEffectiveLabel[key];
+    }
+  }
+  return {
+    total: raw.total,
+    byLabel,
+    byEffectiveLabel,
+    rejectedCitations: raw.rejectedCitations,
+    totalWarnings: raw.totalWarnings,
+    criticalCount: raw.criticalCount,
+    warningCount: raw.warningCount,
+    infoCount: raw.infoCount,
+    warningCountsByCode: raw.warningCountsByCode,
   };
 }

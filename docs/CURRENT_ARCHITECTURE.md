@@ -1,7 +1,13 @@
 # Polis — Current Architecture
 
-**Last updated**: 2026-05-27
+**Last updated**: 2026-06-14
 **Status**: Authoritative — this document supersedes stale references in AGENTS.md and older phase docs.
+
+## Product Direction
+
+Polis is an AI-native module operating system for students. Create a workspace from a module name → import everything → Polis classifies and extracts → assessment dashboard → work inside an assessment (Plan / Write / Review) with source-backed AI, including powerful writing help.
+
+The runtime stack below is the substrate for that experience. The internal data model (Module / Assignment / Argument / Draft) is unchanged; user-facing language is Workspace / Assessment / Evidence Map / Plan / Write / Review. See `docs/PRODUCT_VISION.md`.
 
 ## Runtime Stack
 
@@ -56,7 +62,13 @@ The following are wired end-to-end with Convex + Clerk:
 - **CoThinker runtime**: `convex/cothinker_ask.ts` — AI-powered CoThinker responses with retrieval grounding.
 - **Draft review AI**: `convex/reviews.ts` — `runReview` action with AI analysis + template fallback.
 - **Judgements**: `convex/judgements.ts` — manual CRUD for gap analysis and evidence sufficiency.
-- **Cleanup cascades**: `convex/cleanup.ts` — recursive `deleteAll` for entity deletion with cascading removes.
+- **Cleanup cascades**: `convex/cleanup.ts` — recursive `deleteAll` for entity deletion with cascading removes. Includes module, source, assignment, draft, and import batch cascades. Extraction tables (moduleFacts, assessmentSpecs, extractedRubricCriteria, weeklyTopics, requiredReadings) are cleaned up in module and batch cascades.
+- **Import batches**: `importBatches` + `importedFiles` tables, `convex/imports.ts` — batch file import with classification labels, review status, and conversion to sources.
+- **Assessment spec extraction**: `assessmentSpecs` + `extractedRubricCriteria` tables, `convex/extraction.ts` + `convex/extractionAI.ts` — AI-powered extraction of assessment titles, questions, deadlines, weights, word limits, referencing rules, submission formats, and rubric criteria from classified sources. Every field carries provenance (source chunk, page range, confidence) and uncertainty flags. Extracted specs start as `"extracted"` (pending) and are applied to live assignments via review mutations.
+- **Module fact extraction**: `moduleFacts` table, `convex/extraction.ts` + `convex/extractionAI.ts` — AI-powered extraction of module themes, concepts, learning outcomes, integrity guidance, referencing rules, and submission format from handbooks/syllabi. Each fact has provenance + uncertainty. Applied to module fields via `extraction.applyModuleFact`.
+- **Weekly topic extraction**: `weeklyTopics` table, `convex/extraction.ts` — AI-extracted weekly schedule topics with provenance. Review/apply/reject per topic.
+- **Required readings extraction**: `requiredReadings` table, `convex/extraction.ts` — AI-extracted required and recommended readings (distinguished by `kind`). Review/apply/reject per reading. Apply optionally creates a placeholder source.
+- **Extraction review/confirm**: `convex/extraction.ts` — `applyAssessmentSpec` (creates/updates live assignment from extracted spec), `rejectAssessmentSpec`, `applyModuleFact` (updates module fields), `rejectModuleFact`, `applyWeeklyTopic`, `rejectWeeklyTopic`, `applyRequiredReading`, `rejectRequiredReading`, `rejectAllForFile`. Pending extracted data is never auto-applied to live entities without explicit student confirmation.
 
 ## What Is Not Live (Paused/Planned)
 
@@ -86,7 +98,10 @@ These are superseded by this document and the updated versions of those docs on 
 | Dev AI tools | Codex + Copilot | Development productivity, not runtime integration |
 | Citation style | Harvard | Default for social science coursework |
 | AI summaries | Allowed | Source summaries are a permitted AI use |
-| Essay generation | Prohibited | Academic integrity boundary |
+| AI writing help | Allowed | Drafting, paraphrasing, critique, restructuring, revision — bounded by source-truth and labelling |
+| Fabricated citations / pages / misattribution | Hard error | Validation truth: never produced, never treated as valid |
+| Insufficient evidence / unsupported claims | Soft warning | Warn and label; do not block the user |
+| Standalone CoThinker / Workbench destinations | Deprecated | Capabilities are embedded in context where the student is working |
 
 ## File Structure (Current)
 

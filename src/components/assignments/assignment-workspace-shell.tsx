@@ -7,62 +7,121 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
   ArrowLeft,
-  BookOpen,
-  Layers,
-  GitMerge,
   FileText,
-  CheckCircle,
-  Scale,
+  BookOpen,
+  GitMerge,
   Beaker,
+  PenLine,
+  ShieldCheck,
   PanelRightOpen,
   PanelRightClose,
   AlertTriangle,
   Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Module, Assignment, SourceFile, Argument, Judgement, Draft, Review, ProductionStage, SectionPlan } from "@/lib/types";
-import { IngestStage } from "./ingest-stage";
+import type {
+  Module,
+  Assignment,
+  SourceFile,
+  Argument,
+  Judgement,
+  Draft,
+  Review,
+  ProductionStage,
+  SectionPlan,
+  DraftSegment,
+  AssessmentTab,
+} from "@/lib/types";
+import { ASSESSMENT_TABS } from "@/lib/types";
+import { AssignmentBriefPanel } from "./assignment-brief-panel";
+import { AssignmentSourceBase } from "./assignment-source-base";
 import { UnderstandStage } from "./understand-stage";
 import { EvidenceMap } from "@/components/evidence/evidence-map";
 import { JudgeStage } from "@/components/arguments/judge-stage";
 import { ArgumentBuilder } from "@/components/arguments/argument-builder";
-import { DraftStudio } from "@/components/drafts/draft-studio";
-import { RefineWorkspace } from "@/components/refine/refine-workspace";
-import { CoThinkerPanel } from "@/components/cothinker/cothinker-panel";
+import { DraftWriteSurface } from "@/components/write";
+import { RefineWorkspace } from "@/components/refine";
+import { CoThinkerPanel } from "@/components/cothinker";
 
-const WORKFLOW_STAGES = [
-  { id: "ingest", label: "Ingest", icon: BookOpen, description: "Collect raw material" },
-  { id: "understand", label: "Understand", icon: Layers, description: "Comprehend sources" },
-  { id: "map", label: "Map", icon: GitMerge, description: "Connect ideas" },
-  { id: "judge", label: "Judge", icon: Scale, description: "Evaluate argument" },
-  { id: "build", label: "Build", icon: Beaker, description: "Structure assignment" },
-  { id: "draft", label: "Draft", icon: FileText, description: "Write with evidence" },
-  { id: "refine", label: "Refine", icon: CheckCircle, description: "Polish and validate" },
+const TABS = [
+  {
+    id: "brief",
+    label: "Brief",
+    icon: FileText,
+    description: "Question, rubric, deadline, and stage readiness.",
+    stage: "ingest" as ProductionStage,
+  },
+  {
+    id: "sources",
+    label: "Source Base",
+    icon: BookOpen,
+    description: "Selected sources and per-source analyses.",
+    stage: "understand" as ProductionStage,
+  },
+  {
+    id: "evidence",
+    label: "Evidence Map",
+    icon: GitMerge,
+    description: "Claims, evidence links, and judgement gaps.",
+    stage: "map" as ProductionStage,
+  },
+  {
+    id: "plan",
+    label: "Plan",
+    icon: Beaker,
+    description: "Working thesis, section plan, and word budget.",
+    stage: "build" as ProductionStage,
+  },
+  {
+    id: "write",
+    label: "Write",
+    icon: PenLine,
+    description: "Living draft with provenance labels and warnings.",
+    stage: "draft" as ProductionStage,
+  },
+  {
+    id: "review",
+    label: "Review",
+    icon: ShieldCheck,
+    description: "Findings, rubric alignment, citation safety.",
+    stage: "refine" as ProductionStage,
+  },
 ] satisfies Array<{
-  id: ProductionStage;
+  id: AssessmentTab;
   label: string;
   icon: React.ElementType;
   description: string;
+  stage: ProductionStage;
 }>;
 
-const STAGE_PREREQUISITES: Record<ProductionStage, string[]> = {
-  ingest: [],
-  understand: ["At least one source selected in Ingest"],
-  map: ["Sources processed"],
-  judge: ["Evidence links started"],
-  build: ["Evidence map reviewed"],
-  draft: ["Argument builder complete"],
-  refine: ["Draft submitted for review"],
-};
+const TAB_STAGE: Record<AssessmentTab, ProductionStage> = TABS.reduce(
+  (acc, tab) => {
+    acc[tab.id] = tab.stage;
+    return acc;
+  },
+  {} as Record<AssessmentTab, ProductionStage>,
+);
+
+const STAGE_ORDER: ProductionStage[] = [
+  "ingest",
+  "understand",
+  "map",
+  "judge",
+  "build",
+  "draft",
+  "refine",
+];
 
 interface AssignmentWorkspaceShellProps {
   module: Module;
   assignment: Assignment;
-  activeStage: ProductionStage;
+  activeTab: AssessmentTab;
   allModuleSources?: SourceFile[];
   assignmentArguments?: Argument[];
   draft?: Draft;
+  draftSegments?: DraftSegment[];
   review?: Review;
+  reviewRunId?: string;
   judgements?: Judgement[];
   workingThesis?: string;
   assignmentSources?: SourceFile[];
@@ -71,48 +130,31 @@ interface AssignmentWorkspaceShellProps {
   sectionPlans?: SectionPlan[];
 }
 
-function StagePlaceholder({ label, description, icon: Icon }: { label: string; description: string; icon: React.ElementType }) {
-  return (
-    <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 py-24 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-6 w-6 text-muted-foreground" />
-      </div>
-      <h3 className="text-lg font-medium">{label}</h3>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        {description}. This area will be implemented in future phases.
-      </p>
-    </div>
-  );
-}
-
-function StageOverrideButton({
-  assignmentId,
-  targetStage,
-  currentStageIndex,
-  targetIndex,
+function TabLockedBanner({
+  assignmentConvexId,
+  activeTab,
+  assignment,
 }: {
-  assignmentId: string;
-  targetStage: ProductionStage;
-  currentStageIndex: number;
-  targetIndex: number;
+  assignmentConvexId: string;
+  activeTab: AssessmentTab;
+  assignment: Assignment;
 }) {
   const updateStage = useMutation(api.assignments.updateStage);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isAhead = targetIndex > currentStageIndex;
+  const tabStage = TAB_STAGE[activeTab];
+  const assignmentStageIndex = STAGE_ORDER.indexOf(assignment.stage);
+  const tabStageIndex = STAGE_ORDER.indexOf(tabStage);
 
-  if (!isAhead) return null;
-
-  const prerequisites = STAGE_PREREQUISITES[targetStage];
-  if (prerequisites.length === 0) return null;
+  if (tabStageIndex <= assignmentStageIndex) return null;
 
   const handleOverride = async () => {
     setLoading(true);
     setError(null);
     try {
       await updateStage({
-        assignmentId: assignmentId as Id<"assignments">,
-        stage: targetStage,
+        assignmentId: assignmentConvexId as Id<"assignments">,
+        stage: tabStage,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to advance stage");
@@ -122,30 +164,26 @@ function StageOverrideButton({
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-warning/40 bg-warning/5 p-4">
+    <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4">
       <div className="flex items-start gap-3">
-        <Lock className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div className="flex-1">
           <p className="text-sm font-medium text-foreground">
-            Prerequisites for this stage:
+            This tab sits ahead of your current stage ({assignment.stage}).
           </p>
-          <ul className="mt-1.5 space-y-1">
-            {prerequisites.map((req, i) => (
-              <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-border shrink-0" />
-                {req}
-              </li>
-            ))}
-          </ul>
+          <p className="mt-1 text-xs text-muted-foreground">
+            You can preview the surface, but Polis will treat your source base
+            and evidence map as the live context. Advance the stage if you are
+            ready to commit.
+          </p>
           <div className="mt-3 flex items-center gap-3">
             <button
               onClick={handleOverride}
               disabled={loading}
-              className="text-xs font-medium text-warning hover:text-warning/80 transition-colors disabled:opacity-50"
+              className="text-xs font-medium text-warning transition-colors hover:text-warning/80 disabled:opacity-50"
             >
-              {loading ? "Advancing..." : "Advance anyway"}
+              {loading ? "Advancing…" : `Advance to ${tabStage}`}
             </button>
-            <span className="text-[10px] text-muted-foreground">This is your decision — prerequisites may not be met</span>
           </div>
           {error && (
             <div className="mt-2 flex items-center gap-1.5 text-xs text-danger">
@@ -162,11 +200,13 @@ function StageOverrideButton({
 export function AssignmentWorkspaceShell({
   module,
   assignment,
-  activeStage,
+  activeTab,
   allModuleSources = [],
   assignmentArguments = [],
   draft,
+  draftSegments = [],
   review,
+  reviewRunId,
   judgements = [],
   workingThesis,
   assignmentSources = [],
@@ -175,57 +215,82 @@ export function AssignmentWorkspaceShell({
   sectionPlans = [],
 }: AssignmentWorkspaceShellProps) {
   const [coThinkerOpen, setCoThinkerOpen] = useState(true);
-
-  const currentStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === assignment.stage);
-  const activeStageIndex = WORKFLOW_STAGES.findIndex((stage) => stage.id === activeStage);
-  const activeStageConfig = WORKFLOW_STAGES.find((stage) => stage.id === activeStage) ?? WORKFLOW_STAGES[0];
-  const ActiveIcon = activeStageConfig.icon;
-  const hasFullBleedStageContent = activeStage === "draft" || activeStage === "refine";
+  const activeTabConfig = TABS.find((t) => t.id === activeTab) ?? TABS[0];
+  const ActiveIcon = activeTabConfig.icon;
+  const activeStage = TAB_STAGE[activeTab];
+  const hasFullBleedContent = activeTab === "write" || activeTab === "review";
 
   const evidenceGaps = judgements
-    .filter((judgement) => judgement.type === "evidence_sufficiency" || judgement.type === "gap_analysis")
+    .filter(
+      (judgement) =>
+        judgement.type === "evidence_sufficiency" ||
+        judgement.type === "gap_analysis",
+    )
     .flatMap((judgement) => judgement.findings);
 
-  const isViewingAhead = activeStageIndex > currentStageIndex;
-
-  const renderStageContent = () => {
-    switch (activeStage) {
-      case "ingest":
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "brief":
         return (
-          <IngestStage
-            assignment={assignment}
-            allModuleSources={allModuleSources}
-            activeStage={assignment.stage}
-            assignmentId={assignmentConvexId ?? assignment.id}
-          />
+          <AssignmentBriefPanel assignment={assignment} activeStage={activeStage} />
         );
-      case "understand":
+      case "sources":
         return (
-          <UnderstandStage
-            assignment={assignment}
-            assignmentSources={assignmentSources}
-            assignmentConvexId={assignmentConvexId}
-          />
+          <div className="space-y-8">
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-accent" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Selected for this assessment
+                </h3>
+              </div>
+              <AssignmentSourceBase
+                allModuleSources={allModuleSources}
+                initialSelectedIds={assignment.selectedSourceIds}
+                assignmentId={assignmentConvexId ?? assignment.id}
+              />
+            </section>
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-source" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Per-source analyses
+                </h3>
+              </div>
+              <UnderstandStage
+                assignment={assignment}
+                assignmentSources={assignmentSources}
+                assignmentConvexId={assignmentConvexId}
+              />
+            </section>
+          </div>
         );
-      case "map":
+      case "evidence":
         return (
-          <EvidenceMap
-            arguments={assignmentArguments}
-            evidenceGaps={evidenceGaps}
-            assignmentConvexId={assignmentConvexId ?? assignment.id}
-            assignmentSources={assignmentSources}
-          />
+          <div className="space-y-8">
+            <EvidenceMap
+              arguments={assignmentArguments}
+              evidenceGaps={evidenceGaps}
+              assignmentConvexId={assignmentConvexId ?? assignment.id}
+              assignmentSources={assignmentSources}
+            />
+            <section>
+              <div className="mb-3 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-interpretation" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Position judgements
+                </h3>
+              </div>
+              <JudgeStage
+                assignment={assignment}
+                arguments={assignmentArguments}
+                judgements={judgements}
+                assignmentConvexId={assignmentConvexId ?? assignment.id}
+              />
+            </section>
+          </div>
         );
-      case "judge":
-        return (
-          <JudgeStage
-            assignment={assignment}
-            arguments={assignmentArguments}
-            judgements={judgements}
-            assignmentConvexId={assignmentConvexId ?? assignment.id}
-          />
-        );
-      case "build":
+      case "plan":
         return (
           <ArgumentBuilder
             assignment={assignment}
@@ -235,18 +300,22 @@ export function AssignmentWorkspaceShell({
             assignmentConvexId={assignmentConvexId ?? assignment.id}
           />
         );
-      case "draft":
+      case "write":
         return (
-          <DraftStudio
+          <DraftWriteSurface
+            key={draft?.id ?? "no-draft"}
             module={module}
             assignment={assignment}
             draft={draft}
+            initialSegments={draftSegments}
             arguments={assignmentArguments}
             sources={assignmentSources}
             assignmentConvexId={assignmentConvexId ?? assignment.id}
+            moduleConvexId={moduleConvexId ?? module.id}
+            reviewRunId={reviewRunId}
           />
         );
-      case "refine":
+      case "review":
         return (
           <RefineWorkspace
             module={module}
@@ -257,13 +326,7 @@ export function AssignmentWorkspaceShell({
           />
         );
       default:
-        return (
-          <StagePlaceholder
-            label={activeStageConfig.label}
-            description={activeStageConfig.description}
-            icon={ActiveIcon}
-          />
-        );
+        return null;
     }
   };
 
@@ -271,7 +334,7 @@ export function AssignmentWorkspaceShell({
     <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-6 xl:flex-row xl:gap-0">
       <div className="min-w-0 flex-1 pb-12">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-8">
+          <div className="mb-6">
             <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
               <Link
                 href={`/modules/${module.id}?tab=assignments`}
@@ -284,10 +347,12 @@ export function AssignmentWorkspaceShell({
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl">{assignment.title}</h1>
+                <h1 className="font-serif text-3xl tracking-tight text-foreground md:text-4xl">
+                  {assignment.title}
+                </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-accent">
-                    {assignment.stage.replace("-", " ")}
+                    {activeTabConfig.label}
                   </span>
                   {module.code && (
                     <span className="text-sm text-muted-foreground">
@@ -308,60 +373,41 @@ export function AssignmentWorkspaceShell({
                 title={coThinkerOpen ? "Hide CoThinker" : "Show CoThinker"}
                 aria-label={coThinkerOpen ? "Hide CoThinker panel" : "Show CoThinker panel"}
               >
-                {coThinkerOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                {coThinkerOpen ? (
+                  <PanelRightClose className="h-4 w-4" />
+                ) : (
+                  <PanelRightOpen className="h-4 w-4" />
+                )}
                 <span className="hidden sm:inline">CoThinker</span>
               </button>
             </div>
           </div>
 
-          {/* Stage rail - mobile scrollable */}
-          <div className="mb-8 overflow-x-auto pb-4 scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
-            <nav aria-label="Production stages" className="flex min-w-[640px] sm:min-w-[700px] items-center">
-              {WORKFLOW_STAGES.map((stage, index) => {
-                const isActive = stage.id === activeStage;
-                const isPast = index < currentStageIndex;
-                const isCurrent = index === currentStageIndex;
-                const isAhead = index > currentStageIndex;
-
+          <div className="mb-8 overflow-x-auto pb-2 scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
+            <nav
+              aria-label="Assessment tabs"
+              className="flex min-w-[640px] gap-1 rounded-xl border border-border bg-card p-1.5"
+            >
+              {TABS.map((tab) => {
+                const isActive = tab.id === activeTab;
+                const Icon = tab.icon;
                 return (
-                  <div key={stage.id} className="group relative flex flex-1 flex-col items-center">
-                    {index > 0 && (
-                      <div
-                        className={cn(
-                          "absolute left-[-50%] top-5 h-[2px] w-full transition-colors",
-                          index <= currentStageIndex ? "bg-accent" : "bg-border"
-                        )}
-                        aria-hidden="true"
-                      />
+                  <Link
+                    key={tab.id}
+                    href={`/modules/${module.id}/assignments/${assignment.id}?tab=${tab.id}`}
+                    className={cn(
+                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
-
-                    <Link
-                      href={`/modules/${module.id}/assignments/${assignment.id}?stage=${stage.id}`}
-                      className={cn(
-                        "relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
-                        isActive
-                          ? "border-accent bg-accent text-accent-foreground"
-                          : isPast
-                            ? "border-accent bg-background text-accent hover:bg-accent/10"
-                            : isCurrent
-                              ? "border-accent/60 bg-background text-accent"
-                              : "border-border bg-background text-muted-foreground hover:border-foreground/50 hover:text-foreground"
-                      )}
-                      title={isAhead ? `${stage.label} — prerequisites not yet met` : stage.description}
-                      aria-label={`${stage.label} stage${isActive ? " (current)" : isPast ? " (completed)" : isAhead ? " (locked)" : ""}`}
-                    >
-                      <stage.icon className="h-4 w-4" />
-                    </Link>
-
-                    <span
-                      className={cn(
-                        "mt-3 text-xs font-medium uppercase tracking-wider transition-colors text-center",
-                        isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"
-                      )}
-                    >
-                      {stage.label}
-                    </span>
-                  </div>
+                    aria-current={isActive ? "page" : undefined}
+                    title={tab.description}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
+                  </Link>
                 );
               })}
             </nav>
@@ -370,31 +416,31 @@ export function AssignmentWorkspaceShell({
           <div
             className={cn(
               "flex-1 rounded-2xl border border-border p-6 md:p-8",
-              hasFullBleedStageContent ? "border-none bg-transparent p-0 md:p-0" : "bg-card"
+              hasFullBleedContent && "border-none bg-transparent p-0 md:p-0",
+              !hasFullBleedContent && "bg-card",
             )}
           >
-            {!hasFullBleedStageContent && (
+            {!hasFullBleedContent && (
               <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
                 <div>
                   <h2 className="flex items-center gap-2 text-xl font-semibold">
                     <ActiveIcon className="h-5 w-5 text-accent" />
-                    {activeStageConfig.label}
+                    {activeTabConfig.label}
                   </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{activeStageConfig.description}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {activeTabConfig.description}
+                  </p>
                 </div>
               </div>
             )}
 
-            {isViewingAhead && (
-              <StageOverrideButton
-                assignmentId={assignmentConvexId ?? assignment.id}
-                targetStage={activeStage}
-                currentStageIndex={currentStageIndex}
-                targetIndex={activeStageIndex}
-              />
-            )}
+            <TabLockedBanner
+              assignmentConvexId={assignmentConvexId ?? assignment.id}
+              activeTab={activeTab}
+              assignment={assignment}
+            />
 
-            {renderStageContent()}
+            {renderTabContent()}
           </div>
         </div>
       </div>
@@ -409,13 +455,15 @@ export function AssignmentWorkspaceShell({
       <div
         className={cn(
           "fixed inset-y-0 right-0 z-50 shrink-0 border-l border-border bg-card shadow-2xl transition-transform duration-300 xl:static xl:z-auto xl:shadow-none xl:bg-card/50",
-          coThinkerOpen ? "translate-x-0 w-80" : "translate-x-full w-80 xl:w-0 xl:translate-x-0 xl:hidden"
+          coThinkerOpen
+            ? "translate-x-0 w-80"
+            : "translate-x-full w-80 xl:w-0 xl:translate-x-0 xl:hidden",
         )}
       >
         {coThinkerOpen && (
-          <div className="h-full w-full flex flex-col">
-            <div className="flex justify-between items-center p-2 border-b border-border xl:hidden">
-              <span className="text-sm font-medium px-2">CoThinker</span>
+          <div className="flex h-full w-full flex-col">
+            <div className="flex items-center justify-between border-b border-border p-2 xl:hidden">
+              <span className="px-2 text-sm font-medium">CoThinker</span>
               <button
                 onClick={() => setCoThinkerOpen(false)}
                 className="p-2 text-muted-foreground hover:text-foreground"
@@ -441,3 +489,5 @@ export function AssignmentWorkspaceShell({
     </div>
   );
 }
+
+export { ASSESSMENT_TABS, TAB_STAGE };

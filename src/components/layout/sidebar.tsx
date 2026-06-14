@@ -1,46 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-  BookOpen,
   LayoutDashboard,
-  Library,
-  MessageSquare,
   Settings,
-  Wrench,
   X,
-  Info,
-  StickyNote,
-  PenTool,
+  Home,
+  Upload,
+  ClipboardList,
+  BookOpen,
+  Cog,
   ArrowLeft,
-  Presentation,
-  FileEdit,
-  CheckSquare,
 } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
+import { PolisMark } from "@/components/brand/polis-mark";
 
-const navigation = [
+const topLevelNavigation = [
   { name: "Workspaces", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Sources", href: "/sources", icon: Library },
-  { name: "Workbench", href: "/tools", icon: Wrench },
-  { name: "CoThinker", href: "/assistant", icon: MessageSquare },
 ];
+
+const moduleNavigation = [
+  { name: "Home", id: "home", icon: Home },
+  { name: "Imports", id: "imports", icon: Upload },
+  { name: "Assessments", id: "assessments", icon: ClipboardList },
+  { name: "Knowledge Base", id: "knowledge-base", icon: BookOpen },
+  { name: "Workspace Settings", id: "settings", icon: Cog },
+];
+
+export interface ModuleNavContext {
+  id: string;
+  title: string;
+  code: string;
+  colour?: string;
+  description?: string;
+  activeTab?: string;
+}
 
 export function Sidebar({
   onClose,
   moduleContext,
 }: {
   onClose?: () => void;
-  moduleContext?: {
-    id: string;
-    title: string;
-    code: string;
-    colour?: string;
-    activeTab?: string;
-  };
+  moduleContext?: ModuleNavContext;
 }) {
   const pathname = usePathname();
   const { isSignedIn, isLoaded } = useUser();
@@ -48,18 +51,11 @@ export function Sidebar({
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-muted/30">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <Link href="/" className="flex items-center">
-          <Image 
-            src="/brand/polis-wordmark.svg" 
-            alt="Polis" 
-            width={96} 
-            height={24} 
-            className="h-5 w-auto" 
-            priority
-          />
+        <Link href="/" className="-m-2 flex items-center p-2 text-foreground" aria-label="Polis home">
+          <PolisMark iconClassName="h-5 w-5" textClassName="h-4" priority />
         </Link>
         {onClose && (
-          <button onClick={onClose} className="rounded p-1 hover:bg-muted">
+          <button onClick={onClose} className="rounded p-2 hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         )}
@@ -86,33 +82,29 @@ export function Sidebar({
                   {moduleContext.code?.slice(0, 3)}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-sm font-semibold truncate block text-foreground">{moduleContext.title}</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{moduleContext.code}</span>
+                  <span className="text-sm font-semibold truncate block text-foreground">
+                    {moduleContext.title}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                    {moduleContext.code}
+                  </span>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-0.5">
-              {[
-                { name: "Module Info", id: "module-info", icon: Info, href: `/modules/${moduleContext.id}?tab=module-info` },
-                { name: "Readings", id: "readings", icon: BookOpen, href: `/modules/${moduleContext.id}?tab=readings` },
-                { name: "Lectures", id: "lectures", icon: Presentation, href: `/modules/${moduleContext.id}?tab=lectures` },
-                { name: "Source Notes", id: "source-notes", icon: StickyNote, href: `/modules/${moduleContext.id}?tab=source-notes` },
-                { name: "Assignments", id: "assignments", icon: PenTool, href: `/modules/${moduleContext.id}?tab=assignments` },
-                { name: "Drafts & Reviews", id: "drafts", icon: FileEdit, href: `/modules/${moduleContext.id}?tab=drafts` },
-                { name: "Submissions", id: "submissions", icon: CheckSquare, href: `/modules/${moduleContext.id}?tab=submissions` },
-              ].map((item) => {
+              {moduleNavigation.map((item) => {
                 const isActive = moduleContext.activeTab === item.id;
                 return (
                   <Link
                     key={item.id}
-                    href={item.href}
+                    href={`/modules/${moduleContext.id}?tab=${item.id}`}
                     onClick={onClose}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
@@ -123,15 +115,10 @@ export function Sidebar({
             </div>
           </>
         ) : (
-          navigation.filter(item => {
-            if (pathname === "/dashboard") {
-              return !["Sources", "Workbench", "CoThinker"].includes(item.name);
-            }
-            return true;
-          }).map((item) => {
+          topLevelNavigation.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href.split("?")[0]));
+              (item.href !== "/" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}
@@ -141,7 +128,7 @@ export function Sidebar({
                   "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -160,7 +147,7 @@ export function Sidebar({
             "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
             pathname.startsWith("/settings")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
           <Settings className="h-4 w-4 shrink-0" />
@@ -174,7 +161,7 @@ export function Sidebar({
         ) : isLoaded && !isSignedIn ? (
           <SignInButton mode="modal">
             <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 mt-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
-              <BookOpen className="h-4 w-4" />
+              <LayoutDashboard className="h-4 w-4" />
               <span>Sign in</span>
             </button>
           </SignInButton>

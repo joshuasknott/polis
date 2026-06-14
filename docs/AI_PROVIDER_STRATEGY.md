@@ -1,8 +1,12 @@
 # Polis — AI Provider Strategy
 
+**Last updated**: 2026-06-14
+
 ## Overview
 
 Polis supports runtime AI providers with a BYO (Bring Your Own) API key model and app-level fallback. The current implementation supports **z.ai / Zhipu GLM** (primary) and **Google Gemini** (secondary).
+
+Polis provides powerful writing help — drafting, paraphrasing, critique, restructuring, revision — bounded by source-truth and labelling. Writing that claims to be source-backed must be source-backed. Fabricated citations, page numbers, authors, or catalog records are hard errors (never produced, never treated as valid). Insufficient evidence produces soft warnings, not user-blocking gates.
 
 ## Provider Resolution Order
 
@@ -95,24 +99,30 @@ User Query → Provider Resolution → Key Decryption → Prompt Construction �
 
 ### Academic Integrity (always included)
 
-- NEVER generate fake citations, authors, or page numbers
-- NEVER write content that could be submitted as a student's own work
-- ALWAYS label outputs: [Source-supported], [Interpretation], [General]
-- ALWAYS warn when evidence is insufficient
+- NEVER fabricate citations, authors, page numbers, source claims, or catalog records
+- Source-backed claims must trace to a real retrieved chunk; otherwise relabel as `interpretation`, `general_context`, or `unsupported`
+- ALWAYS label outputs: `[Source-supported]`, `[Interpretation]`, `[General]`, `[Unsupported]`
+- ALWAYS warn (soft) when evidence is insufficient — never block the user except via validation truth
 - Harvard referencing as default citation format
-- [Source N] notation for in-text source citations
+- `[Source N]` notation for in-text source citations
+- Writing help is permitted: drafting, paraphrasing, critique, restructuring, and revision are allowed in Plan / Write / Review
+- Student responsibility for the submitted work is explicit
 
 ### Stage-Aware Prompts
 
-| Stage | Purpose |
-|-------|---------|
-| ingest | Understand uploaded sources |
-| understand | Deep comprehension of source material |
-| map | Argument identification and structuring |
-| judge | Critical evaluation of arguments |
-| build | Argument construction guidance |
-| draft | Draft review and feedback |
-| refine | Writing refinement suggestions |
+The internal stage enum drives prompt selection. User-facing phases map onto it.
+
+| Internal stage | User-facing phase | Purpose |
+|----------------|-------------------|---------|
+| ingest | Workspace setup | Understand imported sources; classify; extract assessments |
+| understand | Plan | Deep comprehension of source material |
+| map | Plan | Argument identification and structuring; Evidence Map |
+| judge | Plan | Critical evaluation of arguments; gap and counterargument checks |
+| build | Plan | Argument construction guidance; outline and evidence allocation |
+| draft | Write | Drafting, paraphrasing, restructuring, citation insertion; critique |
+| refine | Review | Revision suggestions; rubric alignment; citation safety |
+
+In **Write** and **Review**, prompts explicitly permit drafting, paraphrasing, restructuring, and revision while enforcing source-truth for any `source_supported` claim.
 
 ## Environment Variables (Convex)
 

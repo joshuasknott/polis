@@ -39,3 +39,42 @@ export {
   buildSourceContextBlock,
 } from "./prompt-guardrails";
 export type { PromptGuardrails } from "./prompt-guardrails";
+
+export {
+  PROVENANCE_LABEL_ORDER,
+  HARD_TRUTH_RULES,
+  computeSegmentWarnings,
+  summarizeWarnings,
+  isLabelAvailableForSource,
+  studentResponsibilityNote,
+} from "./draft-provenance";
+export type {
+  ProvenanceLabelMeta,
+  WarningContext,
+} from "./draft-provenance";
+
+export {
+  PROVENANCE_LABELS,
+  SOURCE_BACKED_LABELS,
+  NON_SOURCE_LABELS,
+  PROVENANCE_LABEL_META,
+  isProvenanceLabel,
+  labelRequiresSource,
+  labelRequiresChunk,
+  labelForbidsSource,
+  validateProvenanceClaim,
+  summarizeProvenance,
+  renderProvenanceSummary,
+  emptyLabelCounts,
+} from "./provenance";
+export type {
+  ProvenanceLabel,
+  ProvenanceWarningSeverity,
+  ProvenanceWarningCode,
+  ProvenanceWarning,
+  EvidenceStrength as ProvenanceEvidenceStrength,
+  ClaimProvenanceInput,
+  ProvenanceValidationContext,
+  ProvenanceValidationResult,
+  ProvenanceSummary,
+} from "./provenance";

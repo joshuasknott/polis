@@ -1,6 +1,14 @@
 # Polis — MVP Scope
 
-**Last updated**: 2026-05-27
+**Last updated**: 2026-06-14
+
+## Direction
+
+Polis is now an **AI-native module operating system for students**. The student creates a workspace with a name, semester, and year, imports everything they have, and Polis turns messy files into an organized command center for coursework. Full thesis: `docs/PRODUCT_VISION.md`.
+
+The Phase 4 foundation (Convex + Clerk + CRUD + storage + extraction + AI providers) is the substrate. Phase 5 builds the new product experience on top of it.
+
+User-facing language: Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review. Internal data model: Module / Assignment / Argument / Draft (unchanged).
 
 ## Phase 0: Static Prototype (Complete)
 
@@ -87,7 +95,7 @@
 - [x] Assignment workspace with production stage tracking
 - [x] Module workspace backed by Convex data
 
-### Architecture Contracts (In Progress)
+### Architecture Contracts (Complete)
 
 - [x] Reconcile current reality vs. historical docs
 - [x] Define production architecture
@@ -95,7 +103,7 @@
 - [x] Update data model, RAG, AI provider docs
 - [x] Update AGENTS.md
 
-### Backend Runtime (Next)
+### Backend Runtime (Mostly complete)
 
 - [x] File extraction + chunking actions on Convex
 - [ ] Vector embeddings + Convex vector search
@@ -118,3 +126,51 @@
 - [ ] Processing pipeline monitoring
 - [ ] Error handling and failure states
 - [ ] Mobile refinements
+
+## Phase 5: AI-Native Module OS (Next — New Direction)
+
+**Goal**: Rebuild the product surface around the new direction: workspace-first, import-to-dashboard, embedded AI, powerful source-backed writing help.
+
+This phase reuses the Phase 4 backend and adds the new product experience on top.
+
+### Workspace Setup
+
+- [x] Create workspace from name, semester, and year (no upfront folder/brief setup)
+- [ ] Bulk import flow: drop everything you have for the module
+- [ ] AI-assisted source classification (readings / lectures / briefs / handbook / notes), user-confirmable
+- [ ] Assessment + module-fact extraction from imported briefs and handbook
+- [x] Workspace dashboard with workspaces and merged deadline timeline
+- [ ] Assessment dashboard inside each workspace, with status, deadline, coverage
+
+### Embedded AI (formerly standalone CoThinker / Workbench)
+
+- [ ] In-context assistant panel available inside workspace and assessment (no standalone destination)
+- [ ] In-context tools surfaced within Plan / Write / Review phases (no standalone Workbench destination)
+- [ ] Scope selector: workspace / assessment / specific sources
+- [ ] Phase-aware directive cards (Plan / Write / Review)
+
+### Writing Help (Write and Review)
+
+- [ ] Drafting on request (source-backed where claimed)
+- [ ] Paraphrase / restructure selected text
+- [ ] Critique against rubric and evidence
+- [ ] Citation insertion using only verified source data
+- [ ] Revision and restructuring in Review
+- [ ] Soft warnings for unsupported claims and missing citations (no hard user-blocking except validation truth)
+
+### Integrity UX
+
+- [ ] Hard rejection of fabricated citations / pages / misattribution at the validation layer
+- [ ] Visible labels (source-supported / interpretation / general / unsupported) on all AI claims
+- [ ] Explicit student-responsibility messaging in assistant and Review
+
+### Terminology Migration (UI)
+
+- [x] Update user-facing copy: Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review
+- [ ] Keep internal data-model names in code and schema
+
+### Out of Scope for Phase 5
+
+- Vector search (tracked separately in Phase 4)
+- Payments, collaboration, mobile app
+
