@@ -4,7 +4,7 @@
 
 ## Direction
 
-Polis is now an **AI-native module operating system for students**. The student creates a workspace with just a module name, imports everything they have, and Polis turns messy files into an organized command center for coursework. Full thesis: `docs/PRODUCT_VISION.md`.
+Polis is now an **AI-native module operating system for students**. The student creates a workspace with a name, semester, and year, imports everything they have, and Polis turns messy files into an organized command center for coursework. Full thesis: `docs/PRODUCT_VISION.md`.
 
 The Phase 4 foundation (Convex + Clerk + CRUD + storage + extraction + AI providers) is the substrate. Phase 5 builds the new product experience on top of it.
 
@@ -135,11 +135,12 @@ This phase reuses the Phase 4 backend and adds the new product experience on top
 
 ### Workspace Setup
 
-- [ ] Create workspace from a module name only (no upfront folder/brief setup)
+- [x] Create workspace from name, semester, and year (no upfront folder/brief setup)
 - [ ] Bulk import flow: drop everything you have for the module
 - [ ] AI-assisted source classification (readings / lectures / briefs / handbook / notes), user-confirmable
 - [ ] Assessment + module-fact extraction from imported briefs and handbook
-- [ ] Assessment dashboard (all assessments for the workspace, with status, deadline, coverage)
+- [x] Workspace dashboard with workspaces and merged deadline timeline
+- [ ] Assessment dashboard inside each workspace, with status, deadline, coverage
 
 ### Embedded AI (formerly standalone CoThinker / Workbench)
 
@@ -165,7 +166,7 @@ This phase reuses the Phase 4 backend and adds the new product experience on top
 
 ### Terminology Migration (UI)
 
-- [ ] Update user-facing copy: Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review
+- [x] Update user-facing copy: Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review
 - [ ] Keep internal data-model names in code and schema
 
 ### Out of Scope for Phase 5

@@ -20,9 +20,10 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Polis — Coursework Intelligence Workspace",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  title: "Polis - Source-backed coursework workspace",
   description:
-    "Turn scattered readings into structured arguments. Source-grounded AI for social science students.",
+    "Turn scattered module materials into source-backed assessment plans, drafts, and reviews.",
   icons: {
     icon: "/brand/polis-icon.svg",
     apple: "/brand/polis-icon.svg",
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     images: [
       {
-        url: "/brand/polis-wordmark.svg",
+        url: "/brand/polis-icon.svg",
       },
     ],
   },

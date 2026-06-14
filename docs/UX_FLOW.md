@@ -1,270 +1,171 @@
-# Polis — UX Flow
+# Polis UX Flow
 
 **Last updated**: 2026-06-14
 
 ## Terminology
 
-This document uses **user-facing language**. Internal data-model names (kept stable in code) appear in parentheses where useful for implementation agents.
+This document uses user-facing language. Internal data-model names are kept stable in code.
 
 | User-facing | Internal |
-|-------------|----------|
+| --- | --- |
 | Workspace | Module |
 | Assessment | Assignment |
 | Source Base | Sources in a module |
 | Evidence Map | Arguments + evidence links |
-| Plan | Build stage (and Understand/Map/Judge preparation) |
-| Write | Draft stage |
-| Review | Refine stage |
-| Assistant (in-context) | CoThinker |
-| Tools (in-context) | Workbench actions |
-
-See `docs/PRODUCT_VISION.md` for the full product thesis.
+| Plan | Understand, Map, Judge, Build |
+| Write | Draft |
+| Review | Refine |
+| In-context Assistant | CoThinker |
+| In-context Tools | Workbench actions |
 
 ## Top-Level Flow
 
+```text
+Landing page -> Dashboard -> Create workspace -> Import -> Workspace -> Plan / Write / Review
 ```
-Create workspace → Import → Classify → Extract → Dashboard → Open assessment → Plan / Write / Review
-```
 
-The workspace is the home base. Everything else lives inside it. There are no standalone CoThinker or Workbench destinations — those capabilities are embedded in context where the student is working.
+The workspace is the home base. Assessments live inside a workspace. Timeline information is part of the Workspaces dashboard and workspace home, not a separate top-level destination.
 
-## First Visit
+## Landing Page
 
-1. User lands on the **Landing Page**.
-2. Reads the value proposition: "Turn messy module files into a command center for coursework."
-3. Sees the flow explanation: Create workspace → Import → Classify → Dashboard → Plan / Write / Review.
-4. Clicks "Get Started" → navigates to **Dashboard**.
+1. User sees the direct product promise: "Your module, organized into a source-backed workspace."
+2. The first viewport shows a realistic workspace preview.
+3. Primary action: **Start your workspace**.
+4. Secondary action: **See how Polis works**.
+5. The page explains workspace, assessment, evidence map, Write/Review, and source-backed AI with soft warnings.
 
 ## Dashboard
 
-1. Welcome message with user context.
-2. **Workspace cards** showing active modules with source counts, assessment counts, and recent activity.
-3. **Active assessments** across all workspaces, with deadlines and current phase (Plan / Write / Review).
-4. Recent in-context assistant conversations.
-5. Quick actions: **Create workspace**, **Import**, **Open assessment**.
+The dashboard is a workspace launcher, not the full app shell.
 
-## Workspace Journey
+1. No sidenav is shown on the dashboard.
+2. User sees **Workspaces** and can create/open a workspace.
+3. Cross-workspace deadline timeline appears inside Workspaces.
+4. Workspace cards show source count, assessment count, and recent activity.
+5. Quick action: **New Workspace**.
 
-### Creating a Workspace
+## Creating a Workspace
 
-1. Click **Create workspace** from the Dashboard.
-2. Enter just the **module name**. (Optional: module code, year, semester.)
-3. A workspace is created. The student is dropped straight into the import step.
+1. Click **New Workspace** from the dashboard.
+2. Enter:
+   - Workspace name
+   - Year
+   - Semester
+3. Semester is free text. It is not a dropdown.
+4. The workspace is created.
 
-> Internal: creates a `modules` row. Default folders are created automatically. The student is not asked to set up folders manually.
+Internal: creates a `modules` row. Optional metadata such as code, colour, and description can be edited later.
 
-### Importing Module Material
+## Workspace Layout
 
-1. The workspace shows a large drop zone: "Drop everything you have for this module."
-2. Student drops in PDFs, DOCX, PPTX, images of slides, the module handbook, briefs, their own notes — anything.
-3. Files upload via Convex storage and begin processing (extraction + chunking + analysis).
-4. Progress is shown per file.
+Once the user opens a workspace, the workspace shell appears.
 
-> Internal: `files.generateUploadUrl` → client upload → `sources.attachStorage` → `processing.extractText` → `processing.chunkText` → `ai.summarizeSource`.
-
-### Classifying Files
-
-1. As files finish processing, Polis **classifies** each into the Source Base: readings, lecture material, seminar material, module handbook, assignment briefs, marking rubrics, the student's own notes, etc.
-2. The student sees the proposed classification and can reclassify or merge items.
-3. The Source Base becomes the navigable library of everything in the workspace.
-
-> Internal: `sources.type` (`SourceType`) drives classification. Classification may be AI-suggested and user-confirmed. Folders are derived/organised from `SourceType`.
-
-### Extracting Assessments and Module Facts
-
-1. Polis reads the handbook, briefs, and rubrics and **extracts assessments** (questions, word limits, deadlines, rubrics) plus **module facts** (learning outcomes, themes, key concepts).
-2. The student reviews extracted assessments for accuracy and confirms or edits them.
-3. Confirmed assessments appear on the assessment dashboard.
-
-> Internal: creates `assignments` rows from extracted briefs. Module-level facts populate `modules.themes`, `modules.concepts`, `modules.learningOutcomes`.
-
-### Assessment Dashboard
-
-1. The workspace shows an **assessment dashboard**: every assessment for the module, with status, deadline, word count progress, source coverage, and current phase.
-2. The student picks an assessment and enters it.
-
-### Workspace Layout
-
-```
-┌──────────────┬────────────────────────────┬──────────────────┐
-│  Workspace   │     Main Content Area      │  Assistant       │
-│  Nav         │                            │  (in-context)    │
-│              │                            │                  │
-│  Source Base │  Assessment Dashboard      │  Scope selector  │
-│  Assessments │  Source Viewer             │  Chat / actions  │
-│  Evidence    │  Plan / Write / Review     │  Citations       │
-│  Map         │                            │  Warnings        │
-│              │                            │                  │
-└──────────────┴────────────────────────────┴──────────────────┘
+```text
+Workspace sidenav | Workspace content | In-context assistant/actions
 ```
 
-The right panel is the embedded assistant (formerly "CoThinker"). It is always available inside a workspace, never a separate destination. The left nav switches between Source Base, Assessments, and Evidence Map.
+Workspace navigation includes:
 
-## Source Base Journey
+- Home
+- Imports
+- Assessments
+- Knowledge Base
+- Workspace Settings
 
-### Browsing the Source Base
+CoThinker and Workbench are embedded capabilities. They are not standalone destinations.
 
-1. Open a workspace → **Source Base**.
-2. Filter by type (readings, lectures, briefs, handbook, notes) or search.
-3. Each source shows title, author, year, type, and processing status.
+## Workspace Home
 
-### Viewing a Source
+The workspace home gives the user the current state of the module:
 
-1. Click a source → **Source Viewer**.
-2. Header: title, author, year, type badge, citation.
-3. Sections: Summary, Main Argument, Key Concepts, Evidence excerpts, Limitations.
-4. Actions: re-summarise, extract concepts, add to an assessment's selected sources, link to Evidence Map.
+1. Suggested next actions.
+2. Imports needing review.
+3. Assessment deadlines and weights.
+4. Deadline timeline for that workspace.
+5. Source coverage and missing context.
 
-### Working With a Source (Plan preparation)
+## Importing Material
 
-1. Open the in-context assistant with a source selected.
-2. Ask "What is the main argument of this reading?"
-3. Receive a source-grounded answer with citations and labels.
-4. See "Supported by sources" badges.
-5. Follow up with "How could I use this in my assessment?"
+1. The student imports readings, lecture notes, assignment briefs, rubrics, slides, source images, and their own notes.
+2. Files upload through Convex storage.
+3. Polis extracts and chunks text.
+4. Polis classifies material into the Source Base.
+5. The student can review or correct classifications.
 
-## Assessment Journey
+Internal flow:
 
-Inside an assessment, the student moves through three user-facing phases: **Plan → Write → Review**.
+```text
+generateUploadUrl -> client upload -> attachStorage -> extract text -> chunk text -> classify/analyse
+```
 
-### Creating an Assessment Manually
+## Assessment Flow
 
-Most assessments come from extraction (above). The student can also create one manually:
+Most assessments should come from imported briefs, handbooks, or rubrics. Students can also create assessments manually inside a workspace.
 
-1. From the workspace → Assessments → **New assessment**.
-2. Enter coursework question, word limit, due date.
-3. Select or upload marking rubric.
-4. Select relevant sources from the Source Base.
-5. The assessment opens at the start of **Plan**.
+An assessment moves through:
+
+```text
+Plan -> Write -> Review
+```
 
 ### Plan
 
 Goal: turn the Source Base into a structured plan and Evidence Map.
 
-1. Review the selected sources for this assessment.
-2. Use the in-context assistant to summarise readings, extract concepts, and identify claims.
-3. Build the **Evidence Map**: structured claims (Arguments) linked to evidence from sources.
-4. Identify themes, gaps, and counterarguments.
-5. Draft a working thesis, section plan, and word budget.
-6. Allocate evidence to sections.
-
-> Internal: corresponds to `understand → map → judge → build` stages. Completion signal: at least one Argument with synthesis and allocated evidence.
+1. Review selected and suggested sources.
+2. Understand relevant readings.
+3. Map claims, counterarguments, and evidence links.
+4. Judge evidence strength and identify gaps.
+5. Build thesis, section plan, and word budget.
 
 ### Write
 
-Goal: produce the submission.
+Goal: produce source-aware coursework.
 
-1. Write in the assessment's draft editor, or paste from an external editor.
-2. The in-context assistant provides powerful writing help:
-   - Draft passages on request (source-backed where claimed)
-   - Paraphrase and restructure selected text
-   - Suggest revisions and structural changes
-   - Insert citations using only verified source data
-   - Critique as you go
-3. Evidence links show available evidence by argument.
-4. Soft warnings flag unsupported claims and missing citations — the student decides whether to act.
+The assistant can:
 
-> Internal: corresponds to `draft` stage. Completion signal: draft has content and word count > 0.
+- Draft passages on request.
+- Paraphrase and restructure selected text.
+- Critique structure and argument.
+- Suggest revisions.
+- Insert citations only from verified source data.
+
+Claims are labelled as source-supported, interpretation, general context, unsupported, or needing evidence.
 
 ### Review
 
 Goal: validate and polish.
 
-1. Submit the draft for review.
-2. Receive a structured **Review**:
-   - Strengths
-   - Weaknesses
-   - Missing evidence
-   - Unsupported claims
-   - Revision priorities
-   - Rubric alignment assessment
-   - Citation safety
-3. Iterate. The assistant can revise, paraphrase, and restructure on request.
-4. Run a final citation safety check.
-5. Confirm readiness when all review findings are resolved.
+Review checks include:
 
-> Internal: corresponds to `refine` stage. Completion signal: all review findings resolved, user confirms ready.
+- Unsupported claims.
+- Missing evidence.
+- Citation safety.
+- Rubric alignment.
+- Structural weaknesses.
+- Revision priorities.
 
-## In-Context Assistant (Embedded CoThinker)
+Insufficient evidence produces a soft warning. Fake citations, fake page numbers, and misattribution are hard failures.
 
-The assistant is always available inside a workspace or assessment — never a separate destination. It adapts to context: scope (workspace / assessment / source) and phase (Plan / Write / Review).
+## In-Context Assistant
 
-### Asking Questions
+The assistant adapts to current context:
 
-1. Open the assistant panel (right side of the workspace or assessment).
-2. Select scope: workspace / assessment / specific sources.
-3. The assistant adapts to the current phase.
-4. Create or resume a persisted conversation.
-5. Type a question or pick a directive card.
-6. Receive an answer with:
-   - Source citations where applicable
-   - "Supported by sources" / "Interpretation" / "General context" labels
-   - Soft warnings if evidence is insufficient
-   - Follow-up suggestions
+- Workspace
+- Assessment
+- Source
+- Current phase: Plan, Write, or Review
 
-### Writing Help
+Responses must label source support clearly. Source-backed claims must trace to real retrieved source chunks.
 
-Inside Write and Review, the assistant will, on request:
+## In-Context Tools
 
-- Draft a passage, section, or full working draft
-- Paraphrase or restructure the student's own text
-- Critique against rubric and evidence
-- Suggest and apply revisions
-- Insert citations using verified source data
+Tools appear where they are useful:
 
-All writing that claims to be source-backed must be source-backed. Where the Source Base is thin, the assistant warns and labels rather than fabricating.
+| Phase | Tools |
+| --- | --- |
+| Plan | Reading summary, concept extraction, literature matrix, evidence bank, counterargument finder, argument builder |
+| Write | Draft editor, paraphrase, restructure, citation inserter |
+| Review | Draft review, citation safety, readiness checklist |
 
-### Persistent Sessions
-
-- Conversations are persisted in Convex and can be resumed.
-- Session list shows message count, phase, and scope.
-- Assessment-scoped sessions appear in the assistant panel inside the assessment.
-
-### Phase-Aware Directive Cards
-
-- **Plan**: coverage and brief/rubric questions, source summary prompts, theme and evidence prompts, gap and counterargument prompts, structure and thesis prompts.
-- **Write**: drafting prompts, paraphrase/restructure prompts, citation reminders, unsupported-claim flags.
-- **Review**: revision priorities, rubric alignment, citation safety, readiness checklist.
-
-### Integrity Behaviour
-
-- If no evidence is found, the assistant says so explicitly.
-- No fabricated citations, authors, page numbers, or catalog records.
-- Labels for source-supported, interpretation, unsupported, and general context.
-- Soft warnings for insufficient evidence — never silent fabrication.
-- Writing help is permitted; source-backed claims must be source-backed.
-
-### Example Interaction
-
-```
-User: "What is the difference between Lijphart's consensus model and
-       Tsebelis's veto player theory?"
-
-Assistant: [Source-supported] Lijphart classifies democracies along a
-           majoritarian-consensus dimension using 10 institutional
-           variables... (Lijphart, 1999, pp. 2-3)
-
-           [Source-supported] Tsebelis identifies "veto players" whose
-           agreement is necessary for policy change... (Tsebelis, 2002, p. 19)
-
-           [Interpretation] These frameworks complement each other:
-           Lijphart for classification, Tsebelis for mechanism.
-
-           Warning: Your Source Base does not include a direct comparison
-           of these two theorists. Consider adding a comparative source.
-
-           Follow-up: "How does Tsebelis explain policy change in consensus
-           systems?"
-```
-
-## In-Context Tools (Embedded Workbench)
-
-Stage-appropriate tools appear in context within the phase the student is in — not on a standalone Workbench page.
-
-| Phase | Available Tools |
-|-------|-----------------|
-| **Plan** | Reading Summary, Key Concept Extractor, Theory Comparison, Literature Matrix, Evidence Bank, Counterargument Finder, Research Gap Finder, Argument Builder, Section Planner |
-| **Write** | Draft Editor, Paraphrase, Restructure, Citation Inserter |
-| **Review** | Draft Review, Citation Safety Check, Readiness Checklist |
-
-The standalone Workbench page is deprecated as a destination. Its tools are surfaced inline where they are useful.
+The standalone Workbench destination is deprecated.
