@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
-import { draftBlockType } from "./lib/validators";
+import { draftBlockType, provenanceLabel } from "./lib/validators";
 import { internal } from "./_generated/api";
 
 export const list = query({
@@ -135,6 +135,13 @@ export const saveDraft = mutation({
         content: v.optional(v.string()),
         argumentId: v.optional(v.id("arguments")),
         sortOrder: v.number(),
+        label: v.optional(provenanceLabel),
+        sourceId: v.optional(v.id("sources")),
+        sourceChunkId: v.optional(v.id("sourceChunks")),
+        evidenceLinkId: v.optional(v.id("evidenceLinks")),
+        quote: v.optional(v.string()),
+        pageRange: v.optional(v.string()),
+        aiGenerated: v.optional(v.boolean()),
       }),
     ),
   },
@@ -163,6 +170,13 @@ export const saveDraft = mutation({
         content: section.content,
         argumentId: section.argumentId,
         sortOrder: section.sortOrder,
+        label: section.label,
+        sourceId: section.sourceId,
+        sourceChunkId: section.sourceChunkId,
+        evidenceLinkId: section.evidenceLinkId,
+        quote: section.quote,
+        pageRange: section.pageRange,
+        aiGenerated: section.aiGenerated,
         createdAt: now,
         updatedAt: now,
       });
@@ -224,6 +238,13 @@ export const createBlock = mutation({
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.optional(v.number()),
+    label: v.optional(provenanceLabel),
+    sourceId: v.optional(v.id("sources")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    evidenceLinkId: v.optional(v.id("evidenceLinks")),
+    quote: v.optional(v.string()),
+    pageRange: v.optional(v.string()),
+    aiGenerated: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -240,6 +261,20 @@ export const createBlock = mutation({
         argument.assignmentId !== draft.assignmentId
       ) {
         throw new Error("Argument must belong to the draft's assignment");
+      }
+    }
+
+    if (args.sourceId) {
+      const source = await ctx.db.get(args.sourceId);
+      if (!source || source.tokenIdentifier !== tokenIdentifier) {
+        throw new Error("Source not found");
+      }
+    }
+
+    if (args.sourceChunkId) {
+      const chunk = await ctx.db.get(args.sourceChunkId);
+      if (!chunk || chunk.sourceId !== args.sourceId) {
+        throw new Error("Chunk must belong to the specified source");
       }
     }
 
@@ -261,6 +296,13 @@ export const updateBlock = mutation({
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.optional(v.number()),
+    label: v.optional(provenanceLabel),
+    sourceId: v.optional(v.id("sources")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    evidenceLinkId: v.optional(v.id("evidenceLinks")),
+    quote: v.optional(v.string()),
+    pageRange: v.optional(v.string()),
+    aiGenerated: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
@@ -283,7 +325,27 @@ export const updateBlock = mutation({
       }
     }
 
-    await ctx.db.patch(blockId, { ...updates, updatedAt: Date.now() });
+    if (args.sourceId) {
+      const source = await ctx.db.get(args.sourceId);
+      if (!source || source.tokenIdentifier !== tokenIdentifier) {
+        throw new Error("Source not found");
+      }
+    }
+
+    if (args.sourceChunkId) {
+      const chunk = await ctx.db.get(args.sourceChunkId);
+      if (!chunk || chunk.sourceId !== args.sourceId) {
+        throw new Error("Chunk must belong to the specified source");
+      }
+    }
+
+    const cleanUpdates: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        cleanUpdates[key] = value;
+      }
+    }
+    await ctx.db.patch(blockId, { ...cleanUpdates, updatedAt: Date.now() });
     return blockId;
   },
 });

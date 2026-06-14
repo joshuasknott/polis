@@ -12,6 +12,20 @@ import {
   argumentStatus,
   cothinkerInterventionType,
   rubricCriterion,
+  importBatchStatus,
+  classificationLabel,
+  importFileExtractionStatus,
+  importFileClassificationStatus,
+  moduleFactField,
+  extractionStatus,
+  assessmentSpecStatus,
+  extractionProvenance,
+  gapCategory,
+  gapRunStatus,
+  sourceCatalog,
+  recommendationStatus,
+  provenanceLabel,
+  provenanceWarning,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -259,11 +273,52 @@ export default defineSchema({
     content: v.optional(v.string()),
     argumentId: v.optional(v.id("arguments")),
     sortOrder: v.number(),
+    label: v.optional(provenanceLabel),
+    sourceId: v.optional(v.id("sources")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    evidenceLinkId: v.optional(v.id("evidenceLinks")),
+    quote: v.optional(v.string()),
+    pageRange: v.optional(v.string()),
+    aiGenerated: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_draft", ["draftId"])
-    .index("by_draft_and_sortOrder", ["draftId", "sortOrder"]),
+    .index("by_draft_and_sortOrder", ["draftId", "sortOrder"])
+    .index("by_draft_and_label", ["draftId", "label"])
+    .index("by_source", ["sourceId"])
+    .index("by_evidenceLink", ["evidenceLinkId"]),
+
+  claimProvenance: defineTable({
+    tokenIdentifier: v.string(),
+    draftId: v.id("drafts"),
+    draftBlockId: v.optional(v.id("draftBlocks")),
+    claimText: v.string(),
+    spanStart: v.optional(v.number()),
+    spanEnd: v.optional(v.number()),
+    label: provenanceLabel,
+    effectiveLabel: v.optional(provenanceLabel),
+    sourceId: v.optional(v.id("sources")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    evidenceLinkId: v.optional(v.id("evidenceLinks")),
+    requiredReadingId: v.optional(v.id("requiredReadings")),
+    quote: v.optional(v.string()),
+    claimedPageStart: v.optional(v.number()),
+    claimedPageEnd: v.optional(v.number()),
+    isCatalogRecommendation: v.optional(v.boolean()),
+    evidenceStrength: v.optional(evidenceStrength),
+    validationWarnings: v.optional(v.array(provenanceWarning)),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_draft", ["draftId"])
+    .index("by_draftBlock", ["draftBlockId"])
+    .index("by_draft_and_label", ["draftId", "label"])
+    .index("by_source", ["sourceId"])
+    .index("by_sourceChunk", ["sourceChunkId"])
+    .index("by_evidenceLink", ["evidenceLinkId"]),
 
   judgementOptions: defineTable({
     tokenIdentifier: v.string(),
@@ -458,4 +513,259 @@ export default defineSchema({
   })
     .index("by_assignment", ["assignmentId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
+
+  importBatches: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    name: v.optional(v.string()),
+    status: importBatchStatus,
+    totalFiles: v.number(),
+    processedFiles: v.optional(v.number()),
+    autoAcceptedFiles: v.optional(v.number()),
+    needsReviewFiles: v.optional(v.number()),
+    failedFiles: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_createdAt", ["moduleId", "createdAt"])
+    .index("by_tokenIdentifier_and_status", ["tokenIdentifier", "status"])
+    .index("by_status", ["status"]),
+
+  importedFiles: defineTable({
+    tokenIdentifier: v.string(),
+    batchId: v.id("importBatches"),
+    moduleId: v.id("modules"),
+    sourceId: v.optional(v.id("sources")),
+    storageId: v.optional(v.id("_storage")),
+    fileName: v.optional(v.string()),
+    fileType: v.optional(v.string()),
+    fileSize: v.optional(v.number()),
+    extractionStatus: importFileExtractionStatus,
+    extractionError: v.optional(v.string()),
+    labels: v.optional(v.array(classificationLabel)),
+    primaryLabel: v.optional(classificationLabel),
+    confidence: v.optional(v.number()),
+    rationale: v.optional(v.string()),
+    classificationStatus: importFileClassificationStatus,
+    classificationError: v.optional(v.string()),
+    modelUsed: v.optional(v.string()),
+    providerUsed: v.optional(v.string()),
+    reviewedLabel: v.optional(classificationLabel),
+    reviewedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_batch", ["tokenIdentifier", "batchId"])
+    .index("by_batch", ["batchId"])
+    .index("by_module", ["moduleId"])
+    .index("by_source", ["sourceId"])
+    .index("by_extractionStatus", ["extractionStatus"])
+    .index("by_classificationStatus", ["classificationStatus"])
+    .index("by_batch_and_extractionStatus", ["batchId", "extractionStatus"])
+    .index(
+      "by_batch_and_classificationStatus",
+      ["batchId", "classificationStatus"],
+    )
+    .index("by_module_and_classificationStatus", [
+      "moduleId",
+      "classificationStatus",
+    ])
+    .index(
+      "by_tokenIdentifier_and_classificationStatus",
+      ["tokenIdentifier", "classificationStatus"],
+    ),
+
+  moduleFacts: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    field: moduleFactField,
+    value: v.string(),
+    uncertain: v.optional(v.boolean()),
+    status: extractionStatus,
+    provenance: extractionProvenance,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_field", ["moduleId", "field"])
+    .index("by_module_and_status", ["moduleId", "status"])
+    .index("by_module_and_field_and_status", [
+      "moduleId",
+      "field",
+      "status",
+    ])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
+
+  assessmentSpecs: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    title: v.string(),
+    question: v.optional(v.string()),
+    deadline: v.optional(v.string()),
+    weight: v.optional(v.number()),
+    wordLimit: v.optional(v.number()),
+    referencingRule: v.optional(v.string()),
+    submissionFormat: v.optional(v.string()),
+    uncertain: v.optional(v.boolean()),
+    status: assessmentSpecStatus,
+    provenance: extractionProvenance,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_status", ["moduleId", "status"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
+
+  extractedRubricCriteria: defineTable({
+    tokenIdentifier: v.string(),
+    assessmentSpecId: v.id("assessmentSpecs"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    weight: v.optional(v.number()),
+    sortOrder: v.number(),
+    status: assessmentSpecStatus,
+    provenance: v.optional(extractionProvenance),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_assessmentSpec", ["assessmentSpecId"])
+    .index("by_assessmentSpec_and_sortOrder", [
+      "assessmentSpecId",
+      "sortOrder",
+    ]),
+
+  weeklyTopics: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    weekNumber: v.optional(v.number()),
+    title: v.string(),
+    description: v.optional(v.string()),
+    sortOrder: v.number(),
+    sourceId: v.optional(v.id("sources")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    status: v.optional(extractionStatus),
+    provenance: v.optional(extractionProvenance),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_sortOrder", ["moduleId", "sortOrder"])
+    .index("by_module_and_weekNumber", ["moduleId", "weekNumber"])
+    .index("by_source", ["sourceId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
+
+  requiredReadings: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    weekNumber: v.optional(v.number()),
+    title: v.string(),
+    authors: v.optional(v.string()),
+    year: v.optional(v.number()),
+    citation: v.optional(v.string()),
+    url: v.optional(v.string()),
+    kind: v.optional(v.string()),
+    sourceId: v.optional(v.id("sources")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sortOrder: v.number(),
+    status: v.optional(extractionStatus),
+    provenance: v.optional(extractionProvenance),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_sortOrder", ["moduleId", "sortOrder"])
+    .index("by_module_and_weekNumber", ["moduleId", "weekNumber"])
+    .index("by_source", ["sourceId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
+
+  gapAnalysisRuns: defineTable({
+    tokenIdentifier: v.string(),
+    assignmentId: v.id("assignments"),
+    status: gapRunStatus,
+    summary: v.string(),
+    overallConfidence: v.optional(v.number()),
+    providerUsed: v.optional(v.string()),
+    modelUsed: v.optional(v.string()),
+    warnings: v.optional(v.array(v.string())),
+    sourceCount: v.optional(v.number()),
+    chunkCount: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_and_createdAt", ["assignmentId", "createdAt"]),
+
+  gapAnalysisFindings: defineTable({
+    tokenIdentifier: v.string(),
+    runId: v.id("gapAnalysisRuns"),
+    assignmentId: v.id("assignments"),
+    gapCategory,
+    title: v.string(),
+    content: v.string(),
+    severity: v.string(),
+    confidence: v.number(),
+    rationale: v.string(),
+    label: v.optional(v.string()),
+    citedChunkIds: v.optional(v.array(v.id("sourceChunks"))),
+    relatedRubricCriterion: v.optional(v.string()),
+    suggestedSearchTerms: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+  })
+    .index("by_run", ["runId"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_run_and_category", ["runId", "gapCategory"])
+    .index("by_assignment_and_severity", ["assignmentId", "severity"]),
+
+  sourceRecommendations: defineTable({
+    tokenIdentifier: v.string(),
+    assignmentId: v.id("assignments"),
+    gapAnalysisRunId: v.optional(v.id("gapAnalysisRuns")),
+    catalog: sourceCatalog,
+    catalogId: v.string(),
+    title: v.string(),
+    authors: v.optional(v.string()),
+    year: v.optional(v.number()),
+    venue: v.optional(v.string()),
+    doi: v.optional(v.string()),
+    url: v.optional(v.string()),
+    abstract: v.optional(v.string()),
+    status: recommendationStatus,
+    matchReason: v.optional(v.string()),
+    raw: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_assignment_and_status", ["assignmentId", "status"])
+    .index("by_gapAnalysisRun", ["gapAnalysisRunId"])
+    .index("by_catalog_and_catalogId", ["catalog", "catalogId"])
+    .index("by_assignment_and_catalog", ["assignmentId", "catalog"]),
 });

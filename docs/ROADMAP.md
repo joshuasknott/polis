@@ -1,10 +1,53 @@
 # Polis — Roadmap
 
-**Last updated**: 2026-05-27
+**Last updated**: 2026-06-14
+
+## Next: Phase 5 — AI-Native Module OS
+
+**Status**: Planning
+**Goal**: Rebuild the product surface around the new direction. The student creates a workspace from a module name, imports everything, Polis classifies files and extracts assessments, and the student works inside assessments with embedded, source-backed AI — including powerful writing help.
+
+Reuses the Phase 4 backend (Convex + Clerk + AI providers + extraction). Full scope: `docs/MVP_SCOPE.md`.
+
+### Workspace Setup
+
+- [ ] Create workspace from a module name only
+- [ ] Bulk import flow (drop everything you have)
+- [ ] AI-assisted source classification (user-confirmable)
+- [ ] Assessment + module-fact extraction from imported briefs and handbook
+- [ ] Assessment dashboard
+
+### Embedded AI
+
+- [ ] In-context assistant inside workspace and assessment (CoThinker becomes embedded, no standalone destination)
+- [ ] In-context tools surfaced within Plan / Write / Review phases (Workbench becomes embedded, no standalone destination)
+- [ ] Phase-aware directive cards
+
+### Writing Help
+
+- [ ] Drafting on request (source-backed where claimed)
+- [ ] Paraphrase / restructure
+- [ ] Critique against rubric and evidence
+- [ ] Citation insertion from verified source data
+- [ ] Revision and restructuring in Review
+- [ ] Soft warnings for unsupported claims; hard errors only for fabrication/misattribution
+
+### Integrity UX
+
+- [ ] Hard rejection of fabricated citations / pages / misattribution at the validation layer
+- [ ] Visible labels on all AI claims
+- [ ] Explicit student-responsibility messaging
+
+### Terminology Migration
+
+- [ ] Update user-facing copy: Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review
+- [ ] Keep internal data-model names in code and schema (Module / Assignment / Argument / Draft)
+
+---
 
 ## Current: Phase 4 — Production Architecture & Runtime
 
-**Status**: In progress
+**Status**: In progress (foundation complete)
 **Goal**: Rebuild all runtime capabilities on Convex + Clerk, connect the full product model to live data, and ship source-grounded AI.
 
 ### Architecture Contracts (This Branch)
@@ -121,13 +164,14 @@ These phases were delivered on the old Prisma/PostgreSQL/Auth.js stack. Their de
 
 | Risk | Mitigation |
 |------|------------|
-| AI hallucination in academic context | Strict source-grounding, citation badges, warnings, `[Source N]` format enforced |
-| Academic integrity concerns | Prominent integrity policy, clear labelling, no essay generation, draft review analyses only |
-| User adoption | Focus on genuine workflow value, not AI gimmicks |
+| AI hallucination in academic context | Source-grounding, citation validation (hard error on fabrication), labels, soft warnings |
+| Academic integrity concerns | Explicit responsibility messaging, clear labelling, source-backed-where-claimed, soft warnings; student owns the submission |
+| User adoption | Focus on workspace-first flow: drop files in, get a command center, write with help |
 | API cost sensitivity | z.ai primary (cost-effective), Gemini free tier fallback, transparent usage tracking |
 | Provider API changes | Abstraction layer, multi-provider support |
 | Data privacy | Server-side processing (Convex actions), no third-party data sharing beyond provider API |
 | Convex vector search maturity | Start with keyword fallback, add vector search incrementally |
+| Writing-help perception | Clear labelling, source-truth enforcement, student-responsibility messaging; never fabricate |
 
 ## Open Questions
 
@@ -135,5 +179,6 @@ These phases were delivered on the old Prisma/PostgreSQL/Auth.js stack. Their de
 - Mobile app vs responsive web → Responsive web for now
 - University partnership opportunities
 - Content moderation requirements
-- Rich text editor choice for draft editing
+- Rich text editor choice for the Write phase
 - Convex vector search dimensionality and index strategy
+- How aggressively to auto-extract assessments from imported briefs vs. asking the student

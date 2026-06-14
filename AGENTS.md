@@ -8,11 +8,29 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Project Overview
 
-Polis is a coursework intelligence workspace for social science students. It helps students organise modules, understand readings, build evidence-based arguments, and review drafts using source-grounded AI. Read `docs/PRODUCT_VISION.md` for the full product thesis.
+Polis is an AI-native module operating system for students. A student creates a workspace with just a module name, imports everything they already have for that module, and Polis turns messy files into an organized command center for coursework. Polis then stays with the student through every assessment — Plan / Write / Review — with embedded, source-backed AI, including powerful writing help. Read `docs/PRODUCT_VISION.md` for the full product thesis.
+
+## Terminology
+
+Internal data-model names are authoritative in code and schema. User-facing names differ:
+
+| User-facing | Internal |
+|-------------|----------|
+| Workspace | Module |
+| Assessment | Assignment |
+| Source Base | The collection of sources in a module |
+| Evidence Map | Arguments + evidence links |
+| Plan | Understand → Map → Judge → Build stages |
+| Write | Draft stage |
+| Review | Refine stage |
+| In-context Assistant | CoThinker |
+| In-context Tools | Workbench actions |
+
+CoThinker and Workbench are embedded capabilities, not standalone destinations.
 
 ## Current Status
 
-Phase 4: Production architecture and runtime rebuild. Convex + Clerk are the active backend. AI runtime (z.ai, Gemini), file extraction, embeddings, and RAG are being built as Convex actions. See `docs/CURRENT_ARCHITECTURE.md` for the authoritative state and `docs/IMPLEMENTATION_CONTRACTS.md` for contracts.
+Phase 4 (Convex + Clerk runtime rebuild) is the foundation. Phase 5 (AI-native module OS) is the active product direction: workspace-first flow, embedded AI, source-backed writing help. See `docs/CURRENT_ARCHITECTURE.md` for the authoritative state, `docs/MVP_SCOPE.md` for phase scope, and `docs/IMPLEMENTATION_CONTRACTS.md` for contracts.
 
 ## Tech Stack
 
@@ -50,7 +68,7 @@ npm run convex:codegen # Generate Convex client bindings
 
 ## Core Invariant
 
-The module is the workspace. Assignments are focused production tracks inside the module. Assignments must consume live refined module context. Never separate module context from assignment context.
+The module is the workspace. Assignments are assessment tracks inside the module. Assignments must consume live refined module context. Never separate module context from assignment context.
 
 ## Product Model
 
@@ -58,11 +76,23 @@ The module is the workspace. Assignments are focused production tracks inside th
 Module → Assignment → Argument → Draft
 ```
 
+User-facing: **Workspace → Assessment → Evidence Map → Write/Review**.
+
 ## Production Workflow
+
+Internal stage enum:
 
 ```
 Ingest → Understand → Map → Judge → Build → Draft → Refine
 ```
+
+User-facing flow:
+
+```
+Create workspace → Import → Classify → Extract → Dashboard → Plan → Write → Review
+```
+
+Mapping: Plan absorbs Understand/Map/Judge/Build; Write = Draft; Review = Refine.
 
 ## Coding Standards
 
@@ -91,20 +121,27 @@ Ingest → Understand → Map → Judge → Build → Draft → Refine
 
 ## Product Principles
 
-1. Source-grounded: Every AI claim should trace back to uploaded sources
-2. Academic integrity first: No cheating features, no essay generation
-3. Workflow-driven: Design around real student workflows, not generic AI chat
-4. Clear labelling: Distinguish source-supported claims from interpretation
-5. Warn, don't hide: Flag insufficient evidence, don't fabricate support
+1. Source-grounded: Every AI claim that says it is source-backed must trace to an uploaded source
+2. Academic integrity through source-truth and labelling, not through refusing to write
+3. Workflow-driven: Design around real student workflows (workspace → import → dashboard → plan/write/review), not generic AI chat
+4. Clear labelling: Distinguish source-supported claims from interpretation, general context, and unsupported
+5. Warn, don't hide: Flag insufficient evidence with soft warnings; never fabricate support
+6. Hard only on validation truth: Fake citations/page numbers/misattribution are never treated as valid
+7. Embedded, not standalone: CoThinker and Workbench live inside the workspace and assessment, not as destinations
+8. Powerful writing help: Drafting, paraphrasing, critique, restructuring, and revision are permitted and supported
+9. Student responsibility is explicit: The student owns the submission
 
 ## Academic Integrity Rules
 
-- NEVER generate fake citations, authors, or page numbers
-- NEVER write content that could be submitted as a student's own work
-- ALWAYS label AI outputs clearly (source-supported, interpretation, general)
-- ALWAYS warn when evidence is insufficient
+- NEVER generate fake citations, authors, page numbers, source claims, or catalog records
+- NEVER present invented text as a direct quote from a source
+- NEVER label text `source_supported` unless it traces to a real retrieved chunk
+- ALWAYS label AI outputs clearly (source-supported, interpretation, general, unsupported)
+- ALWAYS warn (soft) when evidence is insufficient — do not hard-block except for validation truth
+- ALWAYS make student responsibility explicit
 - NEVER store API keys in client-side code
 - NEVER claim incomplete features are production-ready
+- Writing help (drafting, paraphrasing, critique, restructuring, revision) is permitted in Plan / Write / Review
 - Default citation style: Harvard `(Author, Year, p. X)`
 
 ## What Not To Do
@@ -116,6 +153,9 @@ Ingest → Understand → Map → Judge → Build → Draft → Refine
 - Do not use real API keys without encryption
 - Do not reference Prisma, PostgreSQL, Auth.js, pgvector, or `src/lib/services/` as if they are active
 - Do not reference OpenAI or Anthropic as runtime providers
+- Do not label AI text `source_supported` unless it traces to a real retrieved chunk
+- Do not hard-block users on insufficient evidence — warn instead (except for validation truth)
+- Do not treat CoThinker or Workbench as standalone destinations; they are embedded capabilities
 
 ## How to Update Docs
 

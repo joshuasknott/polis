@@ -104,6 +104,62 @@ export const deleteModuleData = internalMutation({
       args.moduleId,
     );
 
+    await deleteAll(ctx, "moduleFacts", "by_module", "moduleId", args.moduleId);
+    await deleteAll(ctx, "weeklyTopics", "by_module", "moduleId", args.moduleId);
+    await deleteAll(ctx, "requiredReadings", "by_module", "moduleId", args.moduleId);
+
+    const moduleSpecs = await ctx.db
+      .query("assessmentSpecs")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex("by_module", (q: any) => q.eq("moduleId", args.moduleId))
+      .take(BATCH);
+    for (const spec of moduleSpecs) {
+      await deleteAll(
+        ctx,
+        "extractedRubricCriteria",
+        "by_assessmentSpec",
+        "assessmentSpecId",
+        spec._id,
+      );
+      await ctx.db.delete(spec._id);
+    }
+
+    const moduleBatches = await ctx.db
+      .query("importBatches")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex("by_module", (q: any) => q.eq("moduleId", args.moduleId))
+      .take(BATCH);
+    for (const batch of moduleBatches) {
+      await deleteAll(
+        ctx,
+        "importedFiles",
+        "by_batch",
+        "batchId",
+        batch._id,
+      );
+      await ctx.db.delete(batch._id);
+    }
+    let hasMoreBatches = moduleBatches.length === BATCH;
+    while (hasMoreBatches) {
+      const more = await ctx.db
+        .query("importBatches")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .withIndex("by_module", (q: any) => q.eq("moduleId", args.moduleId))
+        .take(BATCH);
+      if (more.length === 0) break;
+      for (const batch of more) {
+        await deleteAll(
+          ctx,
+          "importedFiles",
+          "by_batch",
+          "batchId",
+          batch._id,
+        );
+        await ctx.db.delete(batch._id);
+      }
+      hasMoreBatches = more.length === BATCH;
+    }
+
     await ctx.db.delete(args.moduleId);
     return args.moduleId;
   },
@@ -123,6 +179,23 @@ export const deleteSourceData = internalMutation({
     await deleteAll(ctx, "sourceClaims", "by_source", "sourceId", args.sourceId);
     await deleteAll(ctx, "sourceConcepts", "by_source", "sourceId", args.sourceId);
     await deleteAll(ctx, "processingJobs", "by_source", "sourceId", args.sourceId);
+
+    const linkedImportedFiles = await ctx.db
+      .query("importedFiles")
+      .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
+      .take(BATCH);
+    for (const f of linkedImportedFiles) {
+      await ctx.db.patch(f._id, { sourceId: undefined });
+    }
+
+    const linkedReadings = await ctx.db
+      .query("requiredReadings")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .withIndex("by_source", (q: any) => q.eq("sourceId", args.sourceId))
+      .take(BATCH);
+    for (const r of linkedReadings) {
+      await ctx.db.patch(r._id, { sourceId: undefined });
+    }
 
     if (source.storageId) {
       try {
@@ -157,6 +230,52 @@ export const deleteArgumentData = internalMutation({
   },
 });
 
+export const deleteImportBatchData = internalMutation({
+  args: { batchId: v.id("importBatches") },
+  handler: async (ctx, args) => {
+    const batch = await ctx.db.get(args.batchId);
+    if (!batch) return args.batchId;
+
+    const specs = await ctx.db
+      .query("assessmentSpecs")
+      .withIndex("by_batch", (q) => q.eq("batchId", args.batchId))
+      .take(BATCH);
+    for (const spec of specs) {
+      await deleteAll(
+        ctx,
+        "extractedRubricCriteria",
+        "by_assessmentSpec",
+        "assessmentSpecId",
+        spec._id,
+      );
+      await ctx.db.delete(spec._id);
+    }
+
+    const files = await ctx.db
+      .query("importedFiles")
+      .withIndex("by_batch", (q) => q.eq("batchId", args.batchId))
+      .take(BATCH);
+    for (const f of files) {
+      if (
+        f.storageId &&
+        !f.sourceId
+      ) {
+        try {
+          await ctx.storage.delete(f.storageId);
+        } catch {}
+      }
+      await ctx.db.delete(f._id);
+    }
+
+    await deleteAll(ctx, "moduleFacts", "by_batch", "batchId", args.batchId);
+    await deleteAll(ctx, "weeklyTopics", "by_batch", "batchId", args.batchId);
+    await deleteAll(ctx, "requiredReadings", "by_batch", "batchId", args.batchId);
+
+    await ctx.db.delete(args.batchId);
+    return args.batchId;
+  },
+});
+
 export const deleteDraftData = internalMutation({
   args: { draftId: v.id("drafts") },
   handler: async (ctx, args) => {
@@ -181,6 +300,15 @@ async function deleteAssignmentChildren(ctx: MutationCtx, assignmentId: string) 
   await deleteAll(ctx, "sectionPlans", "by_assignment", "assignmentId", assignmentId);
   await deleteAll(ctx, "judgementOptions", "by_assignment", "assignmentId", assignmentId);
   await deleteAll(ctx, "judgementDecisions", "by_assignment", "assignmentId", assignmentId);
+
+  const linkedSpecs = await ctx.db
+    .query("assessmentSpecs")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .withIndex("by_assignment", (q: any) => q.eq("assignmentId", assignmentId))
+    .take(BATCH);
+  for (const spec of linkedSpecs) {
+    await ctx.db.patch(spec._id, { assignmentId: undefined });
+  }
 
   const arguments_ = await ctx.db
     .query("arguments")

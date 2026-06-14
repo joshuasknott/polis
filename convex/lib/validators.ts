@@ -169,3 +169,157 @@ export const messageLabel = v.union(
   v.literal("general_context"),
   v.literal("unsupported"),
 );
+
+export const provenanceLabel = v.union(
+  v.literal("quoted"),
+  v.literal("paraphrased"),
+  v.literal("source_supported"),
+  v.literal("interpretation"),
+  v.literal("generated"),
+  v.literal("unsupported"),
+);
+
+export const provenanceWarningSeverity = v.union(
+  v.literal("info"),
+  v.literal("warning"),
+  v.literal("critical"),
+);
+
+export const provenanceWarningCode = v.union(
+  v.literal("UNSUPPORTED_CLAIM"),
+  v.literal("WEAK_EVIDENCE"),
+  v.literal("CITATION_MISMATCH"),
+  v.literal("POSSIBLE_MISATTRIBUTION"),
+  v.literal("SOURCE_NOT_IN_ASSESSMENT"),
+  v.literal("MISSING_PAGE_METADATA"),
+  v.literal("CATALOG_RECOMMENDATION_AS_EVIDENCE"),
+  v.literal("LABEL_REF_MISMATCH"),
+  v.literal("MISSING_QUOTE_FOR_QUOTED_LABEL"),
+  v.literal("PAGE_OUTSIDE_CHUNK_RANGE"),
+  v.literal("FAKE_CITATION_REJECTED"),
+);
+
+export const provenanceWarning = v.object({
+  code: provenanceWarningCode,
+  severity: provenanceWarningSeverity,
+  message: v.string(),
+});
+
+export const gapCategory = v.union(
+  v.literal("missing_theory"),
+  v.literal("missing_method"),
+  v.literal("missing_concept"),
+  v.literal("missing_evidence_type"),
+  v.literal("missing_counterargument"),
+  v.literal("rubric_gap"),
+  v.literal("required_reading_missing"),
+  v.literal("weak_source_coverage"),
+  v.literal("scope_gap"),
+);
+
+export const gapRunStatus = v.union(
+  v.literal("completed"),
+  v.literal("failed"),
+  v.literal("partial"),
+);
+
+export const sourceCatalog = v.union(
+  v.literal("crossref"),
+  v.literal("openalex"),
+  v.literal("semantic_scholar"),
+);
+
+export const recommendationStatus = v.union(
+  v.literal("recommended"),
+  v.literal("dismissed"),
+  v.literal("added"),
+);
+
+export const classificationLabel = v.union(
+  v.literal("handbook"),
+  v.literal("syllabus"),
+  v.literal("assignment_brief"),
+  v.literal("rubric"),
+  v.literal("slides"),
+  v.literal("reading"),
+  v.literal("draft"),
+  v.literal("notes"),
+  v.literal("integrity_guidance"),
+  v.literal("reading_list"),
+  v.literal("other"),
+);
+
+export const importBatchStatus = v.union(
+  v.literal("pending"),
+  v.literal("processing"),
+  v.literal("completed"),
+  v.literal("partial"),
+  v.literal("failed"),
+);
+
+export const importFileExtractionStatus = v.union(
+  v.literal("pending"),
+  v.literal("extracting"),
+  v.literal("extracted"),
+  v.literal("unsupported"),
+  v.literal("skipped"),
+  v.literal("failed"),
+);
+
+export const importFileClassificationStatus = v.union(
+  v.literal("pending"),
+  v.literal("classifying"),
+  v.literal("auto_accepted"),
+  v.literal("needs_review"),
+  v.literal("accepted"),
+  v.literal("rejected"),
+  v.literal("failed"),
+);
+
+export const moduleFactField = v.union(
+  v.literal("title"),
+  v.literal("code"),
+  v.literal("academic_year"),
+  v.literal("semester"),
+  v.literal("description"),
+  v.literal("themes"),
+  v.literal("concepts"),
+  v.literal("learning_outcomes"),
+  v.literal("integrity_guidance"),
+  v.literal("submission_format"),
+  v.literal("referencing_rules"),
+);
+
+export const extractionStatus = v.union(
+  v.literal("extracted"),
+  v.literal("applied"),
+  v.literal("rejected"),
+  v.literal("superseded"),
+);
+
+export const assessmentSpecStatus = v.union(
+  v.literal("extracted"),
+  v.literal("applied"),
+  v.literal("rejected"),
+  v.literal("needs_review"),
+  v.literal("superseded"),
+);
+
+export const extractionProvenance = v.object({
+  source: v.union(
+    v.literal("imported_file"),
+    v.literal("source"),
+    v.literal("manual"),
+  ),
+  batchId: v.optional(v.id("importBatches")),
+  importedFileId: v.optional(v.id("importedFiles")),
+  sourceId: v.optional(v.id("sources")),
+  sourceChunkId: v.optional(v.id("sourceChunks")),
+  extractor: v.string(),
+  extractionRunId: v.optional(v.string()),
+  pageStart: v.optional(v.number()),
+  pageEnd: v.optional(v.number()),
+  quote: v.optional(v.string()),
+  confidence: v.optional(v.number()),
+  extractedAt: v.number(),
+});

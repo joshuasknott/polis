@@ -54,8 +54,8 @@ describe("Component module resolution", () => {
   });
 
   it("module workspace can be imported", async () => {
-    const mod = await import("@/components/modules/module-workspace");
-    expect(mod.ModuleWorkspace).toBeDefined();
+    const mod = await import("@/components/modules/module-workspace-data");
+    expect(mod.ModuleWorkspaceData).toBeDefined();
   });
 
   it("assignment workspace shell can be imported", async () => {
