@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  CalendarClock,
   Settings,
   X,
   Home,
@@ -17,10 +15,10 @@ import {
 } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
+import { PolisMark } from "@/components/brand/polis-mark";
 
 const topLevelNavigation = [
   { name: "Workspaces", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Timeline", href: "/timeline", icon: CalendarClock },
 ];
 
 const moduleNavigation = [
@@ -53,18 +51,11 @@ export function Sidebar({
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-muted/30">
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/brand/polis-wordmark.svg"
-            alt="Polis"
-            width={96}
-            height={24}
-            className="h-5 w-auto"
-            priority
-          />
+        <Link href="/" className="-m-2 flex items-center p-2 text-foreground" aria-label="Polis home">
+          <PolisMark iconClassName="h-5 w-5" textClassName="h-4" priority />
         </Link>
         {onClose && (
-          <button onClick={onClose} className="rounded p-1 hover:bg-muted">
+          <button onClick={onClose} className="rounded p-2 hover:bg-muted">
             <X className="h-4 w-4" />
           </button>
         )}

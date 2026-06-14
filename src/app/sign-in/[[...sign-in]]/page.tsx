@@ -1,18 +1,11 @@
 import { SignIn } from "@clerk/nextjs";
-import Image from "next/image";
+import { PolisMark } from "@/components/brand/polis-mark";
 
 export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="flex flex-col items-center">
-        <Image 
-          src="/brand/polis-wordmark.svg" 
-          alt="Polis" 
-          width={140} 
-          height={40} 
-          className="h-8 w-auto mb-8" 
-          priority
-        />
+        <PolisMark className="mb-8 text-foreground" iconClassName="h-8 w-8" textClassName="h-7" priority />
         <SignIn />
       </div>
     </div>
