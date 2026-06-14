@@ -105,7 +105,7 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
           action={
             <Link
               href={`/modules/${module.id}?tab=imports`}
-              className="text-xs font-medium text-accent hover:underline flex items-center gap-1"
+              className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
             >
               Open Imports <ArrowRight className="h-3 w-3" />
             </Link>
@@ -123,7 +123,7 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
                 </div>
                 <Link
                   href={`/modules/${module.id}?tab=imports`}
-                  className="rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                  className="inline-flex min-h-8 items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
                 >
                   Review
                 </Link>
@@ -144,9 +144,11 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
         action={
           <Link
             href={`/modules/${module.id}?tab=assessments`}
-            className="text-xs font-medium text-accent hover:underline flex items-center gap-1"
+            className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
           >
-            Open Assessments <ArrowRight className="h-3 w-3" />
+            <span className="hidden sm:inline">Open Assessments</span>
+            <span className="sm:hidden">Open</span>
+            <ArrowRight className="h-3 w-3" />
           </Link>
         }
       >
@@ -289,12 +291,12 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="flex items-start justify-between gap-3">
+        <h2 className="flex min-w-0 flex-1 items-start gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           <Icon className="h-4 w-4" />
-          {title}
+          <span className="leading-5">{title}</span>
         </h2>
-        {action}
+        {action ? <div className="shrink-0 pt-0.5">{action}</div> : null}
       </div>
       {children}
     </section>

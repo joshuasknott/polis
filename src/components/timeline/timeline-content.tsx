@@ -39,7 +39,13 @@ const FILTERS = [
 
 type FilterValue = (typeof FILTERS)[number]["value"];
 
-export function TimelineContent({ assignments }: { assignments: TimelineAssignment[] }) {
+export function TimelineContent({
+  assignments,
+  embedded = false,
+}: {
+  assignments: TimelineAssignment[];
+  embedded?: boolean;
+}) {
   const [filter, setFilter] = useState<FilterValue>("upcoming");
 
   const sorted = useMemo(() => {
@@ -73,9 +79,17 @@ export function TimelineContent({ assignments }: { assignments: TimelineAssignme
   }).length;
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <section className={cn("space-y-6", embedded ? "" : "max-w-4xl space-y-8")}>
       <header className="space-y-3">
-        <h1 className="text-3xl font-serif tracking-tight text-foreground">Timeline</h1>
+        {embedded ? (
+          <h2 className="text-xl font-serif tracking-tight text-foreground">
+            Deadline timeline
+          </h2>
+        ) : (
+          <h1 className="text-3xl font-serif tracking-tight text-foreground">
+            Timeline
+          </h1>
+        )}
         <p className="text-sm text-muted-foreground max-w-2xl">
           Cross-module deadline view. Every confirmed assessment across your workspaces, ordered by due date.
         </p>
@@ -95,7 +109,7 @@ export function TimelineContent({ assignments }: { assignments: TimelineAssignme
             type="button"
             onClick={() => setFilter(option.value)}
             className={cn(
-              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+              "rounded-md px-3 py-2 text-xs font-medium transition-colors",
               filter === option.value
                 ? "bg-accent text-accent-foreground"
                 : "border border-border bg-card text-muted-foreground hover:bg-muted",
@@ -125,7 +139,7 @@ export function TimelineContent({ assignments }: { assignments: TimelineAssignme
           ))}
         </ol>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -162,7 +176,7 @@ function TimelineRow({ assignment }: { assignment: TimelineAssignment }) {
     <li>
       <Link
         href={`/modules/${assignment.moduleId}/assignments/${assignment.id}`}
-        className="group flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 hover:bg-muted/40 transition-colors"
+        className="group flex items-start gap-3 rounded-xl border border-border bg-card px-4 py-4 hover:bg-muted/40 transition-colors sm:items-center sm:gap-4 sm:px-5"
       >
         <div
           className={cn(
@@ -172,7 +186,7 @@ function TimelineRow({ assignment }: { assignment: TimelineAssignment }) {
         >
           {assignment.dueDate ? (
             <>
-              <span className="text-[9px] uppercase tracking-wider leading-none">
+              <span className="text-[10px] uppercase tracking-wider leading-none">
                 {new Date(assignment.dueDate).toLocaleDateString("en-GB", { month: "short" })}
               </span>
               <span className="text-base font-bold leading-none mt-0.5">
@@ -185,7 +199,7 @@ function TimelineRow({ assignment }: { assignment: TimelineAssignment }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground truncate group-hover:text-accent transition-colors">
+          <p className="text-sm font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-accent transition-colors sm:truncate">
             {assignment.title}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -209,10 +223,18 @@ function TimelineRow({ assignment }: { assignment: TimelineAssignment }) {
             {assignment.wordLimit ? (
               <span>{assignment.wordLimit.toLocaleString()} words</span>
             ) : null}
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:hidden",
+                getProductionStageColor(assignment.stage),
+              )}
+            >
+              {getProductionStageLabel(assignment.stage)}
+            </span>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden shrink-0 items-center gap-2 sm:flex">
           <span
             className={cn(
               "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",

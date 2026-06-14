@@ -1,12 +1,5 @@
-import { AppShell } from "@/components/layout/shell";
-import { TimelineData } from "@/components/timeline/timeline-data";
-
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 export default function TimelinePage() {
-  return (
-    <AppShell>
-      <TimelineData />
-    </AppShell>
-  );
+  redirect("/dashboard");
 }

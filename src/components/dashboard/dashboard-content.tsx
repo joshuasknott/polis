@@ -20,10 +20,15 @@ import {
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 import type { Module, User } from "@/lib/types";
+import {
+  TimelineContent,
+  type TimelineAssignment,
+} from "@/components/timeline/timeline-content";
 
 interface DashboardContentProps {
   user?: User;
   modules: Module[];
+  timelineAssignments?: TimelineAssignment[];
 }
 
 const MODULE_COLOURS = [
@@ -53,7 +58,7 @@ const emptyForm: ModuleFormData = {
   code: "",
   description: "",
   academicYear: new Date().getFullYear().toString(),
-  semester: "Autumn",
+  semester: "",
   colour: MODULE_COLOURS[0],
 };
 
@@ -78,6 +83,7 @@ function ModuleFormDialog({
     ...emptyForm,
     ...initial,
   });
+  const isCreate = submitLabel.includes("Create");
 
   if (!open) return null;
 
@@ -93,7 +99,7 @@ function ModuleFormDialog({
           <h2 className="text-lg font-semibold font-serif">{submitLabel.includes("Create") ? "New Module Workspace" : "Edit Module"}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted transition-colors"
             aria-label="Close dialog"
           >
             <X className="h-4 w-4" />
@@ -110,7 +116,7 @@ function ModuleFormDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="module-title" className="block text-sm font-medium text-foreground mb-1.5">
-              Title
+              Workspace name
             </label>
             <input
               id="module-title"
@@ -124,83 +130,86 @@ function ModuleFormDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="module-code" className="block text-sm font-medium text-foreground mb-1.5">
-                Module Code
-              </label>
-              <input
-                id="module-code"
-                type="text"
-                required
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                placeholder="e.g. PIRR30041"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-              />
-            </div>
+            {!isCreate && (
+              <div>
+                <label htmlFor="module-code" className="block text-sm font-medium text-foreground mb-1.5">
+                  Module Code
+                </label>
+                <input
+                  id="module-code"
+                  type="text"
+                  value={form.code}
+                  onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                  placeholder="e.g. PIRR30041"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                />
+              </div>
+            )}
             <div>
               <label htmlFor="module-year" className="block text-sm font-medium text-foreground mb-1.5">
-                Academic Year
+                Year
               </label>
               <input
                 id="module-year"
                 type="text"
+                required
                 value={form.academicYear}
                 onChange={(e) => setForm((f) => ({ ...f, academicYear: e.target.value }))}
-                placeholder="e.g. 2025/26"
+                placeholder="e.g. 2026 or 2025/26"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+            </div>
+            <div>
+              <label htmlFor="module-semester" className="block text-sm font-medium text-foreground mb-1.5">
+                Semester
+              </label>
+              <input
+                id="module-semester"
+                type="text"
+                required
+                value={form.semester}
+                onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
+                placeholder="e.g. Autumn, Semester 1, Hilary"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="module-semester" className="block text-sm font-medium text-foreground mb-1.5">
-              Semester
-            </label>
-            <select
-              id="module-semester"
-              value={form.semester}
-              onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-            >
-              <option value="Autumn">Autumn</option>
-              <option value="Spring">Spring</option>
-              <option value="Summer">Summer</option>
-              <option value="Full Year">Full Year</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="module-description" className="block text-sm font-medium text-foreground mb-1.5">
-              Description
-            </label>
-            <textarea
-              id="module-description"
-              value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Brief module description..."
-              rows={3}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Colour
-            </label>
-            <div className="flex gap-2">
-              {MODULE_COLOURS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, colour: c }))}
-                  className={`h-7 w-7 rounded-full border-2 transition-all ${form.colour === c ? "border-foreground scale-110" : "border-transparent"}`}
-                  style={{ backgroundColor: c }}
-                  aria-label={`Select colour ${c}`}
+          {!isCreate && (
+            <>
+              <div>
+                <label htmlFor="module-description" className="block text-sm font-medium text-foreground mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  id="module-description"
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Brief module description..."
+                  rows={3}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
                 />
-              ))}
-            </div>
-          </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  Colour
+                </label>
+                <div className="flex gap-2">
+                  {MODULE_COLOURS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, colour: c }))}
+                      className={`h-7 w-7 rounded-full border-2 transition-all ${form.colour === c ? "border-foreground scale-110" : "border-transparent"}`}
+                      style={{ backgroundColor: c }}
+                      aria-label={`Select colour ${c}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <button
@@ -212,7 +221,12 @@ function ModuleFormDialog({
             </button>
             <button
               type="submit"
-              disabled={loading || !form.title.trim() || !form.code.trim()}
+              disabled={
+                loading ||
+                !form.title.trim() ||
+                !form.academicYear.trim() ||
+                !form.semester.trim()
+              }
               className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -280,6 +294,7 @@ function DeleteConfirmDialog({
 
 export function DashboardContent({
   modules,
+  timelineAssignments = [],
 }: DashboardContentProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editModule, setEditModule] = useState<Module | null>(null);
@@ -350,7 +365,7 @@ export function DashboardContent({
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto mt-4 sm:mt-8">
+    <div className="mx-auto mt-4 max-w-6xl space-y-10 sm:mt-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="font-serif text-3xl font-medium text-foreground tracking-tight">
@@ -368,6 +383,10 @@ export function DashboardContent({
           New Workspace
         </button>
       </div>
+
+      {timelineAssignments.length > 0 && (
+        <TimelineContent assignments={timelineAssignments} embedded />
+      )}
 
       {modules.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-32 text-center">
@@ -412,19 +431,19 @@ export function DashboardContent({
                   <div className="relative z-10 flex items-center gap-1 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditModule(mod); }}
-                      className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
+                      className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
                       title="Edit workspace"
                       aria-label={`Edit ${mod.title}`}
                     >
-                      <Edit2 className="h-3.5 w-3.5" />
+                      <Edit2 className="h-4 w-4" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeleteModule(mod); }}
-                      className="p-1.5 text-muted-foreground hover:text-danger rounded-md hover:bg-danger/10 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-danger rounded-md hover:bg-danger/10 transition-colors"
                       title="Delete workspace"
                       aria-label={`Delete ${mod.title}`}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -458,6 +477,7 @@ export function DashboardContent({
       )}
 
       <ModuleFormDialog
+        key={createOpen ? "create-open" : "create-closed"}
         open={createOpen}
         onClose={() => { setCreateOpen(false); setError(null); }}
         onSubmit={handleCreate}
@@ -467,6 +487,7 @@ export function DashboardContent({
       />
 
       <ModuleFormDialog
+        key={editModule?.id ?? "edit-closed"}
         open={!!editModule}
         onClose={() => { setEditModule(null); setError(null); }}
         onSubmit={handleEdit}
