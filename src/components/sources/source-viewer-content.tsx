@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useMutation, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -151,7 +153,7 @@ export function SourceViewerContent({
 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] -m-6 max-w-full">
-      <div className="p-6 border-b border-border bg-card shrink-0 z-10 shadow-sm relative">
+      <div className="polis-focal-rule relative border-b border-border bg-card-elevated p-6 pl-8 shrink-0 z-10 shadow-sm">
         <Link
           href={backHref}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
@@ -161,10 +163,8 @@ export function SourceViewerContent({
         </Link>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="inline-flex items-center rounded-full bg-source/10 px-2.5 py-0.5 text-xs font-medium text-source">
-                {getSourceTypeLabel(source.type)}
-              </span>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge tone="source">{getSourceTypeLabel(source.type)}</Badge>
               <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", getStatusColor(source.status))}>
                 {getStatusLabel(source.status)}
               </span>
@@ -273,9 +273,7 @@ export function SourceViewerContent({
                   <FileText className="h-4 w-4 text-interpretation" />
                   Source Summary
                   {summaryAnalysis && (
-                    <span className="inline-flex items-center rounded-full border border-source/20 bg-source/10 px-1.5 py-0.5 text-[9px] font-medium text-source normal-case tracking-normal">
-                      Source-supported
-                    </span>
+                    <Badge tone="source" className="normal-case tracking-normal text-[9px]">Source-supported</Badge>
                   )}
                 </h2>
                 {summaryAnalysis ? (
@@ -313,9 +311,7 @@ export function SourceViewerContent({
                   <BookOpen className="h-4 w-4 text-source" />
                   Main Argument
                   {argumentAnalysis && (
-                    <span className="inline-flex items-center rounded-full border border-interpretation/20 bg-interpretation/10 px-1.5 py-0.5 text-[9px] font-medium text-interpretation normal-case tracking-normal">
-                      Interpretation
-                    </span>
+                    <Badge tone="stage" className="normal-case tracking-normal text-[9px]">Interpretation</Badge>
                   )}
                 </h2>
                 {argumentAnalysis ? (
@@ -621,19 +617,16 @@ function SourceNotesSection({
             placeholder="Tags (comma-separated, optional)"
           />
           <div className="flex gap-2">
-            <button
-              onClick={addNote}
-              disabled={loading || !newNote.trim()}
-              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:opacity-90 disabled:opacity-50"
-            >
+            <Button onClick={addNote} disabled={loading || !newNote.trim()} size="sm">
               {loading ? "Saving..." : "Save Note"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => { setShowForm(false); setNewNote(""); setNewTags(""); }}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-muted"
+              size="sm"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -28,6 +28,8 @@ import {
 import type { SourceType } from "@/lib/types";
 import type { WorkspaceSectionProps } from "./workspace-sections";
 import { SourceUploader } from "./source-uploader";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const CLASSIFICATION_OPTIONS: SourceType[] = [
   "journal_article",
@@ -77,11 +79,13 @@ export function WorkspaceImports({ data }: WorkspaceSectionProps) {
           <span>/</span>
           <span className="text-foreground">Imports</span>
         </div>
-        <div>
-          <h1 className="text-3xl font-serif tracking-tight text-foreground">Imports</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-            Review uploaded files, confirm or correct classification, and track processing state. Sources are grouped by import batch.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-serif tracking-tight text-foreground">Imports</h1>
+            <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+              Review uploaded files, confirm or correct classification, and track processing state. Sources are grouped by import batch.
+            </p>
+          </div>
         </div>
       </header>
 
@@ -90,15 +94,11 @@ export function WorkspaceImports({ data }: WorkspaceSectionProps) {
       <ImportSummary sources={sources} />
 
       {batches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <Upload className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <p className="mt-3 text-sm font-medium text-foreground">No imports yet</p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-            Upload readings, lecture slides, the module handbook, or an assignment brief to get started.
-          </p>
-        </div>
+        <EmptyState
+          icon={Upload}
+          title="No imports yet"
+          description="Upload readings, lecture slides, the module handbook, or an assignment brief to get started."
+        />
       ) : (
         <div className="space-y-6">
           {batches.map((batch) => (
@@ -288,15 +288,10 @@ function ImportRow({
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
           {source.hasError ? (
-            <button
-              type="button"
-              onClick={handleRetry}
-              disabled={pending}
-              className="inline-flex items-center gap-1.5 rounded-md border border-danger/40 bg-danger/10 px-2.5 py-1 text-xs font-medium text-danger hover:bg-danger/20 transition-colors disabled:opacity-50"
-            >
+            <Button type="button" variant="danger" size="sm" onClick={handleRetry} disabled={pending}>
               {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
               Retry
-            </button>
+            </Button>
           ) : source.isProcessing ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Processing
@@ -315,50 +310,53 @@ function ImportRow({
                   </option>
                 ))}
               </select>
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={handleSaveClassification}
                 disabled={pending}
-                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setEditing(false);
                   setDraftType(source.classificationLabel);
                   setError(null);
                 }}
                 disabled={pending}
-                className="rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           ) : (
             <>
               {source.needsReview && (
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={handleAccept}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-success px-2.5 py-1 text-xs font-medium text-white hover:bg-success/90 transition-colors disabled:opacity-50"
+                  className="bg-success text-white hover:bg-success/90"
                 >
                   {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
                   Accept
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setEditing(true)}
                 disabled={pending}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
               >
                 <Edit3 className="h-3 w-3" />
                 Correct
-              </button>
+              </Button>
             </>
           )}
         </div>

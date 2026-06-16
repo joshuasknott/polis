@@ -351,7 +351,7 @@ export function AssignmentWorkspaceShell({
                   {assignment.title}
                 </h1>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <span className="inline-flex items-center rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-accent">
+                  <span className="inline-flex items-center rounded-full bg-gold-soft/60 px-2.5 py-1 text-xs font-medium uppercase tracking-wider text-gold-foreground">
                     {activeTabConfig.label}
                   </span>
                   {module.code && (
@@ -396,10 +396,12 @@ export function AssignmentWorkspaceShell({
                     key={tab.id}
                     href={`/modules/${module.id}/assignments/${assignment.id}?tab=${tab.id}`}
                     className={cn(
-                      "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors",
+                      "relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors",
                       isActive
-                        ? "bg-accent text-accent-foreground"
+                        ? "bg-gold-soft/50 text-foreground"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                      isActive &&
+                        "before:absolute before:left-1/2 before:-translate-x-1/2 before:bottom-1 before:h-0.5 before:w-5 before:rounded-full before:bg-gold",
                     )}
                     aria-current={isActive ? "page" : undefined}
                     title={tab.description}

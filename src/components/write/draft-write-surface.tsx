@@ -602,7 +602,7 @@ function EvidencePickerModal({
             placeholder="Search sources…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="mb-2 w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-accent/30"
+            className="mb-2 w-full rounded-md border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-gold/30 focus:border-gold"
           />
           <div className="max-h-48 space-y-1 overflow-y-auto scrollbar-thin">
             {filteredSources.map((source) => (

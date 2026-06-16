@@ -27,6 +27,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type {
   Assignment,
   Module,
@@ -494,13 +495,10 @@ export function RefineWorkspace({
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
           Create and save a draft in the Draft stage before running a review.
         </p>
-        <button
-          onClick={handleNavigateToDraft}
-          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
-        >
+        <Button variant="secondary" onClick={handleNavigateToDraft} className="mt-4">
           <ArrowLeft className="h-4 w-4" />
           Go to Draft
-        </button>
+        </Button>
       </div>
     );
   }
@@ -576,18 +574,10 @@ export function RefineWorkspace({
             missing evidence, and rubric alignment.
           </p>
           <div className="mt-4 flex items-center gap-3">
-            <button
-              onClick={handleRunReview}
-              disabled={runningReview}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90 disabled:opacity-50"
-            >
-              {runningReview ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
+            <Button onClick={handleRunReview} loading={runningReview}>
+              <Play className="h-4 w-4" />
               {runningReview ? "Running\u2026" : "Run Review"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -612,7 +602,7 @@ export function RefineWorkspace({
                       className={cn(
                         "flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors",
                         isActive
-                          ? "bg-accent/10 text-accent font-medium"
+                          ? "bg-gold-soft/40 text-foreground font-medium"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
                       )}
                     >
@@ -820,20 +810,17 @@ export function RefineWorkspace({
                   severity="info"
                 />
                 <div className="mt-3 pt-3 border-t border-border">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleRunCitationCheck}
-                    disabled={runningCitation}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
+                    loading={runningCitation}
                   >
-                    {runningCitation ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    )}
+                    <RotateCcw className="h-3.5 w-3.5" />
                     {runningCitation
                       ? "Checking\u2026"
                       : "Run citation safety check"}
-                  </button>
+                  </Button>
                 </div>
               </ReviewCard>
             )}
@@ -1002,18 +989,15 @@ export function RefineWorkspace({
                   <h3 className="text-sm font-semibold text-foreground">
                     Review History
                   </h3>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleRunReview}
-                    disabled={runningReview}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
+                    loading={runningReview}
                   >
-                    {runningReview ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-3 w-3" />
-                    )}
+                    <RotateCcw className="h-3 w-3" />
                     Re-run
-                  </button>
+                  </Button>
                 </div>
                 {!reviewHistory || reviewHistory.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
@@ -1027,7 +1011,7 @@ export function RefineWorkspace({
                         className={cn(
                           "flex items-center justify-between rounded-lg border p-3",
                           run._id === review?.id
-                            ? "border-accent/30 bg-accent/5"
+                            ? "border-gold/40 bg-gold-soft/30"
                             : "border-border",
                         )}
                       >
@@ -1049,7 +1033,7 @@ export function RefineWorkspace({
                           </div>
                         </div>
                         {run._id === review?.id && (
-                          <span className="text-[10px] font-medium uppercase tracking-wider text-accent">
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-gold-foreground">
                             Current
                           </span>
                         )}
@@ -1069,13 +1053,10 @@ export function RefineWorkspace({
                   Go back to the Draft stage to apply revision priorities.
                 </p>
               </div>
-              <button
-                onClick={handleNavigateToDraft}
-                className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
-              >
+              <Button onClick={handleNavigateToDraft}>
                 Edit Draft
                 <ArrowRight className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

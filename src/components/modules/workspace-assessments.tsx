@@ -14,7 +14,6 @@ import {
   Edit2,
   X,
   AlertTriangle,
-  Loader2,
   CalendarClock,
   Scale,
   BookOpen,
@@ -33,6 +32,10 @@ import {
   getSourceCoverageTone,
   getRubricWeightTotal,
 } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input, Textarea } from "@/components/ui/input";
+import { Dialog, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { WorkspaceSectionProps } from "./workspace-sections";
 
 interface AssignmentFormData {
@@ -143,17 +146,16 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
               Track coursework specs, deadlines, weights, word limits, and source coverage for each assessment.
             </p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => {
               setPrefillFromSource(null);
               setCreateOpen(true);
             }}
-            className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
             New Assessment
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -177,15 +179,11 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
         </div>
 
         {assignments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-12 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <ClipboardList className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-sm font-medium text-foreground">No confirmed assessments</p>
-            <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-              Add an assessment to capture the question, deadline, word limit, and rubric.
-            </p>
-          </div>
+          <EmptyState
+            icon={ClipboardList}
+            title="No confirmed assessments"
+            description="Add an assessment to capture the question, deadline, word limit, and rubric."
+          />
         ) : (
           <ul className="space-y-3">
             {assignments.map((assignment) => (
@@ -302,14 +300,16 @@ function ExtractedSpecsSection({
                 {source.fileName || "No file name"} · review contents before creating an assessment.
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => onConfirm(source)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 transition-colors shrink-0"
+              className="shrink-0"
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Confirm
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -386,22 +386,20 @@ function AssessmentRow({
 
         <div className="flex flex-col gap-3 md:items-end">
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
+            <Button type="button" variant="secondary" size="sm" onClick={onEdit}>
               <Edit2 className="h-3 w-3" />
               Edit
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={onDelete}
-              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors"
+              className="hover:bg-danger/10 hover:text-danger"
             >
               <Trash2 className="h-3 w-3" />
               Delete
-            </button>
+            </Button>
           </div>
           <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs md:text-right">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Next action</p>
@@ -507,20 +505,12 @@ function AssignmentFormDialog({
   const rubricTotal = getRubricWeightTotal(form.rubric);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold font-serif">
-            {submitLabel.includes("Create") ? "New Assessment" : "Edit Assessment"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open={open} onClose={onClose} className="max-h-[90vh] overflow-y-auto">
+      <form onSubmit={handleSubmit}>
+        <DialogHeader
+          title={submitLabel.includes("Create") ? "New Assessment" : "Edit Assessment"}
+          onClose={onClose}
+        />
 
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-4 py-3 text-sm text-danger">
@@ -529,82 +519,78 @@ function AssignmentFormDialog({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
-            <label htmlFor="assignment-title" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="assignment-title" className="mb-1.5 block text-sm font-medium text-foreground">
               Title
             </label>
-            <input
+            <Input
               id="assignment-title"
               type="text"
               required
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="e.g. Essay 1: Security Dilemma"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
             />
           </div>
 
           <div>
-            <label htmlFor="assignment-question" className="block text-sm font-medium text-foreground mb-1.5">
+            <label htmlFor="assignment-question" className="mb-1.5 block text-sm font-medium text-foreground">
               Question
             </label>
-            <textarea
+            <Textarea
               id="assignment-question"
               value={form.question}
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
               placeholder="Paste the assessment question here..."
               rows={3}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="assignment-word-limit" className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="assignment-word-limit" className="mb-1.5 block text-sm font-medium text-foreground">
                 Word Limit
               </label>
-              <input
+              <Input
                 id="assignment-word-limit"
                 type="number"
                 min={100}
                 value={form.wordLimit}
                 onChange={(e) => setForm((f) => ({ ...f, wordLimit: parseInt(e.target.value) || 2000 }))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
             </div>
             <div>
-              <label htmlFor="assignment-due-date" className="block text-sm font-medium text-foreground mb-1.5">
+              <label htmlFor="assignment-due-date" className="mb-1.5 block text-sm font-medium text-foreground">
                 Due Date
               </label>
-              <input
+              <Input
                 id="assignment-due-date"
                 type="date"
                 value={form.dueDate}
                 onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2 flex items-center justify-between">
               <label className="block text-sm font-medium text-foreground">Marking Rubric</label>
               <span className="text-xs text-muted-foreground">{rubricTotal}% allocated</span>
             </div>
 
             {form.rubric.length > 0 && (
-              <div className="space-y-2 mb-3">
+              <div className="mb-3 space-y-2">
                 {form.rubric.map((criterion, i) => (
                   <div key={i} className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <span className="text-sm font-medium">{criterion.name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">({criterion.weight}%)</span>
+                      <span className="ml-2 text-xs text-muted-foreground">({criterion.weight}%)</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeRubricCriterion(i)}
-                      className="p-1 text-muted-foreground hover:text-danger transition-colors"
+                      className="p-1 text-muted-foreground transition-colors hover:text-danger"
                       aria-label={`Remove ${criterion.name}`}
                     >
                       <X className="h-3 w-3" />
@@ -615,60 +601,52 @@ function AssignmentFormDialog({
             )}
 
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 placeholder="Criterion name"
                 value={rubricDraft.name}
                 onChange={(e) => setRubricDraft((r) => ({ ...r, name: e.target.value }))}
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                className="flex-1"
               />
-              <input
+              <Input
                 type="number"
                 min={1}
                 max={100}
                 value={rubricDraft.weight}
                 onChange={(e) => setRubricDraft((r) => ({ ...r, weight: parseInt(e.target.value) || 25 }))}
-                className="w-16 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                className="w-16"
                 title="Weight %"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={addRubricCriterion}
                 disabled={!rubricDraft.name.trim()}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-accent hover:bg-accent/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add
-              </button>
+              </Button>
             </div>
-            <input
+            <Input
               type="text"
               placeholder="Description (optional)"
               value={rubricDraft.description}
               onChange={(e) => setRubricDraft((r) => ({ ...r, description: e.target.value }))}
-              className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              className="mt-2"
             />
           </div>
+        </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !form.title.trim()}
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitLabel}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={loading} disabled={!form.title.trim()}>
+            {submitLabel}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
   );
 }
 
@@ -686,35 +664,25 @@ function DeleteAssessmentDialog({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <h2 className="text-lg font-semibold font-serif">Delete Assessment</h2>
-        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-          Delete <span className="font-medium text-foreground">{assignmentTitle}</span>? All arguments, evidence links, and drafts will be lost. This cannot be undone.
-        </p>
-        {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            {error}
-          </div>
-        )}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-danger/90 transition-colors disabled:opacity-50"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Delete
-          </button>
+    <Dialog open onClose={onCancel} className="max-w-sm">
+      <DialogHeader title="Delete Assessment" onClose={onCancel} />
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Delete <span className="font-medium text-foreground">{assignmentTitle}</span>? All arguments, evidence links, and drafts will be lost. This cannot be undone.
+      </p>
+      {error && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {error}
         </div>
-      </div>
-    </div>
+      )}
+      <DialogFooter>
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button variant="danger" loading={loading} onClick={onConfirm}>
+          Delete
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }

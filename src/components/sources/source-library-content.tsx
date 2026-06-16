@@ -16,6 +16,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { cn, getSourceTypeLabel, getStatusColor, getStatusLabel } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface SourceItem {
   id: string;
@@ -65,8 +66,8 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
 
   return (
     <div className="max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Source Library</h1>
+      <div className="polis-gold-rule relative rounded-xl border border-border bg-card px-6 py-5">
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground">Source Library</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           All uploaded sources across your modules ({sources.length} total)
         </p>
@@ -80,7 +81,7 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
             placeholder="Search sources by title, author, or content..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-border bg-card pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/20"
+            className="w-full rounded-lg border border-border bg-card pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/25 focus:border-gold"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -91,7 +92,7 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
               className={cn(
                 "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                 selectedType === type
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-gold-soft/50 text-gold-foreground"
                   : "border border-border bg-card text-muted-foreground hover:bg-muted"
               )}
             >
@@ -108,15 +109,15 @@ export function SourceLibraryContent({ sources, modules }: SourceLibraryContentP
       </div>
 
       {filtered.length === 0 && (
-        <div className="rounded-xl border border-border bg-card p-12 text-center">
-          <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="mt-3 text-sm font-medium">No sources found</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {sources.length === 0
+        <EmptyState
+          icon={BookOpen}
+          title="No sources found"
+          description={
+            sources.length === 0
               ? "Upload your first source to get started"
-              : "Try adjusting your search or filter"}
-          </p>
-        </div>
+              : "Try adjusting your search or filter"
+          }
+        />
       )}
 
       <UploadZone modules={modules} />

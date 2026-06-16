@@ -17,6 +17,8 @@ import {
   Scale,
 } from "lucide-react";
 import { cn, daysUntil, getProductionStageLabel, getProductionStageColor, getDeadlineUrgency, getDeadlineUrgencyClasses, getDeadlineLabel, getSourceCoverageLabel, getSourceCoverageTone } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { WorkspaceSectionProps } from "./workspace-sections";
 
 export function WorkspaceHome({ data }: WorkspaceSectionProps) {
@@ -44,7 +46,7 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
 
   return (
     <div className="max-w-6xl mx-auto pb-12 space-y-10">
-      <header className="space-y-3">
+      <header className="polis-focal-rule relative space-y-3 rounded-xl border border-border bg-card-elevated px-6 py-5 pl-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Link href="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
             <ArrowLeft className="h-3 w-3" /> Workspaces
@@ -63,11 +65,13 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
               {module.description || "No description set. Add one in Workspace Settings."}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <StatBadge label="Sources" value={sources.length} />
-            <StatBadge label="Processed" value={processedSources.length} tone="success" />
-            <StatBadge label="Needs review" value={reviewQueue.length} tone={reviewQueue.length > 0 ? "warning" : "muted"} />
-            <StatBadge label="Assessments" value={assignments.length} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="neutral">{sources.length} sources</Badge>
+            <Badge tone="success">{processedSources.length} processed</Badge>
+            {reviewQueue.length > 0 ? (
+              <Badge tone="warning">{reviewQueue.length} need review</Badge>
+            ) : null}
+            <Badge tone="neutral">{assignments.length} assessments</Badge>
           </div>
         </div>
       </header>
@@ -153,12 +157,10 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
         }
       >
         {assignments.length === 0 ? (
-          <EmptyRow
+          <EmptyState
             icon={ClipboardList}
             title="No assessments yet"
             description="Add an assessment to start tracking deadlines, weights, and source coverage."
-            ctaHref={`/modules/${module.id}?tab=assessments`}
-            ctaLabel="Open Assessments"
           />
         ) : (
           <ul className="divide-y divide-border rounded-xl border border-border bg-card">
@@ -240,7 +242,7 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
 
       <Section title="Source coverage & missing context" icon={Layers}>
         {assignments.length === 0 ? (
-          <EmptyRow
+          <EmptyState
             icon={Layers}
             title="No coverage to report"
             description="Add an assessment to start tracking source coverage and context gaps."
@@ -300,61 +302,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-function StatBadge({
-  label,
-  value,
-  tone = "muted",
-}: {
-  label: string;
-  value: number;
-  tone?: "muted" | "success" | "warning";
-}) {
-  const toneClass =
-    tone === "success"
-      ? "border-success/30 bg-success/5 text-success"
-      : tone === "warning"
-        ? "border-warning/40 bg-warning/10 text-warning"
-        : "border-border bg-muted/60 text-muted-foreground";
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium uppercase tracking-wider", toneClass)}>
-      <span className="text-foreground font-semibold">{value}</span>
-      {label}
-    </span>
-  );
-}
-
-function EmptyRow({
-  icon: Icon,
-  title,
-  description,
-  ctaHref,
-  ctaLabel,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  ctaHref?: string;
-  ctaLabel?: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-12 text-center">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <p className="mt-3 text-sm font-medium text-foreground">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground max-w-sm">{description}</p>
-      {ctaHref && ctaLabel && (
-        <Link
-          href={ctaHref}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent/90 transition-colors"
-        >
-          {ctaLabel} <ArrowRight className="h-3 w-3" />
-        </Link>
-      )}
-    </div>
   );
 }
 

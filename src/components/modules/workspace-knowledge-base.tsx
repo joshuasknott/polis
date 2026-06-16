@@ -22,6 +22,7 @@ import {
 } from "@/lib/utils";
 import type { WorkspaceSectionProps } from "./workspace-sections";
 import { SourceUploader } from "./source-uploader";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const TYPE_FILTERS = [
   { value: "all", label: "All" },
@@ -109,7 +110,7 @@ export function WorkspaceKnowledgeBase({ data }: WorkspaceSectionProps) {
             placeholder="Search by title, author, or file name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+            className="w-full rounded-md border border-border bg-card pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gold/25 focus:border-gold"
           />
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -121,7 +122,7 @@ export function WorkspaceKnowledgeBase({ data }: WorkspaceSectionProps) {
               className={cn(
                 "rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
                 filter === option.value
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-gold-soft/50 text-gold-foreground"
                   : "border border-border bg-card text-muted-foreground hover:bg-muted",
               )}
             >
@@ -164,19 +165,15 @@ export function WorkspaceKnowledgeBase({ data }: WorkspaceSectionProps) {
       )}
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-            <BookOpen className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <p className="mt-3 text-sm font-medium text-foreground">
-            {sources.length === 0 ? "No sources yet" : "No sources match"}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-            {sources.length === 0
+        <EmptyState
+          icon={BookOpen}
+          title={sources.length === 0 ? "No sources yet" : "No sources match"}
+          description={
+            sources.length === 0
               ? "Import your first files to start building the knowledge base."
-              : "Try clearing filters or adjusting your search."}
-          </p>
-        </div>
+              : "Try clearing filters or adjusting your search."
+          }
+        />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((source) => (
