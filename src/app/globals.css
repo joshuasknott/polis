@@ -6,11 +6,15 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-card: var(--card);
-  --color-card-hover: var(--card-hover);
+  --color-card-elevated: var(--card-elevated);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-muted: var(--accent-muted);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-foreground: var(--gold-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -22,27 +26,34 @@
 }
 
 :root {
-  /* Base App Colors - Parchment & Deep Navy */
+  /* Base App Colors - Parchment & Deep Navy (logo canvas) */
   --background: #FCFBF9;
   --foreground: #162A4A;
-  
-  /* Surfaces & Borders - Derived from Sand */
+
+  /* Surfaces & Borders - sand family (hairline separation) */
   --card: #FFFFFF;
   --card-hover: #F9F8F5;
+  --card-elevated: #FFFEFB;
   --muted: #F5F2EB;
   --border: #E8E1D5;
-  
+  --border-strong: #D9CFBE;
+
   /* Text & Accents - Slate Blue & Navy */
   --muted-foreground: #4B6685;
   --accent: #162A4A;
-  --accent-foreground: #FFFFFF;
+  --accent-foreground: #FCFBF9;
   --accent-muted: #EBD9BB;
-  
+
+  /* Gold — the brand thread + state (selective gilding) */
+  --gold: #BA9858;
+  --gold-soft: #EBD9BB;
+  --gold-foreground: #5A481F;
+
   /* Semantic States */
   --success: #2F6B4A;
   --warning: #A9854B;
   --danger: #9B2C2C;
-  
+
   /* Polis-Specific - Objective vs. Subjective */
   --source: #4B6685;
   --interpretation: #A9854B;
@@ -61,8 +72,47 @@ body {
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--gold-soft);
+  color: var(--gold-foreground);
+}
+
+/* Brand thread — the 1px gold rule under top surfaces */
+.polis-gold-rule {
+  position: relative;
+}
+.polis-gold-rule::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold) 18%, var(--gold) 82%, transparent);
+  opacity: 0.55;
+}
+
+/* Focal card — thin gold left rule for the single focal surface per view */
+.polis-focal-rule {
+  position: relative;
+}
+.polis-focal-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--gold);
+}
+
+/* Hairline parchment grid — used as a quiet structural backdrop */
+.polis-grid {
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0.4;
 }
 
 .scrollbar-thin::-webkit-scrollbar {

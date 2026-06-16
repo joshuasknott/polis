@@ -19,34 +19,43 @@ Avoid using the raster PNG logo assets directly in the UI. They include a white 
 
 ## Core Palette
 
+All colors live as tokens in `src/app/globals.css` and are surfaced through Tailwind utilities (`bg-`, `text-`, `border-`). Do not hardcode hex in components.
+
 | Role | Hex | Usage |
 | --- | --- | --- |
-| Ink | `#060b14` | Marketing page base, deepest product surfaces |
-| Navy | `#07111f` | Primary dark sections, app preview background |
-| Brand navy | `#0f284d` | Product shell, strong text, selected states |
-| Slate | `#445f7c` | Secondary text, borders, calm UI structure |
-| Gold | `#ba9858` | Selective emphasis, stage badges, warning-adjacent accents |
+| Canvas (Parchment) | `#FCFBF9` | Page background everywhere — the logo's parchment quadrant |
+| Ink (Navy) | `#162A4A` | Foreground text, primary actions, strong structure |
+| Slate | `#4B6685` | Secondary text, calm UI, source tones |
+| Gold | `#BA9858` | The brand thread + state: topbar rule, focal-card rule, active state, stage badges |
+| Gold soft | `#EBD9BB` | Gold tint backgrounds (active nav, focal cards) |
+| Card | `#FFFFFF` | Default surface |
+| Card elevated | `#FFFEFB` | Focal/elevated surface |
+| Sand (muted) | `#F5F2EB` | Muted bands, secondary surfaces |
+| Border | `#E8E1D5` | Hairline separation (1px) |
+| Border strong | `#D9CFBE` | Hover/emphasis borders |
 | Success green | `#2F6B4A` | Source-supported status |
-| Canvas | `#f7f9fc` | Light marketing/product bands |
-| Border | `#dfe6ef` | Light section borders |
+| Warning | `#A9854B` | Soft warnings, needs-evidence |
+| Danger | `#9B2C2C` | Destructive actions, validation truth |
 
 ## Marketing Direction
 
-The public site should be:
+The public site shares one language with the app: a **light, parchment canvas** with navy ink, slate secondary text, and gold as a selective brand thread.
 
 - Upfront: state the product in the first viewport.
 - Product-led: show a realistic workspace surface immediately.
-- Dark and frosted: use translucent panels, crisp borders, and quiet shadows.
+- Light and airy: parchment canvas, hairline sand borders, near-invisible shadows, one focal moment per view.
+- Gold as a thread: a 1px gold rule under the topbar, gold-tinted focal cards, gold for the active state.
 - Motion-light: use hover/focus transitions only unless motion clarifies a real interaction.
 - Source-truth focused: lead with workspace, evidence, writing help, and soft warnings.
 
 Avoid:
 
-- Decorative blobs, bokeh, playful illustration loops, and abstract mascots.
+- Dark frosted glass, decorative blobs, bokeh, playful illustration loops, and abstract mascots.
 - Generic SaaS bento clutter.
 - Fake metrics that do not explain the product.
 - Raster logo files with visible backgrounds.
 - Hero badges, eyebrows, or long category labels above the headline.
+- Hardcoded hex outside `src/app/globals.css` — every color is a token.
 
 ## App Direction
 

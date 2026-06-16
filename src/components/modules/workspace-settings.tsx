@@ -18,18 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { WorkspaceSectionProps } from "./workspace-sections";
 
-const MODULE_COLOURS = [
-  "#2563eb",
-  "#7c3aed",
-  "#059669",
-  "#d97706",
-  "#dc2626",
-  "#0891b2",
-  "#4f46e5",
-  "#9333ea",
-  "#ca8a04",
-  "#be185d",
-];
+// Logo-derived module palette: Navy, Slate, Gold, Deep-parchment.
+const MODULE_COLOURS = ["#162A4A", "#4B6685", "#BA9858", "#8A7B5A"];
 
 interface ModuleFormData {
   title: string;

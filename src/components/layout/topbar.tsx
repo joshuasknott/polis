@@ -12,7 +12,7 @@ export function TopBar({ moduleContext }: { moduleContext?: ModuleContext }) {
   const { isSignedIn, isLoaded } = useUser();
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-md px-4 sm:px-6 sticky top-0 z-30">
+    <header className="polis-gold-rule sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md sm:px-6">
       <div className="flex items-center gap-4">
         {moduleContext ? (
           <h2 className="text-sm font-medium text-foreground hidden sm:block">

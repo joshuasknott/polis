@@ -14,8 +14,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  X,
-  Loader2,
   AlertTriangle,
 } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
@@ -24,6 +22,11 @@ import {
   TimelineContent,
   type TimelineAssignment,
 } from "@/components/timeline/timeline-content";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Input, Textarea, Field } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface DashboardContentProps {
   user?: User;
@@ -31,18 +34,8 @@ interface DashboardContentProps {
   timelineAssignments?: TimelineAssignment[];
 }
 
-const MODULE_COLOURS = [
-  "#2563eb",
-  "#7c3aed",
-  "#059669",
-  "#d97706",
-  "#dc2626",
-  "#0891b2",
-  "#4f46e5",
-  "#9333ea",
-  "#ca8a04",
-  "#be185d",
-];
+// Logo-derived module palette: Navy, Slate, Gold, Deep-parchment.
+const MODULE_COLOURS = ["#162A4A", "#4B6685", "#BA9858", "#8A7B5A"];
 
 interface ModuleFormData {
   title: string;
@@ -93,18 +86,9 @@ function ModuleFormDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold font-serif">{submitLabel.includes("Create") ? "New Module Workspace" : "Edit Module"}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-muted-foreground hover:bg-muted transition-colors"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+    <Dialog open={open} onClose={onClose}>
+      <form onSubmit={handleSubmit}>
+        <DialogHeader title={isCreate ? "New Module Workspace" : "Edit Module"} onClose={onClose} />
 
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-4 py-3 text-sm text-danger">
@@ -113,96 +97,78 @@ function ModuleFormDialog({
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="module-title" className="block text-sm font-medium text-foreground mb-1.5">
-              Workspace name
-            </label>
-            <input
+        <div className="space-y-4">
+          <Field label="Workspace name" htmlFor="module-title">
+            <Input
               id="module-title"
               type="text"
               required
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="e.g. International Security"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
             />
-          </div>
+          </Field>
 
           <div className="grid grid-cols-2 gap-4">
             {!isCreate && (
-              <div>
-                <label htmlFor="module-code" className="block text-sm font-medium text-foreground mb-1.5">
-                  Module Code
-                </label>
-                <input
+              <Field label="Module Code" htmlFor="module-code">
+                <Input
                   id="module-code"
                   type="text"
                   value={form.code}
                   onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
                   placeholder="e.g. PIRR30041"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
                 />
-              </div>
+              </Field>
             )}
-            <div>
-              <label htmlFor="module-year" className="block text-sm font-medium text-foreground mb-1.5">
-                Year
-              </label>
-              <input
+            <Field label="Year" htmlFor="module-year">
+              <Input
                 id="module-year"
                 type="text"
                 required
                 value={form.academicYear}
                 onChange={(e) => setForm((f) => ({ ...f, academicYear: e.target.value }))}
                 placeholder="e.g. 2026 or 2025/26"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
-            </div>
-            <div>
-              <label htmlFor="module-semester" className="block text-sm font-medium text-foreground mb-1.5">
-                Semester
-              </label>
-              <input
+            </Field>
+            <Field label="Semester" htmlFor="module-semester">
+              <Input
                 id="module-semester"
                 type="text"
                 required
                 value={form.semester}
                 onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
                 placeholder="e.g. Autumn, Semester 1, Hilary"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
-            </div>
+            </Field>
           </div>
 
           {!isCreate && (
             <>
-              <div>
-                <label htmlFor="module-description" className="block text-sm font-medium text-foreground mb-1.5">
-                  Description
-                </label>
-                <textarea
+              <Field label="Description" htmlFor="module-description">
+                <Textarea
                   id="module-description"
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   placeholder="Brief module description..."
                   rows={3}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
                 />
-              </div>
+              </Field>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Colour
-                </label>
+                <span className="mb-1.5 block text-sm font-medium text-foreground">Colour</span>
                 <div className="flex gap-2">
                   {MODULE_COLOURS.map((c) => (
                     <button
                       key={c}
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, colour: c }))}
-                      className={`h-7 w-7 rounded-full border-2 transition-all ${form.colour === c ? "border-foreground scale-110" : "border-transparent"}`}
-                      style={{ backgroundColor: c }}
+                      className="h-7 w-7 rounded-full border-2 transition-all"
+                      style={{
+                        backgroundColor: c,
+                        borderColor: form.colour === c ? "var(--foreground)" : "transparent",
+                        transform: form.colour === c ? "scale(1.1)" : "scale(1)",
+                      }}
                       aria-label={`Select colour ${c}`}
                     />
                   ))}
@@ -210,32 +176,22 @@ function ModuleFormDialog({
               </div>
             </>
           )}
+        </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={
-                loading ||
-                !form.title.trim() ||
-                !form.academicYear.trim() ||
-                !form.semester.trim()
-              }
-              className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitLabel}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!form.title.trim() || !form.academicYear.trim() || !form.semester.trim()}
+          >
+            {submitLabel}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Dialog>
   );
 }
 
@@ -257,38 +213,28 @@ function DeleteConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-lg">
-        <h2 className="text-lg font-semibold font-serif">Delete Module</h2>
-        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-          Delete <span className="font-medium text-foreground">{moduleName}</span> and all its sources, assignments, and folders? This cannot be undone.
-        </p>
+    <Dialog open={open} onClose={onClose} className="max-w-sm">
+      <DialogHeader title="Delete Module" onClose={onClose} />
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        Delete <span className="font-medium text-foreground">{moduleName}</span> and all its sources, assignments, and folders? This cannot be undone.
+      </p>
 
-        {error && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
-            <AlertTriangle className="h-3 w-3 shrink-0" />
-            {error}
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-danger/90 transition-colors disabled:opacity-50"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Delete
-          </button>
+      {error && (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {error}
         </div>
-      </div>
-    </div>
+      )}
+
+      <DialogFooter>
+        <Button variant="ghost" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="danger" loading={loading} onClick={onConfirm}>
+          Delete
+        </Button>
+      </DialogFooter>
+    </Dialog>
   );
 }
 
@@ -368,20 +314,17 @@ export function DashboardContent({
     <div className="mx-auto mt-4 max-w-6xl space-y-10 sm:mt-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-serif text-3xl font-medium text-foreground tracking-tight">
+          <h1 className="font-serif text-3xl font-medium tracking-tight text-foreground">
             Workspaces
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Select a module to continue your coursework.
           </p>
         </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors"
-        >
+        <Button onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4" />
           New Workspace
-        </button>
+        </Button>
       </div>
 
       {timelineAssignments.length > 0 && (
@@ -389,28 +332,23 @@ export function DashboardContent({
       )}
 
       {modules.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-32 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 mb-4">
-            <FolderOpen className="h-6 w-6 text-accent" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground font-serif">No workspaces yet</h3>
-          <p className="mt-2 text-sm text-muted-foreground max-w-sm">
-            Create your first module workspace to start organising readings, notes, and assignments.
-          </p>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="mt-6 inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm hover:bg-accent/90 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Create Workspace
-          </button>
-        </div>
+        <EmptyState
+          icon={FolderOpen}
+          title="No workspaces yet"
+          description="Create your first module workspace to start organising readings, notes, and assignments."
+          action={
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Create Workspace
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {modules.map((mod) => (
             <div
               key={mod.id}
-              className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 hover:border-border/80 hover:shadow-sm transition-all"
+              className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 transition-all hover:border-border-strong hover:shadow-[0_16px_45px_rgba(7,17,31,0.06)]"
             >
               <div
                 className="absolute left-0 top-6 h-8 w-1 rounded-r-md"
@@ -420,15 +358,15 @@ export function DashboardContent({
               <div className="pl-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-base font-medium text-foreground font-serif group-hover:text-accent transition-colors">
+                    <h3 className="font-serif text-base font-medium text-foreground transition-colors group-hover:text-gold-foreground">
                       <Link href={`/modules/${mod.id}`} className="focus:outline-none">
                         <span className="absolute inset-0" aria-hidden="true" />
                         {mod.title}
                       </Link>
                     </h3>
-                    <p className="mt-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">{mod.code}</p>
+                    <p className="mt-1 font-mono text-xs font-medium uppercase tracking-wider text-muted-foreground">{mod.code}</p>
                   </div>
-                  <div className="relative z-10 flex items-center gap-1 -mt-1 -mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="relative z-10 flex items-center gap-1 -mt-1 -mr-2 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditModule(mod); }}
                       className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
@@ -448,28 +386,28 @@ export function DashboardContent({
                   </div>
                 </div>
 
-                <p className="mt-4 text-sm text-muted-foreground line-clamp-2 leading-relaxed h-10">
+                <p className="mt-4 h-10 text-sm leading-relaxed line-clamp-2 text-muted-foreground">
                   {mod.description}
                 </p>
 
-                <div className="mt-6 flex items-center gap-4 text-xs text-muted-foreground font-medium">
-                  <span className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-md">
+                <div className="mt-6 flex items-center gap-2">
+                  <Badge tone="neutral">
                     <BookOpen className="h-3.5 w-3.5" />
                     {mod.sourceCount} sources
-                  </span>
-                  <span className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-md">
+                  </Badge>
+                  <Badge tone="neutral">
                     <FileText className="h-3.5 w-3.5" />
                     {mod.assignmentCount} assignments
-                  </span>
+                  </Badge>
                 </div>
               </div>
 
-              <div className="mt-6 pl-3 flex items-center justify-between border-t border-border/50 pt-4">
+              <div className="mt-6 flex items-center justify-between border-t border-border/50 pl-3 pt-4">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
                   {formatRelativeTime(mod.lastActivityAt)}
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-accent transition-colors" />
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-gold-foreground" />
               </div>
             </div>
           ))}

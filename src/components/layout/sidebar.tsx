@@ -101,10 +101,12 @@ export function Sidebar({
                     href={`/modules/${moduleContext.id}?tab=${item.id}`}
                     onClick={onClose}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-accent text-accent-foreground"
+                        ? "bg-gold-soft/40 text-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      isActive &&
+                        "before:absolute before:left-1.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:rounded before:bg-gold",
                     )}
                   >
                     <item.icon className="h-4 w-4 shrink-0" />
@@ -125,10 +127,12 @@ export function Sidebar({
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-accent text-accent-foreground"
+                    ? "bg-gold-soft/40 text-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isActive &&
+                    "before:absolute before:left-1.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:rounded before:bg-gold",
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
