@@ -63,8 +63,10 @@ The app itself remains quieter than the marketing site:
 
 - Dashboard is workspace-first and does not show the sidenav.
 - Workspace views use the sidenav because the user is now inside a module.
-- Workspace creation is intentionally lightweight: name, semester, year.
-- Timeline lives inside Workspaces, not as a separate top-level destination.
+- Workspace creation and editing are intentionally name-only.
+- The dashboard stays a simple workspace launcher.
+- Workspace navigation is limited to Module Info, Sources, Assignments, and Settings pinned at the bottom.
+- Module Info is the default workspace landing page and carries the setup tracker.
 
 ## Typography
 

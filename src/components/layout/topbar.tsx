@@ -16,7 +16,7 @@ export function TopBar({ moduleContext }: { moduleContext?: ModuleContext }) {
       <div className="flex items-center gap-4">
         {moduleContext ? (
           <h2 className="text-sm font-medium text-foreground hidden sm:block">
-            {moduleContext.code} &middot; {moduleContext.title}
+            {moduleContext.title}
           </h2>
         ) : (
           <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">

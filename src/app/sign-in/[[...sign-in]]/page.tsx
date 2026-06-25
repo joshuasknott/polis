@@ -11,9 +11,19 @@ export default function SignInPage() {
       />
       <div className="relative flex w-full max-w-sm flex-col items-center">
         <PolisMark className="mb-8" iconClassName="h-8 w-8" textClassName="h-7" priority />
-        <div className="polis-gold-rule w-full rounded-2xl border border-border bg-card-elevated p-8 shadow-[0_30px_90px_rgba(7,17,31,0.10)]">
-          <SignIn />
-        </div>
+        <SignIn
+          routing="path"
+          path="/sign-in"
+          signUpUrl="/sign-up"
+          fallbackRedirectUrl="/dashboard"
+          appearance={{
+            elements: {
+              rootBox: "w-full",
+              cardBox: "w-full shadow-[0_30px_90px_rgba(7,17,31,0.10)]",
+              footerItem: "hidden",
+            },
+          }}
+        />
       </div>
     </div>
   );

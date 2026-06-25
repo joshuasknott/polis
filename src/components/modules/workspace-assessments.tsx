@@ -133,8 +133,8 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
     <div className="max-w-6xl mx-auto pb-12 space-y-8">
       <header className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href={`/modules/${module.id}?tab=home`} className="hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft className="h-3 w-3" /> Home
+          <Link href={`/modules/${module.id}`} className="hover:text-foreground transition-colors flex items-center gap-1">
+            <ArrowLeft className="h-3 w-3" /> Module Info
           </Link>
           <span>/</span>
           <span className="text-foreground">Assessments</span>
@@ -143,7 +143,7 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
           <div>
             <h1 className="text-3xl font-serif tracking-tight text-foreground">Assessments</h1>
             <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
-              Track coursework specs, deadlines, weights, word limits, and source coverage for each assessment.
+              Assessment tracks show the deadline, missing context, source coverage, and next action for each piece of coursework.
             </p>
           </div>
           <Button
@@ -171,7 +171,7 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             <ClipboardList className="h-4 w-4" />
-            Confirmed assessments
+            Assessment tracks
           </h2>
           {assignments.length > 0 && (
             <span className="text-xs text-muted-foreground">{assignments.length} total</span>
@@ -181,8 +181,8 @@ export function WorkspaceAssessments({ data }: WorkspaceSectionProps) {
         {assignments.length === 0 ? (
           <EmptyState
             icon={ClipboardList}
-            title="No confirmed assessments"
-            description="Add an assessment to capture the question, deadline, word limit, and rubric."
+            title="No assessment tracks"
+            description="Add an assessment or confirm an extracted brief to create a focused Plan / Write / Review track."
           />
         ) : (
           <ul className="space-y-3">
@@ -336,7 +336,7 @@ function AssessmentRow({
 
   return (
     <li className="group rounded-xl border border-border bg-card">
-      <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-[2fr_1fr]">
+      <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.75fr)]">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", getProductionStageColor(assignment.stage))}>
@@ -353,7 +353,7 @@ function AssessmentRow({
             )}
           </div>
           <Link
-            href={`/modules/${moduleId}/assignments/${assignment.id}`}
+            href={`/modules/${moduleId}/assignments/${assignment.id}?tab=${nextAction.tab}`}
             className="mt-3 block text-base font-semibold text-foreground hover:text-accent transition-colors"
           >
             {assignment.title}
@@ -382,10 +382,19 @@ function AssessmentRow({
               <CoverageBadge tone={coverageTone} />
             )}
           </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <MissingContextBlock items={assignment.missingContext} />
+            <SourceCoverageBlock
+              selected={assignment.selectedSourceCount}
+              total={totalProcessedSources}
+              tone={coverageTone}
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-3 md:items-end">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-end gap-1">
             <Button type="button" variant="secondary" size="sm" onClick={onEdit}>
               <Edit2 className="h-3 w-3" />
               Edit
@@ -401,19 +410,98 @@ function AssessmentRow({
               Delete
             </Button>
           </div>
-          <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs md:text-right">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Next action</p>
-            <p className="mt-1 text-foreground font-medium">{nextAction.label}</p>
+          <div className="rounded-xl border border-border bg-card-elevated p-4 text-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Next action
+            </p>
+            <p className="mt-2 font-medium leading-6 text-foreground">{nextAction.label}</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">{nextAction.detail}</p>
           </div>
           <Link
-            href={`/modules/${moduleId}/assignments/${assignment.id}`}
-            className="inline-flex items-center gap-1 text-xs font-medium text-accent hover:underline md:self-end"
+            href={`/modules/${moduleId}/assignments/${assignment.id}?tab=${nextAction.tab}`}
+            className="inline-flex min-h-9 items-center justify-center gap-1 rounded-md bg-accent px-3 text-xs font-semibold text-accent-foreground transition-colors hover:bg-accent/90"
           >
-            Open workspace <ArrowRight className="h-3 w-3" />
+            Open {nextAction.phase} <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       </div>
     </li>
+  );
+}
+
+function MissingContextBlock({ items }: { items: string[] }) {
+  const hasMissing = items.length > 0;
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3">
+      <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {hasMissing ? (
+          <CircleAlert className="h-3.5 w-3.5 text-warning" />
+        ) : (
+          <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+        )}
+        Missing context
+      </p>
+      {hasMissing ? (
+        <ul className="mt-2 space-y-1">
+          {items.slice(0, 3).map((item) => (
+            <li key={item} className="text-xs leading-5 text-foreground">
+              {item}
+            </li>
+          ))}
+          {items.length > 3 && (
+            <li className="text-xs text-muted-foreground">+{items.length - 3} more</li>
+          )}
+        </ul>
+      ) : (
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          Brief, deadline, rubric, word limit, and sources are present.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SourceCoverageBlock({
+  selected,
+  total,
+  tone,
+}: {
+  selected: number;
+  total: number;
+  tone: "low" | "medium" | "good" | "none";
+}) {
+  const pct = total > 0 ? Math.min(100, Math.round((selected / total) * 100)) : 0;
+  const barClass =
+    tone === "good"
+      ? "bg-success"
+      : tone === "medium"
+        ? "bg-warning"
+        : tone === "low"
+          ? "bg-danger"
+          : "bg-muted-foreground";
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <BookOpen className="h-3.5 w-3.5" />
+          Source coverage
+        </p>
+        <span className="text-xs font-semibold tabular-nums text-foreground">
+          {selected}/{total}
+        </span>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-border">
+        <div className={cn("h-full rounded-full transition-all", barClass)} style={{ width: `${pct}%` }} />
+      </div>
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        {total === 0
+          ? "Import and process sources first."
+          : selected === 0
+            ? "No sources selected yet."
+            : `${pct}% of processed sources selected.`}
+      </p>
+    </div>
   );
 }
 
@@ -432,27 +520,53 @@ function CoverageBadge({ tone }: { tone: "low" | "medium" | "good" | "none" }) {
   );
 }
 
-function getNextAction(assignment: WorkspaceSectionProps["data"]["assignments"][number]): { label: string } {
+function getNextAction(assignment: WorkspaceSectionProps["data"]["assignments"][number]): {
+  label: string;
+  detail: string;
+  phase: "Plan" | "Write" | "Review";
+  tab: "plan" | "write" | "review";
+} {
   if (assignment.missingContext.length > 0) {
-    return { label: assignment.missingContext[0] };
+    return {
+      label: assignment.missingContext[0],
+      detail: "Complete the missing context in Plan before drafting.",
+      phase: "Plan",
+      tab: "plan",
+    };
   }
   switch (assignment.stage) {
     case "ingest":
-      return { label: "Open Ingest to confirm selected sources" };
     case "understand":
-      return { label: "Generate source summaries" };
     case "map":
-      return { label: "Build the evidence map" };
     case "judge":
-      return { label: "Run gap & counterargument checks" };
     case "build":
-      return { label: "Structure arguments and sections" };
+      return {
+        label: "Continue planning the evidence map and section plan",
+        detail: "Brief, sources, gap analysis, thesis, and outline live together.",
+        phase: "Plan",
+        tab: "plan",
+      };
     case "draft":
-      return { label: "Continue drafting with evidence" };
+      return {
+        label: "Continue drafting with source provenance visible",
+        detail: "Use Write for drafting, labels, citations, and writing help.",
+        phase: "Write",
+        tab: "write",
+      };
     case "refine":
-      return { label: "Resolve review findings" };
+      return {
+        label: "Resolve review findings and citation risks",
+        detail: "Use Review for findings, rubric fit, citation safety, and readiness.",
+        phase: "Review",
+        tab: "review",
+      };
     default:
-      return { label: "Open assessment workspace" };
+      return {
+        label: "Open the assessment track",
+        detail: "Start with Plan, then move to Write and Review.",
+        phase: "Plan",
+        tab: "plan",
+      };
   }
 }
 

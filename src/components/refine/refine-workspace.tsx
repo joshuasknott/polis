@@ -58,7 +58,7 @@ interface SectionConfig {
 const REVIEW_SECTIONS: SectionConfig[] = [
   {
     id: "summary",
-    label: "Review Summary",
+    label: "Findings overview",
     icon: FileText,
     severity: "info",
   },
@@ -112,7 +112,7 @@ const REVIEW_SECTIONS: SectionConfig[] = [
   },
   {
     id: "history",
-    label: "Review History",
+    label: "Check history",
     icon: History,
     severity: "info",
   },
@@ -481,7 +481,7 @@ export function RefineWorkspace({
       stage: "draft",
     });
     router.push(
-      `/modules/${module.id}/assignments/${assignment.id}?stage=draft`,
+      `/modules/${module.id}/assignments/${assignment.id}?tab=write`,
     );
   }, [assignmentConvexId, updateStage, router, module.id, assignment.id]);
 
@@ -493,11 +493,11 @@ export function RefineWorkspace({
         </div>
         <h3 className="text-lg font-medium text-foreground">No draft to review</h3>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-          Create and save a draft in the Draft stage before running a review.
+          Create and save a draft in Write before checking review findings.
         </p>
         <Button variant="secondary" onClick={handleNavigateToDraft} className="mt-4">
           <ArrowLeft className="h-4 w-4" />
-          Go to Draft
+          Go to Write
         </Button>
       </div>
     );
@@ -567,16 +567,16 @@ export function RefineWorkspace({
             <Play className="h-6 w-6 text-accent" />
           </div>
           <h3 className="text-lg font-medium text-foreground">
-            Run a review
+            Check your draft
           </h3>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            Analyse your draft for strengths, weaknesses, unsupported claims,
-            missing evidence, and rubric alignment.
+            Generate findings for strengths, weaknesses, unsupported claims,
+            missing evidence, citation safety, and rubric alignment.
           </p>
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={handleRunReview} loading={runningReview}>
               <Play className="h-4 w-4" />
-              {runningReview ? "Running\u2026" : "Run Review"}
+              {runningReview ? "Checking\u2026" : "Check draft"}
             </Button>
           </div>
         </div>
@@ -587,7 +587,7 @@ export function RefineWorkspace({
           <div className="w-56 shrink-0">
             <div className="sticky top-4">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Review sections
+                Review focus
               </h3>
               <nav className="flex flex-col gap-0.5">
                 {REVIEW_SECTIONS.map((section) => {
@@ -987,7 +987,7 @@ export function RefineWorkspace({
               <div className="rounded-xl border border-border bg-card p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-foreground">
-                    Review History
+                    Check history
                   </h3>
                   <Button
                     variant="secondary"
@@ -1047,14 +1047,14 @@ export function RefineWorkspace({
             <div className="mt-4 flex items-center justify-between rounded-xl border border-dashed border-accent/30 bg-accent/5 px-5 py-4">
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  Return to Draft
+                  Return to Write
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Go back to the Draft stage to apply revision priorities.
+                  Go back to Write to apply revision priorities.
                 </p>
               </div>
               <Button onClick={handleNavigateToDraft}>
-                Edit Draft
+                Edit draft
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

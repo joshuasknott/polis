@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BookOpen,
+  ClipboardList,
+  Cog,
+  Info,
   LayoutDashboard,
   Settings,
   X,
-  Home,
-  Upload,
-  ClipboardList,
-  BookOpen,
-  Cog,
   ArrowLeft,
 } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
@@ -22,12 +21,17 @@ const topLevelNavigation = [
 ];
 
 const moduleNavigation = [
-  { name: "Home", id: "home", icon: Home },
-  { name: "Imports", id: "imports", icon: Upload },
-  { name: "Assessments", id: "assessments", icon: ClipboardList },
-  { name: "Knowledge Base", id: "knowledge-base", icon: BookOpen },
-  { name: "Workspace Settings", id: "settings", icon: Cog },
-];
+  { name: "Module Info", id: "module-info", icon: Info, hrefSuffix: "" },
+  { name: "Sources", id: "sources", icon: BookOpen, hrefSuffix: "?tab=sources" },
+  { name: "Assignments", id: "assignments", icon: ClipboardList, hrefSuffix: "?tab=assignments" },
+] as const;
+
+const moduleSettings = {
+  name: "Settings",
+  id: "settings",
+  icon: Cog,
+  hrefSuffix: "?tab=settings",
+} as const;
 
 export interface ModuleNavContext {
   id: string;
@@ -55,124 +59,198 @@ export function Sidebar({
           <PolisMark iconClassName="h-5 w-5" textClassName="h-4" priority />
         </Link>
         {onClose && (
-          <button onClick={onClose} className="rounded p-2 hover:bg-muted">
+          <button onClick={onClose} className="rounded p-2 hover:bg-muted" aria-label="Close menu">
             <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3 scrollbar-thin">
-        {moduleContext ? (
-          <>
-            <div className="mb-4 px-2">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Back to Workspaces
-              </Link>
-            </div>
-            <div className="px-2 mb-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-7 w-7 rounded flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-                  style={{ backgroundColor: moduleContext.colour || "#000" }}
+      {moduleContext ? (
+        <ModuleNav moduleContext={moduleContext} onClose={onClose} />
+      ) : (
+        <>
+          <nav className="flex-1 space-y-1 overflow-y-auto p-3 scrollbar-thin">
+            {topLevelNavigation.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  className={cn(
+                    "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-gold-soft/40 text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    isActive &&
+                      "before:absolute before:left-1.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:rounded before:bg-gold",
+                  )}
                 >
-                  {moduleContext.code?.slice(0, 3)}
-                </div>
-                <div className="min-w-0">
-                  <span className="text-sm font-semibold truncate block text-foreground">
-                    {moduleContext.title}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                    {moduleContext.code}
-                  </span>
-                </div>
-              </div>
-            </div>
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
 
-            <div className="space-y-0.5">
-              {moduleNavigation.map((item) => {
-                const isActive = moduleContext.activeTab === item.id;
-                return (
-                  <Link
-                    key={item.id}
-                    href={`/modules/${moduleContext.id}?tab=${item.id}`}
-                    onClick={onClose}
-                    className={cn(
-                      "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-gold-soft/40 text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      isActive &&
-                        "before:absolute before:left-1.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:rounded before:bg-gold",
-                    )}
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          topLevelNavigation.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-gold-soft/40 text-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  isActive &&
-                    "before:absolute before:left-1.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:rounded before:bg-gold",
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {item.name}
-              </Link>
-            );
-          })
-        )}
-      </nav>
-
-      <div className="border-t border-border p-3 space-y-1">
-        <Link
-          href="/settings"
-          onClick={onClose}
-          className={cn(
-            "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            pathname.startsWith("/settings")
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          Settings
-        </Link>
-        {isLoaded && isSignedIn ? (
-          <div className="flex items-center gap-2.5 px-3 py-2 mt-2">
-            <UserButton />
-            <span className="text-sm text-muted-foreground truncate">Signed in</span>
+          <div className="space-y-1 border-t border-border p-3">
+            <Link
+              href="/settings"
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                pathname.startsWith("/settings")
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <Settings className="h-4 w-4 shrink-0" />
+              Settings
+            </Link>
+            <AccountBlock isLoaded={isLoaded} isSignedIn={isSignedIn} />
           </div>
-        ) : isLoaded && !isSignedIn ? (
-          <SignInButton mode="modal">
-            <button className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 mt-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Sign in</span>
-            </button>
-          </SignInButton>
-        ) : (
-          <div className="px-3 py-2 mt-2 text-xs text-muted-foreground">Loading...</div>
-        )}
-      </div>
+        </>
+      )}
     </aside>
   );
+}
+
+function ModuleNav({
+  moduleContext,
+  onClose,
+}: {
+  moduleContext: ModuleNavContext;
+  onClose?: () => void;
+}) {
+  const initials = moduleContext.title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "W";
+
+  return (
+    <>
+      <nav className="flex flex-1 flex-col overflow-y-auto p-3 scrollbar-thin">
+        <div className="mb-4 px-2">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            onClick={onClose}
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Workspaces
+          </Link>
+        </div>
+        <div className="mb-4 px-2">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
+              style={{ backgroundColor: moduleContext.colour || "#162A4A" }}
+            >
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {moduleContext.title}
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                Workspace
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-0.5">
+          {moduleNavigation.map((item) => (
+            <ModuleNavLink
+              key={item.id}
+              item={item}
+              moduleContext={moduleContext}
+              onClose={onClose}
+            />
+          ))}
+        </div>
+      </nav>
+
+      <div className="space-y-1 border-t border-border p-3">
+        <ModuleNavLink
+          item={moduleSettings}
+          moduleContext={moduleContext}
+          onClose={onClose}
+        />
+        <AccountBlock />
+      </div>
+    </>
+  );
+}
+
+function ModuleNavLink({
+  item,
+  moduleContext,
+  onClose,
+}: {
+  item: {
+    name: string;
+    id: string;
+    icon: React.ElementType;
+    hrefSuffix: string;
+  };
+  moduleContext: ModuleNavContext;
+  onClose?: () => void;
+}) {
+  const isActive = moduleContext.activeTab === item.id;
+  return (
+    <Link
+      href={`/modules/${moduleContext.id}${item.hrefSuffix}`}
+      onClick={onClose}
+      className={cn(
+        "relative flex items-center gap-2.5 rounded-lg px-3 py-2 pl-4 text-sm font-medium transition-colors",
+        isActive
+          ? "bg-gold-soft/40 text-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        isActive &&
+          "before:absolute before:left-1.5 before:bottom-2.5 before:top-2.5 before:w-0.5 before:rounded before:bg-gold",
+      )}
+    >
+      <item.icon className="h-4 w-4 shrink-0" />
+      {item.name}
+    </Link>
+  );
+}
+
+function AccountBlock({
+  isLoaded: providedLoaded,
+  isSignedIn: providedSignedIn,
+}: {
+  isLoaded?: boolean;
+  isSignedIn?: boolean;
+}) {
+  const userState = useUser();
+  const isLoaded = providedLoaded ?? userState.isLoaded;
+  const isSignedIn = providedSignedIn ?? userState.isSignedIn;
+
+  if (isLoaded && isSignedIn) {
+    return (
+      <div className="mt-2 flex items-center gap-2.5 px-3 py-2">
+        <UserButton />
+        <span className="truncate text-sm text-muted-foreground">Signed in</span>
+      </div>
+    );
+  }
+
+  if (isLoaded && !isSignedIn) {
+    return (
+      <SignInButton mode="modal">
+        <button className="mt-2 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+          <LayoutDashboard className="h-4 w-4" />
+          <span>Sign in</span>
+        </button>
+      </SignInButton>
+    );
+  }
+
+  return <div className="mt-2 px-3 py-2 text-xs text-muted-foreground">Loading...</div>;
 }

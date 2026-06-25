@@ -554,7 +554,7 @@ function BuildReadinessSummary({ args }: { args: Argument[] }) {
         </p>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
           {allReady
-            ? "Each argument has claims, evidence, synthesis, and counterarguments. You can move to the Draft stage when ready."
+            ? "Each argument has claims, evidence, synthesis, and counterarguments. You can move to Write when ready."
             : "Resolve the issues flagged on each argument card before drafting. Polis will not write your draft, but will help you check structure and evidence once you start."}
         </p>
       </div>
@@ -634,7 +634,7 @@ export function ArgumentBuilder({ arguments: args, workingThesis, sectionPlans, 
         {args.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border py-16 text-center">
             <p className="text-sm text-muted-foreground">
-              No arguments yet. Return to the Map stage to create claims and link evidence.
+              No arguments yet. Use the Evidence Map above to create claims and link evidence.
             </p>
           </div>
         ) : (

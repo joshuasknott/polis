@@ -5,7 +5,7 @@ import { FileText, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AssignmentBriefPanel } from "./assignment-brief-panel";
 import { AssignmentSourceBase } from "./assignment-source-base";
-import type { Assignment, SourceFile, ProductionStage } from "@/lib/types";
+import type { Assignment, SourceFile } from "@/lib/types";
 
 const TABS = [
   { id: "brief", label: "Brief & Rubric", icon: FileText },
@@ -17,11 +17,10 @@ type Tab = (typeof TABS)[number]["id"];
 interface IngestStageProps {
   assignment: Assignment;
   allModuleSources: SourceFile[];
-  activeStage: ProductionStage;
   assignmentId?: string;
 }
 
-export function IngestStage({ assignment, allModuleSources, activeStage, assignmentId }: IngestStageProps) {
+export function IngestStage({ assignment, allModuleSources, assignmentId }: IngestStageProps) {
   const [activeTab, setActiveTab] = useState<Tab>("brief");
 
   return (
@@ -50,7 +49,7 @@ export function IngestStage({ assignment, allModuleSources, activeStage, assignm
       </div>
 
       {activeTab === "brief" && (
-        <AssignmentBriefPanel assignment={assignment} activeStage={activeStage} />
+        <AssignmentBriefPanel assignment={assignment} />
       )}
 
       {activeTab === "sources" && (

@@ -78,6 +78,8 @@ export function mapSource(source: Doc<"sources">): SourceFile & { errorMessage: 
 
 export interface WorkspaceSourceItem extends SourceFile {
   errorMessage: string;
+  batchId: string;
+  importedFileId: string;
   fileName: string;
   fileType: string;
   fileSize: number;
@@ -93,6 +95,8 @@ export function mapWorkspaceSource(source: Doc<"sources">): WorkspaceSourceItem 
   const status = source.status as SourceStatus;
   return {
     ...mapSource(source),
+    batchId: source.batchId ?? "",
+    importedFileId: source.importedFileId ?? "",
     fileName: source.fileName ?? "",
     fileType: source.fileType ?? "",
     fileSize: source.fileSize ?? 0,
@@ -107,6 +111,175 @@ export function mapWorkspaceSource(source: Doc<"sources">): WorkspaceSourceItem 
       status === "processing",
     hasError: status === "failed",
     uploadedAtMs: source.createdAt,
+  };
+}
+
+export interface WorkspaceImportBatch {
+  id: string;
+  name: string;
+  status: string;
+  totalFiles: number;
+  processedFiles: number;
+  autoAcceptedFiles: number;
+  needsReviewFiles: number;
+  failedFiles: number;
+  createdAt: string;
+  createdAtMs: number;
+}
+
+export interface WorkspaceImportedFile {
+  id: string;
+  batchId: string;
+  moduleId: string;
+  sourceId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  extractionStatus: string;
+  classificationStatus: string;
+  labels: string[];
+  primaryLabel: string;
+  confidence: number | null;
+  rationale: string;
+  classificationError: string;
+  extractionError: string;
+  reviewedLabel: string;
+  rawRetainedAt: string | null;
+  removedAt: string | null;
+  createdAt: string;
+  createdAtMs: number;
+}
+
+export interface WorkspaceAiAction {
+  id: string;
+  batchId: string;
+  importedFileId: string;
+  sourceId: string;
+  operation: string;
+  status: string;
+  title: string;
+  summary: string;
+  confidence: number | null;
+  autoApplied: boolean;
+  reversible: boolean;
+  revertedAt: string | null;
+  errorMessage: string;
+  createdAt: string;
+  createdAtMs: number;
+}
+
+export interface WorkspaceSourceSignal {
+  id: string;
+  sourceId: string;
+  assignmentId: string;
+  title: string;
+  content: string;
+  signalType: string;
+  severity: string;
+  confidence: number;
+  status: string;
+  suggestedAction: string;
+  createdAt: string;
+  createdAtMs: number;
+}
+
+export function mapImportBatch(batch: Doc<"importBatches">): WorkspaceImportBatch {
+  return {
+    id: batch._id,
+    name: batch.name ?? "Import batch",
+    status: batch.status,
+    totalFiles: batch.totalFiles,
+    processedFiles: batch.processedFiles ?? 0,
+    autoAcceptedFiles: batch.autoAcceptedFiles ?? 0,
+    needsReviewFiles: batch.needsReviewFiles ?? 0,
+    failedFiles: batch.failedFiles ?? 0,
+    createdAt: new Date(batch.createdAt).toISOString(),
+    createdAtMs: batch.createdAt,
+  };
+}
+
+export function mapImportedFile(file: Doc<"importedFiles">): WorkspaceImportedFile {
+  return {
+    id: file._id,
+    batchId: file.batchId,
+    moduleId: file.moduleId,
+    sourceId: file.sourceId ?? "",
+    fileName: file.fileName ?? "Untitled upload",
+    fileType: file.fileType ?? "",
+    fileSize: file.fileSize ?? 0,
+    extractionStatus: file.extractionStatus,
+    classificationStatus: file.classificationStatus,
+    labels: file.labels ?? [],
+    primaryLabel: file.primaryLabel ?? "",
+    confidence: file.confidence ?? null,
+    rationale: file.rationale ?? "",
+    classificationError: file.classificationError ?? "",
+    extractionError: file.extractionError ?? "",
+    reviewedLabel: file.reviewedLabel ?? "",
+    rawRetainedAt: file.rawRetainedAt
+      ? new Date(file.rawRetainedAt).toISOString()
+      : null,
+    removedAt: file.removedAt ? new Date(file.removedAt).toISOString() : null,
+    createdAt: new Date(file.createdAt).toISOString(),
+    createdAtMs: file.createdAt,
+  };
+}
+
+export function mapAiAction(action: Doc<"aiActions">): WorkspaceAiAction {
+  return {
+    id: action._id,
+    batchId: action.batchId ?? "",
+    importedFileId: action.importedFileId ?? "",
+    sourceId: action.sourceId ?? "",
+    operation: action.operation,
+    status: action.status,
+    title: action.title,
+    summary: action.summary ?? "",
+    confidence: action.confidence ?? null,
+    autoApplied: action.autoApplied ?? false,
+    reversible: action.reversible ?? false,
+    revertedAt: action.revertedAt ? new Date(action.revertedAt).toISOString() : null,
+    errorMessage: action.errorMessage ?? "",
+    createdAt: new Date(action.createdAt).toISOString(),
+    createdAtMs: action.createdAt,
+  };
+}
+
+export function mapRelevanceSignal(
+  signal: Doc<"sourceRelevanceSignals">,
+): WorkspaceSourceSignal {
+  return {
+    id: signal._id,
+    sourceId: signal.sourceId,
+    assignmentId: signal.assignmentId ?? "",
+    title: signal.title,
+    content: signal.rationale,
+    signalType: signal.signalType,
+    severity: "info",
+    confidence: signal.confidence,
+    status: signal.status,
+    suggestedAction: "",
+    createdAt: new Date(signal.createdAt).toISOString(),
+    createdAtMs: signal.createdAt,
+  };
+}
+
+export function mapGapSignal(
+  signal: Doc<"sourceGapSignals">,
+): WorkspaceSourceSignal {
+  return {
+    id: signal._id,
+    sourceId: signal.sourceId ?? "",
+    assignmentId: signal.assignmentId ?? "",
+    title: signal.title,
+    content: signal.content,
+    signalType: signal.gapCategory ?? "scope_gap",
+    severity: signal.severity,
+    confidence: signal.confidence,
+    status: signal.status,
+    suggestedAction: signal.suggestedAction ?? "",
+    createdAt: new Date(signal.createdAt).toISOString(),
+    createdAtMs: signal.createdAt,
   };
 }
 

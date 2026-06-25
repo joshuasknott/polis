@@ -1,6 +1,6 @@
 # Polis Roadmap
 
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-21
 
 ## Active: Phase 5 - AI-Native Module OS
 
@@ -12,19 +12,22 @@
 
 - [x] Product-led marketing site focused on source-backed workspaces.
 - [x] Dashboard is workspace-first and has no sidenav.
-- [x] Timeline is merged into Workspaces instead of being a separate top-level destination.
-- [x] Workspace creation asks for name, semester, and year only.
-- [x] Semester is a free-text field.
+- [x] Dashboard is a simple workspace launcher.
+- [x] Workspace creation and editing ask for name only.
 - [x] Workspace shell appears after opening a workspace.
+- [x] Workspace sidenav is limited to Module Info, Sources, Assignments, and Settings pinned at the bottom.
+- [x] Module Info is the default workspace landing page with the setup tracker.
 - [x] User-facing copy now centers Workspace / Assessment / Source Base / Evidence Map / Plan / Write / Review.
 
 ### Workspace Setup
 
-- [x] Create workspace from name, semester, and year.
-- [ ] Bulk import flow: drop everything for the module.
-- [ ] AI-assisted source classification with user confirmation.
-- [ ] Assessment and module-fact extraction from briefs, rubrics, and handbooks.
-- [ ] Workspace home shows import review, assessment deadlines, timeline, and source coverage.
+- [x] Create workspace from name only.
+- [x] Bulk import flow: upload multiple files into an import batch.
+- [x] AI-assisted source classification with user confirmation.
+- [x] Assessment and module-fact extraction from briefs, rubrics, and handbooks.
+- [x] Import-time source summaries, concepts, claims, relevance signals, and gap signals.
+- [x] Visible, reversible Polis activity log for import AI actions.
+- [x] Module Info shows workspace setup, source organization, assessment start, Plan, Write, and Review status.
 
 ### Embedded AI
 
@@ -62,7 +65,7 @@
 - [x] Rate limiting via usage event tracking.
 - [ ] Vector embeddings and Convex vector search.
 - [ ] Judgement generation actions.
-- [ ] Processing pipeline monitoring.
+- [x] Processing pipeline activity surfaced in Sources.
 
 ## Reference Docs
 

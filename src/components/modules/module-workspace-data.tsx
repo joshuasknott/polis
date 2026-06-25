@@ -6,16 +6,21 @@ import type { Id, Doc } from "../../../convex/_generated/dataModel";
 import { useAuth } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { AppShell } from "@/components/layout/shell";
 import {
+  mapAiAction,
   mapCommandCenterAssignment,
+  mapGapSignal,
+  mapImportBatch,
+  mapImportedFile,
+  mapRelevanceSignal,
   mapWorkspaceSource,
 } from "@/lib/convex-ui-mappers";
 import type { WorkspaceTab } from "@/lib/types";
 import type { WorkspaceSectionData } from "./workspace-sections";
 import { WorkspaceHome } from "./workspace-home";
-import { WorkspaceImports } from "./workspace-imports";
 import { WorkspaceAssessments } from "./workspace-assessments";
-import { WorkspaceKnowledgeBase } from "./workspace-knowledge-base";
+import { WorkspaceSources } from "./workspace-knowledge-base";
 import { WorkspaceSettings } from "./workspace-settings";
 
 interface ModuleWorkspaceDataProps {
@@ -42,27 +47,31 @@ export function ModuleWorkspaceData({
 
   if (bundle === undefined) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-muted-foreground">
-        <Loader2 className="h-6 w-6 animate-spin" />
-        <p className="text-sm">Loading workspace…</p>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p className="text-sm">Loading workspace...</p>
+        </div>
+      </AppShell>
     );
   }
 
   if (bundle === null) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3 text-muted-foreground">
-        <p className="text-sm font-medium text-foreground">Workspace not found.</p>
-        <p className="text-xs">
-          It may have been deleted or you may not have access.
-        </p>
-        <Link
-          href="/dashboard"
-          className="mt-2 text-sm font-medium text-accent hover:underline"
-        >
-          Back to Workspaces
-        </Link>
-      </div>
+      <AppShell>
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-3 text-muted-foreground">
+          <p className="text-sm font-medium text-foreground">Workspace not found.</p>
+          <p className="text-xs">
+            It may have been deleted or you may not have access.
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-2 text-sm font-medium text-accent hover:underline"
+          >
+            Back to Workspaces
+          </Link>
+        </div>
+      </AppShell>
     );
   }
 
@@ -95,20 +104,39 @@ export function ModuleWorkspaceData({
       (a: Doc<"assignments"> & { selectedSourceCount?: number }) =>
         mapCommandCenterAssignment(a),
     ),
+    importBatches: (bundle.importBatches ?? []).map(mapImportBatch),
+    importedFiles: (bundle.importedFiles ?? []).map(mapImportedFile),
+    aiActions: (bundle.aiActions ?? []).map(mapAiAction),
+    relevanceSignals: (bundle.relevanceSignals ?? []).map(mapRelevanceSignal),
+    gapSignals: (bundle.gapSignals ?? []).map(mapGapSignal),
   };
 
+  const moduleContext = {
+    id: mod._id,
+    title: mod.title,
+    code: mod.code,
+    colour: mod.colour ?? "var(--color-border)",
+    description: mod.description ?? "",
+    activeTab,
+  };
+
+  let content: React.ReactNode;
   switch (activeTab) {
-    case "home":
-      return <WorkspaceHome data={data} />;
-    case "imports":
-      return <WorkspaceImports data={data} />;
-    case "assessments":
-      return <WorkspaceAssessments data={data} />;
-    case "knowledge-base":
-      return <WorkspaceKnowledgeBase data={data} />;
+    case "module-info":
+      content = <WorkspaceHome data={data} />;
+      break;
+    case "sources":
+      content = <WorkspaceSources data={data} />;
+      break;
+    case "assignments":
+      content = <WorkspaceAssessments data={data} />;
+      break;
     case "settings":
-      return <WorkspaceSettings data={data} />;
+      content = <WorkspaceSettings data={data} />;
+      break;
     default:
-      return <WorkspaceHome data={data} />;
+      content = <WorkspaceHome data={data} />;
   }
+
+  return <AppShell moduleContext={moduleContext}>{content}</AppShell>;
 }

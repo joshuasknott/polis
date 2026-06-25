@@ -47,8 +47,8 @@ function derivePositions(
         id: "pos_placeholder",
         label: "Awaiting claims",
         thesis: assignment.question
-          ? `Map your claims in the Map stage before judging positions for: "${assignment.question}"`
-          : "Return to the Map stage to create argument claims before judging positions.",
+          ? `Map your claims in the Evidence Map before judging positions for: "${assignment.question}"`
+          : "Create argument claims in the Evidence Map before judging positions.",
         evidenceStrength: "weak",
         forPoints: [],
         againstPoints: [],
@@ -481,7 +481,7 @@ function HumanDecisionBanner({ hasSelected }: { hasSelected: boolean }) {
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
           {hasSelected
             ? "You have selected a position. You can revise this at any point."
-            : "Polis has mapped the evidence and identified tradeoffs. Only you can decide which position your argument will defend. Select a position above to unlock the Build stage."}
+            : "Polis can surface evidence tradeoffs. Only you can decide which position your argument will defend before you move into Write."}
         </p>
       </div>
     </div>

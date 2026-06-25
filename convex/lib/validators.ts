@@ -40,6 +40,7 @@ export const folderType = v.union(
   v.literal("module_info"),
   v.literal("readings"),
   v.literal("lecture_material"),
+  v.literal("briefs_rubrics"),
   v.literal("source_notes"),
   v.literal("assignments"),
   v.literal("drafts_reviews"),
@@ -323,3 +324,38 @@ export const extractionProvenance = v.object({
   confidence: v.optional(v.number()),
   extractedAt: v.number(),
 });
+
+export const aiActionOperation = v.union(
+  v.literal("classification"),
+  v.literal("source_conversion"),
+  v.literal("source_processing"),
+  v.literal("context_extraction"),
+  v.literal("source_context_analysis"),
+  v.literal("relevance_signal"),
+  v.literal("gap_signal"),
+  v.literal("manual_review"),
+  v.literal("revert"),
+);
+
+export const aiActionStatus = v.union(
+  v.literal("proposed"),
+  v.literal("auto_applied"),
+  v.literal("applied"),
+  v.literal("needs_review"),
+  v.literal("completed"),
+  v.literal("failed"),
+  v.literal("rejected"),
+  v.literal("reverted"),
+);
+
+export const sourceSignalStatus = v.union(
+  v.literal("active"),
+  v.literal("dismissed"),
+  v.literal("superseded"),
+);
+
+export const sourceSignalSeverity = v.union(
+  v.literal("info"),
+  v.literal("warning"),
+  v.literal("critical"),
+);

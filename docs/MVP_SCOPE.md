@@ -1,10 +1,10 @@
 # Polis — MVP Scope
 
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-21
 
 ## Direction
 
-Polis is now an **AI-native module operating system for students**. The student creates a workspace with a name, semester, and year, imports everything they have, and Polis turns messy files into an organized command center for coursework. Full thesis: `docs/PRODUCT_VISION.md`.
+Polis is now an **AI-native module operating system for students**. The student creates a workspace with just a module name, imports everything they have, and Polis turns messy files into an organized command center for coursework. Full thesis: `docs/PRODUCT_VISION.md`.
 
 The Phase 4 foundation (Convex + Clerk + CRUD + storage + extraction + AI providers) is the substrate. Phase 5 builds the new product experience on top of it.
 
@@ -87,7 +87,7 @@ User-facing language: Workspace / Assessment / Source Base / Evidence Map / Plan
 
 ### Foundation (Complete)
 
-- [x] Convex schema (29 tables) covering full product model
+- [x] Convex schema (32 tables) covering full product model, import audit, relevance signals, and gap signals
 - [x] Clerk auth integrated with Convex
 - [x] Full CRUD for all entities
 - [x] File upload via Convex storage
@@ -105,11 +105,11 @@ User-facing language: Workspace / Assessment / Source Base / Evidence Map / Plan
 
 ### Backend Runtime (Mostly complete)
 
-- [x] File extraction + chunking actions on Convex
+- [x] Batch import pipeline with raw upload retention, classification, source conversion, extraction, chunking, context extraction, source analysis, and visible AI action logging
 - [ ] Vector embeddings + Convex vector search
 - [x] AI provider actions (z.ai primary, Gemini secondary)
 - [x] CoThinker chat with retrieval
-- [x] Source analysis generation
+- [x] Source analysis generation with summaries, concepts, claims, relevance signals, and soft gap signals
 - [x] Draft review AI
 - [ ] Judgement generation
 
@@ -123,8 +123,8 @@ User-facing language: Workspace / Assessment / Source Base / Evidence Map / Plan
 
 - [x] Cleanup cascade actions
 - [x] Rate limiting
-- [ ] Processing pipeline monitoring
-- [ ] Error handling and failure states
+- [x] Processing pipeline activity shown in Sources via import batches and Polis activity
+- [x] Error handling and failure states for batch imports, source processing, and reversible AI actions
 - [ ] Mobile refinements
 
 ## Phase 5: AI-Native Module OS (Next — New Direction)
@@ -135,11 +135,14 @@ This phase reuses the Phase 4 backend and adds the new product experience on top
 
 ### Workspace Setup
 
-- [x] Create workspace from name, semester, and year (no upfront folder/brief setup)
-- [ ] Bulk import flow: drop everything you have for the module
-- [ ] AI-assisted source classification (readings / lectures / briefs / handbook / notes), user-confirmable
-- [ ] Assessment + module-fact extraction from imported briefs and handbook
-- [x] Workspace dashboard with workspaces and merged deadline timeline
+- [x] Create workspace from name only (no upfront folder/brief setup)
+- [x] Bulk import flow: upload multiple files into an import batch
+- [x] AI-assisted source classification (readings / lectures / briefs / handbook / notes), user-confirmable
+- [x] Assessment + module-fact extraction from imported briefs, rubrics, and handbooks
+- [x] Import-time source summaries, concepts, claims, relevance signals, and gap signals
+- [x] Visible, reversible AI action history for import and source-context work
+- [x] Dashboard as a simple workspace launcher
+- [x] Module Info landing page with setup tracker and minimal workspace nav
 - [ ] Assessment dashboard inside each workspace, with status, deadline, coverage
 
 ### Embedded AI (formerly standalone CoThinker / Workbench)

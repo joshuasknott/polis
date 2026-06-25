@@ -7,41 +7,22 @@ import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
+  AlertTriangle,
   ArrowLeft,
   Save,
-  Trash2,
-  X,
-  AlertTriangle,
-  Loader2,
   Settings as SettingsIcon,
+  Trash2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { WorkspaceSectionProps } from "./workspace-sections";
-
-// Logo-derived module palette: Navy, Slate, Gold, Deep-parchment.
-const MODULE_COLOURS = ["#162A4A", "#4B6685", "#BA9858", "#8A7B5A"];
-
-interface ModuleFormData {
-  title: string;
-  code: string;
-  description: string;
-  academicYear: string;
-  semester: string;
-  colour: string;
-}
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { Field, Input } from "@/components/ui/input";
 
 export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
   const { module } = data;
   const router = useRouter();
 
-  const [form, setForm] = useState<ModuleFormData>({
-    title: module.title,
-    code: module.code,
-    description: module.description,
-    academicYear: module.academicYear,
-    semester: module.semester || "Autumn",
-    colour: module.colour,
-  });
+  const [title, setTitle] = useState(module.title);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -60,12 +41,7 @@ export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
     try {
       await updateMutation({
         moduleId: module.id as Id<"modules">,
-        title: form.title,
-        code: form.code,
-        description: form.description || undefined,
-        academicYear: form.academicYear || undefined,
-        semester: form.semester || undefined,
-        colour: form.colour,
+        title: title.trim(),
       });
       setSavedAt(Date.now());
     } catch (err) {
@@ -89,25 +65,25 @@ export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-12 space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8 pb-12">
       <header className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href={`/modules/${module.id}?tab=home`} className="hover:text-foreground transition-colors flex items-center gap-1">
-            <ArrowLeft className="h-3 w-3" /> Home
+          <Link href={`/modules/${module.id}`} className="flex items-center gap-1 transition-colors hover:text-foreground">
+            <ArrowLeft className="h-3 w-3" /> Module Info
           </Link>
           <span>/</span>
-          <span className="text-foreground">Workspace Settings</span>
+          <span className="text-foreground">Settings</span>
         </div>
-        <h1 className="text-3xl font-serif tracking-tight text-foreground">Workspace Settings</h1>
+        <h1 className="font-serif text-3xl tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">
-          Update module metadata or remove this workspace. Changes apply across all assessments.
+          Rename or delete this workspace. Everything else is built from imported module material.
         </p>
       </header>
 
       <form onSubmit={handleSave} className="space-y-6 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           <SettingsIcon className="h-4 w-4" />
-          Module details
+          Workspace name
         </div>
 
         {saveError && (
@@ -117,98 +93,19 @@ export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
           </div>
         )}
 
-        <div>
-          <label htmlFor="module-title" className="block text-sm font-medium text-foreground mb-1.5">
-            Title
-          </label>
-          <input
-            id="module-title"
+        <Field label="Workspace name" htmlFor="workspace-name">
+          <Input
+            id="workspace-name"
             type="text"
             required
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setSavedAt(null);
+            }}
+            placeholder="e.g. International Security"
           />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="module-code" className="block text-sm font-medium text-foreground mb-1.5">
-              Module code
-            </label>
-            <input
-              id="module-code"
-              type="text"
-              required
-              value={form.code}
-              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-            />
-          </div>
-          <div>
-            <label htmlFor="module-year" className="block text-sm font-medium text-foreground mb-1.5">
-              Academic year
-            </label>
-            <input
-              id="module-year"
-              type="text"
-              value={form.academicYear}
-              onChange={(e) => setForm((f) => ({ ...f, academicYear: e.target.value }))}
-              placeholder="e.g. 2025/26"
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="module-semester" className="block text-sm font-medium text-foreground mb-1.5">
-            Semester
-          </label>
-          <select
-            id="module-semester"
-            value={form.semester}
-            onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-          >
-            <option value="Autumn">Autumn</option>
-            <option value="Spring">Spring</option>
-            <option value="Summer">Summer</option>
-            <option value="Full Year">Full Year</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="module-description" className="block text-sm font-medium text-foreground mb-1.5">
-            Description
-          </label>
-          <textarea
-            id="module-description"
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            placeholder="Brief module description..."
-            rows={4}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Accent colour</label>
-          <div className="flex flex-wrap gap-2">
-            {MODULE_COLOURS.map((colour) => (
-              <button
-                key={colour}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, colour }))}
-                className={cn(
-                  "h-7 w-7 rounded-full border-2 transition-all",
-                  form.colour === colour ? "border-foreground scale-110" : "border-transparent",
-                )}
-                style={{ backgroundColor: colour }}
-                aria-label={`Select colour ${colour}`}
-              />
-            ))}
-          </div>
-        </div>
+        </Field>
 
         <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
           {savedAt ? (
@@ -216,14 +113,10 @@ export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
           ) : (
             <span />
           )}
-          <button
-            type="submit"
-            disabled={saving || !form.title.trim() || !form.code.trim()}
-            className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save changes
-          </button>
+          <Button type="submit" loading={saving} disabled={!title.trim()}>
+            {saving ? null : <Save className="h-4 w-4" />}
+            Save name
+          </Button>
         </div>
       </form>
 
@@ -234,66 +127,44 @@ export function WorkspaceSettings({ data }: WorkspaceSectionProps) {
             Deleting this workspace permanently removes its sources, assessments, arguments, and drafts.
           </p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="danger"
           onClick={() => setDeleteOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-danger/40 bg-card px-3.5 py-2 text-sm font-medium text-danger hover:bg-danger/10 transition-colors"
         >
           <Trash2 className="h-4 w-4" />
           Delete workspace
-        </button>
+        </Button>
       </section>
 
-      {deleteOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold font-serif">Delete Workspace</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteOpen(false);
-                  setDeleteError(null);
-                }}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                aria-label="Close dialog"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              Delete <span className="font-medium text-foreground">{module.title}</span> and all its sources, assessments, and folders? This cannot be undone.
-            </p>
-            {deleteError && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
-                <AlertTriangle className="h-3 w-3 shrink-0" />
-                {deleteError}
-              </div>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteOpen(false);
-                  setDeleteError(null);
-                }}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-danger/90 transition-colors disabled:opacity-50"
-              >
-                {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Delete
-              </button>
-            </div>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} className="max-w-sm">
+        <DialogHeader title="Delete Workspace" onClose={() => setDeleteOpen(false)} />
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Delete <span className="font-medium text-foreground">{module.title}</span> and all its sources, assessments, and folders? This cannot be undone.
+        </p>
+        {deleteError && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/5 px-3 py-2 text-xs text-danger">
+            <AlertTriangle className="h-3 w-3 shrink-0" />
+            {deleteError}
           </div>
-        </div>
-      )}
+        )}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setDeleteOpen(false);
+              setDeleteError(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="button" variant="danger" loading={deleting} onClick={handleDelete}>
+            {deleting ? null : <Trash2 className="h-4 w-4" />}
+            Delete
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

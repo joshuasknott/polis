@@ -2,6 +2,18 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
+
+function makeWorkspaceCode(title: string) {
+  const initials = title
+    .split(/\s+/)
+    .map((part) => part.replace(/[^A-Za-z0-9]/g, ""))
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+  return initials || "WS";
+}
 
 export const list = query({
   args: {},
@@ -30,7 +42,7 @@ export const get = query({
 export const create = mutation({
   args: {
     title: v.string(),
-    code: v.string(),
+    code: v.optional(v.string()),
     description: v.optional(v.string()),
     academicYear: v.optional(v.string()),
     semester: v.optional(v.string()),
@@ -42,9 +54,11 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const tokenIdentifier = await getAuthIdentifier(ctx);
     const now = Date.now();
+    const code = args.code?.trim() || makeWorkspaceCode(args.title);
 
     const moduleId = await ctx.db.insert("modules", {
       ...args,
+      code,
       tokenIdentifier,
       contextVersion: 1,
       contextUpdatedAt: now,
@@ -56,29 +70,14 @@ export const create = mutation({
       { name: "Module Info", type: "module_info" as const, sortOrder: 0 },
       { name: "Readings", type: "readings" as const, sortOrder: 1 },
       {
-        name: "Lecture and Seminar Material",
+        name: "Lecture Material",
         type: "lecture_material" as const,
         sortOrder: 2,
       },
       {
-        name: "Source Notes",
-        type: "source_notes" as const,
+        name: "Briefs/Rubrics",
+        type: "briefs_rubrics" as const,
         sortOrder: 3,
-      },
-      {
-        name: "Assignments",
-        type: "assignments" as const,
-        sortOrder: 4,
-      },
-      {
-        name: "Drafts and Reviews",
-        type: "drafts_reviews" as const,
-        sortOrder: 5,
-      },
-      {
-        name: "Submissions",
-        type: "submissions" as const,
-        sortOrder: 6,
       },
     ];
 
@@ -221,6 +220,44 @@ export const getWorkspaceBundle = query({
       .order("desc")
       .take(100);
 
+    const importBatches = await ctx.db
+      .query("importBatches")
+      .withIndex("by_module_and_createdAt", (q) =>
+        q.eq("moduleId", args.moduleId),
+      )
+      .order("desc")
+      .take(20);
+
+    const importedFiles: Doc<"importedFiles">[] = [];
+    for (const batch of importBatches) {
+      const files = await ctx.db
+        .query("importedFiles")
+        .withIndex("by_batch", (q) => q.eq("batchId", batch._id))
+        .order("asc")
+        .take(200);
+      importedFiles.push(...files);
+    }
+
+    const aiActions = await ctx.db
+      .query("aiActions")
+      .withIndex("by_module_and_createdAt", (q) =>
+        q.eq("moduleId", args.moduleId),
+      )
+      .order("desc")
+      .take(100);
+
+    const relevanceSignals = await ctx.db
+      .query("sourceRelevanceSignals")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(100);
+
+    const gapSignals = await ctx.db
+      .query("sourceGapSignals")
+      .withIndex("by_module", (q) => q.eq("moduleId", args.moduleId))
+      .order("desc")
+      .take(100);
+
     return {
       module: {
         ...mod,
@@ -230,6 +267,11 @@ export const getWorkspaceBundle = query({
       folders,
       sources,
       assignments,
+      importBatches,
+      importedFiles,
+      aiActions,
+      relevanceSignals,
+      gapSignals,
     };
   },
 });

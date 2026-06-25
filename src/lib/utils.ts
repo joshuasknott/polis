@@ -149,11 +149,11 @@ export function getDeadlineLabel(urgency: DeadlineUrgency, dateString: string | 
   const diffDays = Math.ceil((target.getTime() - Date.now()) / 86400000);
   const formatted = formatDate(dateString);
   if (urgency === "overdue") {
-    return `Overdue · ${formatted}`;
+    return `Overdue - ${formatted}`;
   }
-  if (diffDays === 0) return `Due today · ${formatted}`;
-  if (diffDays === 1) return `Due tomorrow · ${formatted}`;
-  if (diffDays <= 14) return `Due in ${diffDays}d · ${formatted}`;
+  if (diffDays === 0) return `Due today - ${formatted}`;
+  if (diffDays === 1) return `Due tomorrow - ${formatted}`;
+  if (diffDays <= 14) return `Due in ${diffDays}d - ${formatted}`;
   return formatted;
 }
 
@@ -180,7 +180,7 @@ export function getSourceCoverageTone(selected: number, total: number): "low" | 
 }
 
 export function formatBytes(bytes: number | null | undefined): string {
-  if (!bytes || bytes <= 0) return "—";
+  if (!bytes || bytes <= 0) return "-";
   const units = ["B", "KB", "MB", "GB"];
   let value = bytes;
   let unitIndex = 0;

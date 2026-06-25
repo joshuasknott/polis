@@ -1,6 +1,6 @@
 "use node";
 
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
@@ -209,8 +209,203 @@ export const extractFromSource = action({
       args.importedFileId,
     );
 
+    await ctx.runMutation(internal.aiActions.record, {
+      tokenIdentifier,
+      moduleId: source.moduleId,
+      batchId: args.batchId,
+      importedFileId: args.importedFileId,
+      sourceId: args.sourceId,
+      operation: "context_extraction",
+      status: "completed",
+      title: "Extracted workspace context",
+      summary: `Found ${result.assessmentSpecs} assessment specs, ${result.moduleFacts} module facts, ${result.weeklyTopics} weekly topics, and ${result.readings} readings.`,
+      providerUsed: provider,
+      modelUsed: model,
+      reversible: true,
+      output: result,
+    });
+
     await ctx.runMutation(internal.ai_keys.internalLogUsage, {
       tokenIdentifier,
+      provider,
+      model,
+      type: "extraction",
+      tokensIn: Math.ceil(chunkContext.length / 4),
+      tokensOut: Math.ceil(response.length / 4),
+    });
+
+    return { success: true, runId, ...result };
+  },
+});
+
+export const extractImportedSource = internalAction({
+  args: {
+    sourceId: v.id("sources"),
+    tokenIdentifier: v.string(),
+    importedFileId: v.optional(v.id("importedFiles")),
+    batchId: v.optional(v.id("importBatches")),
+  },
+  handler: async (ctx, args) => {
+    const source = await ctx.runQuery(internal.sources.internalGet, {
+      sourceId: args.sourceId,
+    });
+    if (!source || source.tokenIdentifier !== args.tokenIdentifier) {
+      throw new Error("Source not found");
+    }
+
+    const chunks = await ctx.runQuery(internal.sources.internalListChunks, {
+      sourceId: args.sourceId,
+    });
+
+    if (!chunks || chunks.length === 0) {
+      await ctx.runMutation(internal.aiActions.record, {
+        tokenIdentifier: args.tokenIdentifier,
+        moduleId: source.moduleId,
+        batchId: args.batchId,
+        importedFileId: args.importedFileId,
+        sourceId: args.sourceId,
+        operation: "context_extraction",
+        status: "failed",
+        title: "Workspace context extraction failed",
+        summary: "No chunks were available after source processing.",
+        reversible: false,
+        errorMessage: "No text chunks available for this source.",
+      });
+      return { success: false, error: "No chunks available" };
+    }
+
+    const chunkInfos: ChunkInfo[] = chunks
+      .slice(0, MAX_CHUNKS)
+      .map((c: { _id: Id<"sourceChunks">; chunkIndex: number; text: string; pageStart?: number; pageEnd?: number }) => ({
+        id: c._id,
+        index: c.chunkIndex,
+        text: c.text,
+        pageStart: c.pageStart,
+        pageEnd: c.pageEnd,
+      }));
+
+    const chunkContext = buildChunkContext(chunkInfos);
+    if (chunkContext.trim().length < 50) {
+      return { success: false, error: "Source text is too short" };
+    }
+
+    const { apiKey, model, provider } = await resolveProviderKey(
+      ctx,
+      args.tokenIdentifier,
+    );
+
+    if (!apiKey) {
+      await ctx.runMutation(internal.aiActions.record, {
+        tokenIdentifier: args.tokenIdentifier,
+        moduleId: source.moduleId,
+        batchId: args.batchId,
+        importedFileId: args.importedFileId,
+        sourceId: args.sourceId,
+        operation: "context_extraction",
+        status: "failed",
+        title: "Workspace context extraction skipped",
+        summary: "No AI provider is configured.",
+        reversible: false,
+        errorMessage: "No AI provider configured",
+      });
+      return { success: false, error: "No AI provider configured" };
+    }
+
+    const extractionType = describeExtractionType(source.type);
+    const userPrompt = buildUserPrompt(
+      source.title,
+      source.type,
+      extractionType,
+      chunkContext,
+    );
+
+    const response = await callExtractionAI(apiKey, provider, model, userPrompt);
+    if (!response) {
+      await ctx.runMutation(internal.aiActions.record, {
+        tokenIdentifier: args.tokenIdentifier,
+        moduleId: source.moduleId,
+        batchId: args.batchId,
+        importedFileId: args.importedFileId,
+        sourceId: args.sourceId,
+        operation: "context_extraction",
+        status: "failed",
+        title: "Workspace context extraction failed",
+        summary: "The AI provider did not return a response.",
+        providerUsed: provider,
+        modelUsed: model,
+        reversible: false,
+        errorMessage: "AI extraction failed",
+      });
+      return { success: false, error: "AI extraction failed" };
+    }
+
+    const parsed = parseJsonResponse(response);
+    if (!parsed) {
+      await ctx.runMutation(internal.aiActions.record, {
+        tokenIdentifier: args.tokenIdentifier,
+        moduleId: source.moduleId,
+        batchId: args.batchId,
+        importedFileId: args.importedFileId,
+        sourceId: args.sourceId,
+        operation: "context_extraction",
+        status: "failed",
+        title: "Workspace context extraction failed",
+        summary: "The AI response could not be parsed.",
+        providerUsed: provider,
+        modelUsed: model,
+        reversible: false,
+        errorMessage: "Could not parse extraction response",
+        output: { rawResponse: response.slice(0, 500) },
+      });
+      return { success: false, error: "Could not parse extraction response" };
+    }
+
+    const runId = `${EXTRACTOR_VERSION}-${Date.now()}`;
+    const baseProvenance = {
+      source: args.importedFileId ? ("imported_file" as const) : ("source" as const),
+      batchId: args.batchId,
+      importedFileId: args.importedFileId,
+      sourceId: args.sourceId,
+      extractor: EXTRACTOR_VERSION,
+      extractionRunId: runId,
+      extractedAt: Date.now(),
+    };
+
+    await ctx.runMutation(internal.extraction._supersedeForSource, {
+      moduleId: source.moduleId,
+      sourceId: args.sourceId,
+    });
+
+    const result = await writeExtractedData(
+      ctx,
+      args.tokenIdentifier,
+      source.moduleId,
+      args.sourceId,
+      chunkInfos,
+      baseProvenance,
+      parsed,
+      args.batchId,
+      args.importedFileId,
+    );
+
+    await ctx.runMutation(internal.aiActions.record, {
+      tokenIdentifier: args.tokenIdentifier,
+      moduleId: source.moduleId,
+      batchId: args.batchId,
+      importedFileId: args.importedFileId,
+      sourceId: args.sourceId,
+      operation: "context_extraction",
+      status: "completed",
+      title: "Extracted workspace context",
+      summary: `Found ${result.assessmentSpecs} assessment specs, ${result.moduleFacts} module facts, ${result.weeklyTopics} weekly topics, and ${result.readings} readings.`,
+      providerUsed: provider,
+      modelUsed: model,
+      reversible: true,
+      output: result,
+    });
+
+    await ctx.runMutation(internal.ai_keys.internalLogUsage, {
+      tokenIdentifier: args.tokenIdentifier,
       provider,
       model,
       type: "extraction",

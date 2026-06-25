@@ -319,6 +319,39 @@ export const internalGet = internalQuery({
   },
 });
 
+export const internalListChunks = internalQuery({
+  args: { sourceId: v.id("sources") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("sourceChunks")
+      .withIndex("by_source_and_chunkIndex", (q) =>
+        q.eq("sourceId", args.sourceId),
+      )
+      .order("asc")
+      .take(500);
+  },
+});
+
+export const internalPatchSource = internalMutation({
+  args: {
+    sourceId: v.id("sources"),
+    title: v.optional(v.string()),
+    authors: v.optional(v.string()),
+    year: v.optional(v.number()),
+    type: v.optional(sourceType),
+    status: v.optional(sourceStatus),
+    folderId: v.optional(v.id("folders")),
+    citation: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { sourceId, ...updates } = args;
+    await ctx.db.patch(sourceId, { ...updates, updatedAt: Date.now() });
+    return sourceId;
+  },
+});
+
 export const updateStatus = internalMutation({
   args: {
     sourceId: v.id("sources"),

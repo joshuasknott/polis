@@ -49,6 +49,17 @@ describe("modules", () => {
     expect(mods[0].code).toBe("SO101");
   });
 
+  test("create module accepts name only and generates internal code", async () => {
+    const asA = asUser(t);
+    const moduleId = await asA.mutation(api.modules.create, {
+      title: "International Security",
+    });
+
+    const mod = await asA.query(api.modules.get, { moduleId });
+    expect(mod!.title).toBe("International Security");
+    expect(mod!.code).toBe("IS");
+  });
+
   test("create module generates default folders", async () => {
     const asA = asUser(t);
     const moduleId = await asA.mutation(api.modules.create, {
@@ -57,10 +68,12 @@ describe("modules", () => {
     });
 
     const folders = await asA.query(api.folders.list, { moduleId });
-    expect(folders.length).toBe(7);
+    expect(folders.length).toBe(4);
     const names = folders.map((f) => f.name);
     expect(names).toContain("Readings");
-    expect(names).toContain("Assignments");
+    expect(names).toContain("Lecture Material");
+    expect(names).toContain("Module Info");
+    expect(names).toContain("Briefs/Rubrics");
   });
 
   test("modules are scoped to user - cannot see other user modules", async () => {
@@ -803,7 +816,7 @@ describe("folders", () => {
     });
 
     const folders = await asA.query(api.folders.list, { moduleId });
-    expect(folders.length).toBe(8); // 7 default + 1 custom
+    expect(folders.length).toBe(5);
     const custom = folders.find((f) => f.name === "My Custom Folder");
     expect(custom).toBeDefined();
     expect(custom!.type).toBe("custom");

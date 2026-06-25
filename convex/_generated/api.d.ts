@@ -9,6 +9,7 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as aiActions from "../aiActions.js";
 import type * as ai_crypto from "../ai_crypto.js";
 import type * as ai_gemini from "../ai_gemini.js";
 import type * as ai_keys from "../ai_keys.js";
@@ -64,6 +65,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  aiActions: typeof aiActions;
   ai_crypto: typeof ai_crypto;
   ai_gemini: typeof ai_gemini;
   ai_keys: typeof ai_keys;

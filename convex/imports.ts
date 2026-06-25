@@ -4,6 +4,7 @@ import {
   internalMutation,
   internalQuery,
   type QueryCtx,
+  type MutationCtx,
 } from "./_generated/server";
 import { v } from "convex/values";
 import { Id, Doc } from "./_generated/dataModel";
@@ -50,9 +51,73 @@ const LABEL_TO_SOURCE_TYPE: Record<string, string> = {
   other: "report",
 };
 
+const LABEL_TO_FOLDER_TYPE: Record<string, string> = {
+  handbook: "module_info",
+  syllabus: "module_info",
+  assignment_brief: "briefs_rubrics",
+  rubric: "briefs_rubrics",
+  slides: "lecture_material",
+  reading: "readings",
+  notes: "lecture_material",
+  integrity_guidance: "module_info",
+  reading_list: "readings",
+};
+
+type BaselineSourceFolderType =
+  | "module_info"
+  | "readings"
+  | "lecture_material"
+  | "briefs_rubrics";
+
 export function labelToSourceType(label: string | undefined): string {
   if (!label) return "report";
   return LABEL_TO_SOURCE_TYPE[label] ?? "report";
+}
+
+export function labelToFolderType(
+  label: string | undefined,
+): BaselineSourceFolderType | undefined {
+  if (!label) return undefined;
+  return LABEL_TO_FOLDER_TYPE[label] as BaselineSourceFolderType | undefined;
+}
+
+async function ensureSourceGroup(
+  ctx: MutationCtx,
+  tokenIdentifier: string,
+  moduleId: Id<"modules">,
+  folderTypeValue: BaselineSourceFolderType | undefined,
+): Promise<Id<"folders"> | undefined> {
+  if (!folderTypeValue) return undefined;
+
+  const folders = await ctx.db
+    .query("folders")
+    .withIndex("by_module", (q) => q.eq("moduleId", moduleId))
+    .take(100);
+  const existing = folders.find((f) => f.type === folderTypeValue);
+  if (existing) return existing._id;
+
+  const names: Record<string, string> = {
+    module_info: "Module Info",
+    readings: "Readings",
+    lecture_material: "Lecture Material",
+    briefs_rubrics: "Briefs/Rubrics",
+  };
+  const sortOrders: Record<string, number> = {
+    module_info: 0,
+    readings: 1,
+    lecture_material: 2,
+    briefs_rubrics: 3,
+  };
+  const now = Date.now();
+  return await ctx.db.insert("folders", {
+    tokenIdentifier,
+    moduleId,
+    name: names[folderTypeValue] ?? "Sources",
+    type: folderTypeValue,
+    sortOrder: sortOrders[folderTypeValue] ?? 99,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 async function assertBatchOwnership(
@@ -79,6 +144,34 @@ async function assertModuleOwnership(
   return mod;
 }
 
+async function syncLinkedSourceClassification(
+  ctx: MutationCtx,
+  tokenIdentifier: string,
+  file: Doc<"importedFiles">,
+  label: ClassificationLabel | undefined,
+  accepted: boolean,
+) {
+  if (!file.sourceId || !label) return;
+  const source = await ctx.db.get(file.sourceId);
+  if (!source || source.tokenIdentifier !== tokenIdentifier) return;
+
+  const folderId = await ensureSourceGroup(
+    ctx,
+    tokenIdentifier,
+    file.moduleId,
+    labelToFolderType(label),
+  );
+
+  await ctx.db.patch(file.sourceId, {
+    type: labelToSourceType(label),
+    folderId,
+    ...(accepted && source.status === "needs_review"
+      ? { status: "processed" }
+      : {}),
+    updatedAt: Date.now(),
+  });
+}
+
 export const listBatches = query({
   args: {
     moduleId: v.optional(v.id("modules")),
@@ -92,8 +185,8 @@ export const listBatches = query({
       if (!mod || mod.tokenIdentifier !== tokenIdentifier) return [];
       return await ctx.db
         .query("importBatches")
-        .withIndex("by_tokenIdentifier_and_status", (q) =>
-          q.eq("tokenIdentifier", tokenIdentifier).eq("status", args.status!),
+        .withIndex("by_module_and_status", (q) =>
+          q.eq("moduleId", args.moduleId!).eq("status", args.status!),
         )
         .order("desc")
         .take(100);
@@ -327,6 +420,7 @@ export const registerFile = mutation({
       fileSize: args.fileSize,
       extractionStatus: "pending",
       classificationStatus: "pending",
+      rawRetainedAt: now,
       createdAt: now,
       updatedAt: now,
     });
@@ -385,6 +479,13 @@ export const confirmClassification = mutation({
       reviewedAt: Date.now(),
       updatedAt: Date.now(),
     });
+    await syncLinkedSourceClassification(
+      ctx,
+      tokenIdentifier,
+      file,
+      file.primaryLabel,
+      true,
+    );
     return args.importedFileId;
   },
 });
@@ -403,6 +504,12 @@ export const rejectClassification = mutation({
       reviewedAt: Date.now(),
       updatedAt: Date.now(),
     });
+    if (file.sourceId) {
+      await ctx.db.patch(file.sourceId, {
+        status: "needs_review",
+        updatedAt: Date.now(),
+      });
+    }
     return args.importedFileId;
   },
 });
@@ -427,6 +534,13 @@ export const editClassification = mutation({
       reviewedAt: Date.now(),
       updatedAt: Date.now(),
     });
+    await syncLinkedSourceClassification(
+      ctx,
+      tokenIdentifier,
+      file,
+      args.primaryLabel,
+      true,
+    );
     return args.importedFileId;
   },
 });
@@ -460,13 +574,12 @@ export const removeFile = mutation({
       throw new Error("Not found");
     }
 
-    if (file.storageId && !file.sourceId) {
-      try {
-        await ctx.storage.delete(file.storageId);
-      } catch {}
-    }
-
-    await ctx.db.delete(args.importedFileId);
+    await ctx.db.patch(args.importedFileId, {
+      classificationStatus: "rejected",
+      reviewedAt: Date.now(),
+      removedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
     return args.importedFileId;
   },
 });
@@ -484,35 +597,90 @@ export const applyFileToModule = mutation({
       throw new Error("Not found");
     }
 
-    if (file.sourceId) return file.sourceId;
+    const sourceId: Id<"sources"> = await ctx.runMutation(
+      internal.imports.internalCreateSourceForFile,
+      {
+        importedFileId: args.importedFileId,
+        tokenIdentifier,
+        folderId: args.folderId,
+        title: args.title,
+      },
+    );
 
-    const mod = await ctx.db.get(file.moduleId);
-    if (!mod || mod.tokenIdentifier !== tokenIdentifier) {
+    if (file.storageId) {
+      await ctx.db.insert("processingJobs", {
+        tokenIdentifier,
+        sourceId,
+        type: "ingestion",
+        status: "queued",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      await ctx.scheduler.runAfter(
+        0,
+        internal.ingestion.process.processSource,
+        { sourceId },
+      );
+    }
+
+    return sourceId;
+  },
+});
+
+export const internalCreateSourceForFile = internalMutation({
+  args: {
+    importedFileId: v.id("importedFiles"),
+    tokenIdentifier: v.string(),
+    folderId: v.optional(v.id("folders")),
+    title: v.optional(v.string()),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const file = await ctx.db.get(args.importedFileId);
+    if (!file || file.tokenIdentifier !== args.tokenIdentifier) {
       throw new Error("Not found");
     }
 
-    if (args.folderId) {
-      const folder = await ctx.db.get(args.folderId);
+    if (file.sourceId) return file.sourceId;
+
+    const mod = await ctx.db.get(file.moduleId);
+    if (!mod || mod.tokenIdentifier !== args.tokenIdentifier) {
+      throw new Error("Not found");
+    }
+
+    let folderId = args.folderId;
+    if (folderId) {
+      const folder = await ctx.db.get(folderId);
       if (
         !folder ||
-        folder.tokenIdentifier !== tokenIdentifier ||
+        folder.tokenIdentifier !== args.tokenIdentifier ||
         folder.moduleId !== file.moduleId
       ) {
         throw new Error("Not found");
       }
+    } else {
+      folderId = await ensureSourceGroup(
+        ctx,
+        args.tokenIdentifier,
+        file.moduleId,
+        labelToFolderType(file.reviewedLabel ?? file.primaryLabel),
+      );
     }
 
     const now = Date.now();
-    const sourceType = labelToSourceType(file.primaryLabel);
+    const sourceType = labelToSourceType(file.reviewedLabel ?? file.primaryLabel);
     const title = args.title ?? file.fileName ?? "Imported source";
 
     const sourceId = await ctx.db.insert("sources", {
-      tokenIdentifier,
+      tokenIdentifier: args.tokenIdentifier,
       moduleId: file.moduleId,
-      folderId: args.folderId,
+      folderId,
+      batchId: file.batchId,
+      importedFileId: args.importedFileId,
       title,
       type: sourceType,
-      status: "queued",
+      status: args.status ?? "queued",
       fileName: file.fileName,
       fileType: file.fileType,
       fileSize: file.fileSize,
@@ -523,25 +691,9 @@ export const applyFileToModule = mutation({
 
     await ctx.db.patch(args.importedFileId, {
       sourceId,
+      sourceCreatedAt: now,
       updatedAt: now,
     });
-
-    if (file.storageId) {
-      await ctx.db.insert("processingJobs", {
-        tokenIdentifier,
-        sourceId,
-        type: "ingestion",
-        status: "queued",
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      await ctx.scheduler.runAfter(
-        0,
-        internal.ingestion.process.processSource,
-        { sourceId },
-      );
-    }
 
     return sourceId;
   },
@@ -569,12 +721,14 @@ export const internalGetBatchForProcessing = internalQuery({
         moduleId: batch.moduleId,
         totalFiles: batch.totalFiles,
       },
-      files: files.map((f) => ({
-        _id: f._id,
-        storageId: f.storageId,
-        fileName: f.fileName,
-        fileType: f.fileType,
-      })),
+      files: files
+        .filter((f) => !f.removedAt && !f.sourceId)
+        .map((f) => ({
+          _id: f._id,
+          storageId: f.storageId,
+          fileName: f.fileName,
+          fileType: f.fileType,
+        })),
     };
   },
 });

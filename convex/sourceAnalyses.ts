@@ -1,6 +1,11 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthIdentifier } from "./lib/auth";
+import {
+  extractionProvenance,
+  gapCategory,
+  sourceSignalSeverity,
+} from "./lib/validators";
 
 export const getForSource = query({
   args: {
@@ -222,6 +227,29 @@ export const createAnalysis = mutation({
   },
 });
 
+export const internalCreateAnalysis = internalMutation({
+  args: {
+    tokenIdentifier: v.string(),
+    sourceId: v.id("sources"),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    analysisType: v.string(),
+    content: v.string(),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("sourceAnalyses", {
+      ...args,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 export const deleteAnalysis = mutation({
   args: {
     analysisId: v.id("sourceAnalyses"),
@@ -265,6 +293,28 @@ export const createClaim = mutation({
   },
 });
 
+export const internalCreateClaim = internalMutation({
+  args: {
+    tokenIdentifier: v.string(),
+    sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    claim: v.string(),
+    context: v.optional(v.string()),
+    pageRange: v.optional(v.string()),
+    strength: v.optional(v.string()),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("sourceClaims", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
 export const removeClaim = mutation({
   args: {
     claimId: v.id("sourceClaims"),
@@ -302,6 +352,81 @@ export const createConcept = mutation({
       definition: args.definition,
       relevance: args.relevance,
       createdAt: Date.now(),
+    });
+  },
+});
+
+export const internalCreateConcept = internalMutation({
+  args: {
+    tokenIdentifier: v.string(),
+    sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    concept: v.string(),
+    definition: v.optional(v.string()),
+    relevance: v.optional(v.string()),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("sourceConcepts", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const internalCreateRelevanceSignal = internalMutation({
+  args: {
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    sourceId: v.id("sources"),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    signalType: v.string(),
+    title: v.string(),
+    rationale: v.string(),
+    confidence: v.number(),
+    provenance: v.optional(extractionProvenance),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("sourceRelevanceSignals", {
+      ...args,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const internalCreateGapSignal = internalMutation({
+  args: {
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    sourceId: v.optional(v.id("sources")),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    gapCategory: v.optional(gapCategory),
+    title: v.string(),
+    content: v.string(),
+    severity: sourceSignalSeverity,
+    confidence: v.number(),
+    suggestedAction: v.optional(v.string()),
+    provenance: v.optional(extractionProvenance),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("sourceGapSignals", {
+      ...args,
+      status: "active",
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });

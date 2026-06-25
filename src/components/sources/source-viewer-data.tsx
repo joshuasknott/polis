@@ -48,7 +48,7 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-muted-foreground">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <p className="text-sm">Loading source…</p>
+        <p className="text-sm">Loading source...</p>
       </div>
     );
   }
@@ -88,8 +88,8 @@ export function SourceViewerData({ sourceId }: SourceViewerDataProps) {
       }}
       moduleTitle={moduleInfo?.title ?? ""}
       moduleCode={moduleInfo?.code ?? ""}
-      backHref={moduleInfo ? `/modules/${moduleInfo._id}?tab=knowledge-base` : "/sources"}
-      backLabel={moduleInfo ? "Back to Knowledge Base" : "Back to Sources"}
+      backHref={moduleInfo ? `/modules/${moduleInfo._id}?tab=sources` : "/sources"}
+      backLabel="Back to Sources"
       chunks={chunks.map((chunk) => ({
         id: chunk._id,
         text: chunk.text,

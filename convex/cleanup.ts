@@ -184,6 +184,7 @@ export const deleteSourceData = internalMutation({
       .query("importedFiles")
       .withIndex("by_source", (q) => q.eq("sourceId", args.sourceId))
       .take(BATCH);
+    const preserveStorage = linkedImportedFiles.length > 0;
     for (const f of linkedImportedFiles) {
       await ctx.db.patch(f._id, { sourceId: undefined });
     }
@@ -197,7 +198,7 @@ export const deleteSourceData = internalMutation({
       await ctx.db.patch(r._id, { sourceId: undefined });
     }
 
-    if (source.storageId) {
+    if (source.storageId && !preserveStorage) {
       try {
         await ctx.storage.delete(source.storageId);
       } catch {}
@@ -256,14 +257,6 @@ export const deleteImportBatchData = internalMutation({
       .withIndex("by_batch", (q) => q.eq("batchId", args.batchId))
       .take(BATCH);
     for (const f of files) {
-      if (
-        f.storageId &&
-        !f.sourceId
-      ) {
-        try {
-          await ctx.storage.delete(f.storageId);
-        } catch {}
-      }
       await ctx.db.delete(f._id);
     }
 

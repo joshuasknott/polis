@@ -2,47 +2,10 @@
 
 import { CalendarDays, FileText, Hash, BookOpen, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Assignment, RubricCriterion, ProductionStage } from "@/lib/types";
-
-const STAGE_ORDER: ProductionStage[] = ["ingest", "understand", "map", "judge", "build", "draft", "refine"];
-
-const STAGE_READINESS: Record<
-  ProductionStage,
-  { requires: string[]; unlocks: string }
-> = {
-  ingest: {
-    requires: ["Assignment brief uploaded", "At least one source selected"],
-    unlocks: "Understand",
-  },
-  understand: {
-    requires: ["Sources processed", "At least 2 readings summarised"],
-    unlocks: "Map",
-  },
-  map: {
-    requires: ["Key concepts identified", "Evidence links started"],
-    unlocks: "Judge",
-  },
-  judge: {
-    requires: ["Evidence map complete", "Gaps identified"],
-    unlocks: "Build",
-  },
-  build: {
-    requires: ["Position selected", "Working thesis drafted"],
-    unlocks: "Draft",
-  },
-  draft: {
-    requires: ["Argument builder complete", "All claims evidenced"],
-    unlocks: "Refine",
-  },
-  refine: {
-    requires: ["Draft submitted for review"],
-    unlocks: "Submission",
-  },
-};
+import type { Assignment, RubricCriterion } from "@/lib/types";
 
 interface AssignmentBriefPanelProps {
   assignment: Assignment;
-  activeStage: ProductionStage;
 }
 
 function RubricRow({ criterion }: { criterion: RubricCriterion }) {
@@ -68,51 +31,48 @@ function RubricRow({ criterion }: { criterion: RubricCriterion }) {
   );
 }
 
-function StageReadinessBlock({
-  assignment,
-  activeStage,
-}: {
-  assignment: Assignment;
-  activeStage: ProductionStage;
-}) {
-  const currentIndex = STAGE_ORDER.indexOf(assignment.stage);
-  const readiness = STAGE_READINESS[activeStage];
+function PlanContextBlock({ assignment }: { assignment: Assignment }) {
+  const checklist = [
+    { label: "Assessment question captured", done: assignment.question.trim().length > 0 },
+    { label: "Deadline confirmed", done: Boolean(assignment.dueDate) },
+    { label: "Word limit confirmed", done: Boolean(assignment.wordLimit && assignment.wordLimit > 0) },
+    { label: "Rubric attached", done: assignment.rubric.length > 0 },
+    { label: "Sources selected", done: assignment.selectedSourceIds.length > 0 },
+  ];
+  const doneCount = checklist.filter((item) => item.done).length;
 
   return (
     <div className="rounded-xl border border-border bg-muted/40 p-4">
       <div className="flex items-center gap-2 mb-3">
         <Clock className="h-4 w-4 text-muted-foreground" />
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Stage Readiness
+          Plan context
         </span>
       </div>
       <ul className="space-y-2 mb-3">
-        {readiness.requires.map((req, i) => {
-          const stageIndex = STAGE_ORDER.indexOf(activeStage);
-          const done = currentIndex > stageIndex;
+        {checklist.map((item) => {
           return (
-            <li key={i} className="flex items-start gap-2">
-              {done ? (
+            <li key={item.label} className="flex items-start gap-2">
+              {item.done ? (
                 <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
               ) : (
                 <div className="h-4 w-4 rounded-full border-2 border-border flex-shrink-0 mt-0.5" />
               )}
-              <span className={cn("text-sm", done ? "text-muted-foreground line-through" : "text-foreground")}>
-                {req}
+              <span className={cn("text-sm", item.done ? "text-muted-foreground line-through" : "text-foreground")}>
+                {item.label}
               </span>
             </li>
           );
         })}
       </ul>
       <p className="text-xs text-muted-foreground">
-        Completing this stage unlocks{" "}
-        <span className="font-medium text-foreground">{readiness.unlocks}</span>.
+        {doneCount} of {checklist.length} context item{checklist.length === 1 ? "" : "s"} ready for planning.
       </p>
     </div>
   );
 }
 
-export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBriefPanelProps) {
+export function AssignmentBriefPanel({ assignment }: AssignmentBriefPanelProps) {
   const dueDateValue = assignment.dueDate;
   const hasDueDate = !!dueDateValue && dueDateValue.length > 0;
   const dueDate = hasDueDate ? new Date(dueDateValue) : null;
@@ -208,7 +168,7 @@ export function AssignmentBriefPanel({ assignment, activeStage }: AssignmentBrie
         </div>
       )}
 
-      <StageReadinessBlock assignment={assignment} activeStage={activeStage} />
+      <PlanContextBlock assignment={assignment} />
     </div>
   );
 }

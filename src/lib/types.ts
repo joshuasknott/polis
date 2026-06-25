@@ -11,9 +11,6 @@ export const PRODUCTION_STAGES = [
 export type ProductionStage = (typeof PRODUCTION_STAGES)[number];
 
 export const ASSESSMENT_TABS = [
-  "brief",
-  "sources",
-  "evidence",
   "plan",
   "write",
   "review",
@@ -21,20 +18,57 @@ export const ASSESSMENT_TABS = [
 
 export type AssessmentTab = (typeof ASSESSMENT_TABS)[number];
 
+export const DEFAULT_ASSESSMENT_TAB: AssessmentTab = "plan";
+
+const LEGACY_ASSESSMENT_TAB_MAP: Record<string, AssessmentTab> = {
+  brief: "plan",
+  sources: "plan",
+  evidence: "plan",
+  ingest: "plan",
+  understand: "plan",
+  map: "plan",
+  judge: "plan",
+  build: "plan",
+  draft: "write",
+  refine: "review",
+};
+
+export function isAssessmentTab(value: string | undefined): value is AssessmentTab {
+  return !!value && (ASSESSMENT_TABS as readonly string[]).includes(value);
+}
+
+export function normalizeAssessmentTab(value: string | undefined): AssessmentTab {
+  if (isAssessmentTab(value)) return value;
+  if (value && LEGACY_ASSESSMENT_TAB_MAP[value]) return LEGACY_ASSESSMENT_TAB_MAP[value];
+  return DEFAULT_ASSESSMENT_TAB;
+}
+
 export const WORKSPACE_TABS = [
-  "home",
-  "imports",
-  "assessments",
-  "knowledge-base",
+  "module-info",
+  "sources",
+  "assignments",
   "settings",
 ] as const;
 
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 
-export const DEFAULT_WORKSPACE_TAB: WorkspaceTab = "home";
+export const DEFAULT_WORKSPACE_TAB: WorkspaceTab = "module-info";
+
+const LEGACY_WORKSPACE_TAB_MAP: Record<string, WorkspaceTab> = {
+  home: "module-info",
+  imports: "sources",
+  "knowledge-base": "sources",
+  assessments: "assignments",
+};
 
 export function isWorkspaceTab(value: string | undefined): value is WorkspaceTab {
   return !!value && (WORKSPACE_TABS as readonly string[]).includes(value);
+}
+
+export function normalizeWorkspaceTab(value: string | undefined): WorkspaceTab {
+  if (isWorkspaceTab(value)) return value;
+  if (value && LEGACY_WORKSPACE_TAB_MAP[value]) return LEGACY_WORKSPACE_TAB_MAP[value];
+  return DEFAULT_WORKSPACE_TAB;
 }
 
 export type SourceType =
@@ -75,6 +109,7 @@ export type FolderType =
   | "module_info"
   | "readings"
   | "lecture_material"
+  | "briefs_rubrics"
   | "source_notes"
   | "assignments"
   | "drafts_reviews"

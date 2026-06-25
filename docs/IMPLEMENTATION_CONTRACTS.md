@@ -1,6 +1,6 @@
 # Polis — Implementation Contracts
 
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-21
 **Purpose**: Canonical contracts that all implementation agents must follow. This document defines contexts, stage artifacts, backend boundaries, academic integrity guarantees, and the branch dependency map.
 
 ## Terminology
@@ -96,6 +96,9 @@ The live context available to any feature operating within a module. Assembled b
 | Assignments | `assignments` | `modules.getWorkspaceBundle` |
 | Import batches | `importBatches` | `imports.listBatches` |
 | Imported files | `importedFiles` | `imports.listFiles` / `imports.getBatchWithFiles` |
+| AI action history | `aiActions` | `modules.getWorkspaceBundle` / `aiActions.listForModule` |
+| Source relevance signals | `sourceRelevanceSignals` | `modules.getWorkspaceBundle` |
+| Source gap signals | `sourceGapSignals` | `modules.getWorkspaceBundle` |
 | Module facts | `moduleFacts` | `extraction.listModuleFacts` |
 | Assessment specs | `assessmentSpecs` | `extraction.listAssessmentSpecs` |
 | Extracted rubric criteria | `extractedRubricCriteria` | `extraction.getAssessmentSpec` |
@@ -143,11 +146,14 @@ Workspace setup and import. The student creates a workspace (Module) from a modu
 
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
-| Source uploads | `sources` + `assignmentSources` | Schema ready | `files.generateUploadUrl` → client upload → `sources.attachStorage` |
-| Brief/rubric | `assignments.question`, `assignments.rubric` | Live | Set on assignment creation/update; future: auto-extracted from imported briefs |
-| Processing state | `processingJobs` | Schema ready | Needs extraction action |
-| Source classification | `sources.type` (`SourceType`) | Schema ready | AI-suggested, user-confirmed |
-| Module facts | `modules.themes`, `modules.concepts`, `modules.learningOutcomes` | Schema ready | Future: auto-extracted from handbook |
+| Source uploads | `importBatches` + `importedFiles` + `sources` | Live | `createBatch` -> `generateUploadUrl` -> client upload -> `registerFile` -> `importClassification.processBatch` |
+| Brief/rubric | `assignments.question`, `assignments.rubric` | Live | Can be set manually or applied from extracted specs |
+| Processing state | `processingJobs` + `aiActions` | Live | Source extraction/chunking plus visible action history |
+| Source classification | `importedFiles.primaryLabel`, `sources.type` | Live | AI-suggested, high confidence may auto-apply, user-confirmable/correctable |
+| Module facts | `moduleFacts` -> `modules.themes`, `modules.concepts`, `modules.learningOutcomes` | Live | Extracted from handbooks/syllabi with provenance; live module application requires confirmation |
+| Assessment specs/readings | `assessmentSpecs`, `extractedRubricCriteria`, `weeklyTopics`, `requiredReadings` | Live | Extracted from imports with provenance; assignment/module application requires confirmation |
+| Source context | `sourceAnalyses`, `sourceConcepts`, `sourceClaims`, `sourceRelevanceSignals`, `sourceGapSignals` | Live | Generated from chunks during batch import and reversible via `aiActions` |
+| Reversibility | `aiActions` | Live | Safe AI outputs can be undone; raw imported uploads are retained |
 
 **Completion signal**: At least one source in the workspace, and at least one assignment with a brief/question set.
 
@@ -157,10 +163,10 @@ User-facing: part of **Plan**. Reading-level comprehension of individual sources
 
 | Artifact | Table | Status | Notes |
 |----------|-------|--------|-------|
-| Summaries | `sourceAnalyses` (analysisType: `"summary"`) | Schema ready | Needs AI action |
-| Concepts | `sourceConcepts` | Schema ready | Needs AI action |
-| Main arguments | `sourceAnalyses` (analysisType: `"main_argument"`) | Schema ready | Needs AI action |
-| Source claims | `sourceClaims` | Schema ready | Needs AI action |
+| Summaries | `sourceAnalyses` (analysisType: `"summary"`) | Live | Generated from source chunks |
+| Concepts | `sourceConcepts` | Live | Generated from source chunks |
+| Main arguments | `sourceAnalyses` (analysisType: `"main_argument"`) | Live | Generated on demand; import-time summary is live |
+| Source claims | `sourceClaims` | Live | Import-time context analysis writes chunk-traced claims |
 | Notes | `sourceNotes` | Live | User-created |
 | Limitations | `sourceAnalyses` (analysisType: `"limitations"`) | Schema ready | Needs AI action |
 
@@ -256,6 +262,8 @@ All queries are auth-gated via `getAuthIdentifier(ctx)` which calls `ctx.auth.ge
 | `reviews.ts` | listForDraft, get, getWithFindings, listFindings |
 | `cothinker.ts` | listSessions, getSession, listMessages, listInterventions |
 | `usage.ts` | listEvents |
+| `imports.ts` | listBatches, getBatch, getBatchWithFiles, listFiles, listFilesByModule, listNeedsReview |
+| `aiActions.ts` | listForModule, listForBatch, listForSource |
 | `ai.ts` | providerPlaceholders (placeholder) |
 | `users.ts` | getProfile |
 
@@ -276,6 +284,8 @@ All mutations are auth-gated. Every mutation must verify ownership before write.
 | `reviews.ts` | createRun, updateRun, removeRun, createFinding, updateFinding, removeFinding |
 | `cothinker.ts` | createSession, updateSession, removeSession, addMessage, addIntervention, updateIntervention |
 | `files.ts` | generateUploadUrl |
+| `imports.ts` | createBatch, updateBatch, removeBatch, registerFile, confirmClassification, rejectClassification, editClassification, retryFile, removeFile, applyFileToModule |
+| `aiActions.ts` | revertAction |
 | `users.ts` | createOrUpdateProfile |
 
 ### Internal Mutations (system-only)
@@ -284,9 +294,14 @@ Used by actions to write data. Not exposed to clients.
 
 | Planned | Purpose |
 |---------|---------|
-| `processing._insertChunks` | Write extracted chunks after text extraction |
-| `processing._updateSourceStatus` | Update source processing status |
-| `ai._writeAnalysis` | Write AI-generated source analysis |
+| `sources.saveChunks` | Write extracted chunks after text extraction |
+| `sources.updateStatus` | Update source processing status |
+| `sourceAnalyses.internalCreateAnalysis` | Write AI-generated source analysis |
+| `sourceAnalyses.internalCreateConcept` | Write AI-generated source concept |
+| `sourceAnalyses.internalCreateClaim` | Write AI-generated source claim |
+| `sourceAnalyses.internalCreateRelevanceSignal` | Write source relevance signal |
+| `sourceAnalyses.internalCreateGapSignal` | Write source gap signal |
+| `aiActions.record` | Write visible AI/system action history |
 | `ai._writeUsageEvent` | Log AI usage event |
 | `ai._writeCoThinkerResponse` | Write AI-generated CoThinker message |
 | `ai._writeReviewFindings` | Write AI-generated review findings |
@@ -297,10 +312,11 @@ Actions run in the Node.js runtime and are the only place where external API cal
 
 | Planned Action | Purpose |
 |---------------|---------|
-| `processing.extractText` | Extract text from uploaded file (PDF, DOCX) |
-| `processing.chunkText` | Split extracted text into chunks |
+| `importClassification.processBatch` | Classify batch files, create sources, process chunks, extract context, analyse source context |
+| `ingestion.process.processSource` | Extract text from uploaded source and split it into chunks |
 | `processing.generateEmbeddings` | Generate vector embeddings for chunks |
-| `ai.summarizeSource` | Generate source summary, concepts, claims |
+| `extractionAI.extractImportedSource` | Generate module facts, assessment specs, weekly topics, and reading lists from imported source chunks |
+| `sourceAnalysisAI.analyseImportedSource` | Generate source summary, concepts, claims, relevance signals, and gap signals from imported source chunks |
 | `ai.chat` | Generate CoThinker response with retrieval |
 | `ai.reviewDraft` | Analyse draft and produce review findings |
 | `ai.runJudgement` | Run gap analysis, evidence sufficiency, etc. |
@@ -317,12 +333,13 @@ Actions run in the Node.js runtime and are the only place where external API cal
 
 ### Processing Actions (Background Pipeline)
 
-Triggered by file upload or manual action:
+Triggered by batch import or manual retry:
 
 ```
-upload → extractText → chunkText → generateEmbeddings → summarizeSource
-                                                         ↓
-                                                   write analyses, concepts, claims
+create batch -> upload raw files -> register imported files -> classify
+  -> create source -> extract/chunk -> extract workspace context
+  -> write facts/specs/readings -> analyse source context
+  -> write summaries/concepts/claims/relevance/gap signals -> record aiActions
 ```
 
 ### Cleanup/Cascade Jobs

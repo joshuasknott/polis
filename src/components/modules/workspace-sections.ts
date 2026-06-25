@@ -1,4 +1,11 @@
-import type { CommandCenterAssignment, WorkspaceSourceItem } from "@/lib/convex-ui-mappers";
+import type {
+  CommandCenterAssignment,
+  WorkspaceAiAction,
+  WorkspaceImportBatch,
+  WorkspaceImportedFile,
+  WorkspaceSourceItem,
+  WorkspaceSourceSignal,
+} from "@/lib/convex-ui-mappers";
 
 export interface WorkspaceModuleMeta {
   id: string;
@@ -22,6 +29,11 @@ export interface WorkspaceSectionData {
   folders: WorkspaceFolderSummary[];
   sources: WorkspaceSourceItem[];
   assignments: CommandCenterAssignment[];
+  importBatches: WorkspaceImportBatch[];
+  importedFiles: WorkspaceImportedFile[];
+  aiActions: WorkspaceAiAction[];
+  relevanceSignals: WorkspaceSourceSignal[];
+  gapSignals: WorkspaceSourceSignal[];
 }
 
 export interface WorkspaceSectionProps {

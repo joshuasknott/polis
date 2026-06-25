@@ -26,6 +26,10 @@ import {
   recommendationStatus,
   provenanceLabel,
   provenanceWarning,
+  aiActionOperation,
+  aiActionStatus,
+  sourceSignalStatus,
+  sourceSignalSeverity,
 } from "./lib/validators";
 
 export default defineSchema({
@@ -81,6 +85,8 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     moduleId: v.id("modules"),
     folderId: v.optional(v.id("folders")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
     title: v.string(),
     authors: v.optional(v.string()),
     year: v.optional(v.number()),
@@ -101,6 +107,8 @@ export default defineSchema({
     .index("by_module", ["moduleId"])
     .index("by_module_and_status", ["moduleId", "status"])
     .index("by_folder", ["folderId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"])
     .index("by_status", ["status"]),
 
   sourceChunks: defineTable({
@@ -173,36 +181,59 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     sourceId: v.id("sources"),
     assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
     analysisType: v.string(),
     content: v.string(),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_source", ["sourceId"])
     .index("by_assignment", ["assignmentId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"])
     .index("by_source_and_type", ["sourceId", "analysisType"]),
 
   sourceClaims: defineTable({
     tokenIdentifier: v.string(),
     sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
     claim: v.string(),
     context: v.optional(v.string()),
     pageRange: v.optional(v.string()),
     strength: v.optional(v.string()),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
     createdAt: v.number(),
   })
     .index("by_source", ["sourceId"])
+    .index("by_sourceChunk", ["sourceChunkId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   sourceConcepts: defineTable({
     tokenIdentifier: v.string(),
     sourceId: v.id("sources"),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
     concept: v.string(),
     definition: v.optional(v.string()),
     relevance: v.optional(v.string()),
+    confidence: v.optional(v.number()),
+    provenance: v.optional(extractionProvenance),
     createdAt: v.number(),
   })
     .index("by_source", ["sourceId"])
+    .index("by_sourceChunk", ["sourceChunkId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
 
   arguments: defineTable({
@@ -532,6 +563,7 @@ export default defineSchema({
     .index("by_tokenIdentifier_and_module", ["tokenIdentifier", "moduleId"])
     .index("by_module", ["moduleId"])
     .index("by_module_and_createdAt", ["moduleId", "createdAt"])
+    .index("by_module_and_status", ["moduleId", "status"])
     .index("by_tokenIdentifier_and_status", ["tokenIdentifier", "status"])
     .index("by_status", ["status"]),
 
@@ -556,6 +588,9 @@ export default defineSchema({
     providerUsed: v.optional(v.string()),
     reviewedLabel: v.optional(classificationLabel),
     reviewedAt: v.optional(v.number()),
+    rawRetainedAt: v.optional(v.number()),
+    removedAt: v.optional(v.number()),
+    sourceCreatedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -579,6 +614,97 @@ export default defineSchema({
       "by_tokenIdentifier_and_classificationStatus",
       ["tokenIdentifier", "classificationStatus"],
     ),
+
+  aiActions: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceId: v.optional(v.id("sources")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    operation: aiActionOperation,
+    status: aiActionStatus,
+    title: v.string(),
+    summary: v.optional(v.string()),
+    providerUsed: v.optional(v.string()),
+    modelUsed: v.optional(v.string()),
+    confidence: v.optional(v.number()),
+    autoApplied: v.optional(v.boolean()),
+    reversible: v.optional(v.boolean()),
+    targetTable: v.optional(v.string()),
+    targetId: v.optional(v.string()),
+    targetIds: v.optional(v.array(v.string())),
+    input: v.optional(v.any()),
+    output: v.optional(v.any()),
+    before: v.optional(v.any()),
+    after: v.optional(v.any()),
+    provenance: v.optional(extractionProvenance),
+    errorMessage: v.optional(v.string()),
+    revertedAt: v.optional(v.number()),
+    revertedByActionId: v.optional(v.id("aiActions")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_createdAt", ["moduleId", "createdAt"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"])
+    .index("by_source", ["sourceId"])
+    .index("by_operation", ["operation"])
+    .index("by_status", ["status"]),
+
+  sourceRelevanceSignals: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    sourceId: v.id("sources"),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    signalType: v.string(),
+    title: v.string(),
+    rationale: v.string(),
+    confidence: v.number(),
+    status: sourceSignalStatus,
+    provenance: v.optional(extractionProvenance),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_status", ["moduleId", "status"])
+    .index("by_source", ["sourceId"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
+
+  sourceGapSignals: defineTable({
+    tokenIdentifier: v.string(),
+    moduleId: v.id("modules"),
+    sourceId: v.optional(v.id("sources")),
+    assignmentId: v.optional(v.id("assignments")),
+    batchId: v.optional(v.id("importBatches")),
+    importedFileId: v.optional(v.id("importedFiles")),
+    sourceChunkId: v.optional(v.id("sourceChunks")),
+    gapCategory: v.optional(gapCategory),
+    title: v.string(),
+    content: v.string(),
+    severity: sourceSignalSeverity,
+    confidence: v.number(),
+    status: sourceSignalStatus,
+    suggestedAction: v.optional(v.string()),
+    provenance: v.optional(extractionProvenance),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_module", ["moduleId"])
+    .index("by_module_and_status", ["moduleId", "status"])
+    .index("by_source", ["sourceId"])
+    .index("by_assignment", ["assignmentId"])
+    .index("by_batch", ["batchId"])
+    .index("by_importedFile", ["importedFileId"]),
 
   moduleFacts: defineTable({
     tokenIdentifier: v.string(),

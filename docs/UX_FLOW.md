@@ -1,6 +1,6 @@
 # Polis UX Flow
 
-**Last updated**: 2026-06-14
+**Last updated**: 2026-06-21
 
 ## Terminology
 
@@ -21,10 +21,10 @@ This document uses user-facing language. Internal data-model names are kept stab
 ## Top-Level Flow
 
 ```text
-Landing page -> Dashboard -> Create workspace -> Import -> Workspace -> Plan / Write / Review
+Landing page -> Dashboard -> Create workspace -> Module Info -> Sources / Assignments -> Plan / Write / Review
 ```
 
-The workspace is the home base. Assessments live inside a workspace. Timeline information is part of the Workspaces dashboard and workspace home, not a separate top-level destination.
+The dashboard is only a workspace launcher. The workspace is the home base. Assessments live inside a workspace, and Module Info is the default landing page for setup state.
 
 ## Landing Page
 
@@ -40,21 +40,16 @@ The dashboard is a workspace launcher, not the full app shell.
 
 1. No sidenav is shown on the dashboard.
 2. User sees **Workspaces** and can create/open a workspace.
-3. Cross-workspace deadline timeline appears inside Workspaces.
-4. Workspace cards show source count, assessment count, and recent activity.
-5. Quick action: **New Workspace**.
+3. Workspace cards show source count, assessment count, and recent activity.
+4. Quick action: **New Workspace**.
 
 ## Creating a Workspace
 
 1. Click **New Workspace** from the dashboard.
-2. Enter:
-   - Workspace name
-   - Year
-   - Semester
-3. Semester is free text. It is not a dropdown.
-4. The workspace is created.
+2. Enter the workspace name.
+3. The workspace is created.
 
-Internal: creates a `modules` row. Optional metadata such as code, colour, and description can be edited later.
+Internal: creates a `modules` row. `code` remains internal and may be generated as a fallback; it is not part of the user-facing create or edit flow.
 
 ## Workspace Layout
 
@@ -66,36 +61,55 @@ Workspace sidenav | Workspace content | In-context assistant/actions
 
 Workspace navigation includes:
 
-- Home
-- Imports
-- Assessments
-- Knowledge Base
-- Workspace Settings
+- Module Info
+- Sources
+- Assignments
+- Settings, pinned at the bottom
 
 CoThinker and Workbench are embedded capabilities. They are not standalone destinations.
 
-## Workspace Home
+## Module Info
 
-The workspace home gives the user the current state of the module:
+Module Info is the default workspace landing page. It gives the user the current setup state:
 
-1. Suggested next actions.
-2. Imports needing review.
-3. Assessment deadlines and weights.
-4. Deadline timeline for that workspace.
-5. Source coverage and missing context.
+1. Workspace created.
+2. Upload module info.
+3. Upload reading list.
+4. Upload assessment brief/rubric.
+5. Upload readings/lecture material.
+6. Review Polis organization.
+7. Confirm extracted info.
+8. Start assessment.
+9. Plan.
+10. Write.
+11. Review.
+
+Module Info can show status summaries and links into Sources or Assignments, but it does not add extra top-level navigation.
+
+## Sources
+
+Sources is the single top-level place for importing and organizing the Source Base.
+
+1. The student imports readings, lecture notes, assignment briefs, rubrics, slides, and their own notes.
+2. Files enter an import batch and upload through Convex storage.
+3. Polis classifies each file, converts it into a source, extracts and chunks text, then generates source context.
+4. Sources are grouped inside Sources as All Sources, Needs Review, Readings, Lecture Material, Module Info, Briefs/Rubrics, and custom groups.
+5. The student can search, filter, review, accept, correct, or undo Polis actions without leaving Sources.
 
 ## Importing Material
 
-1. The student imports readings, lecture notes, assignment briefs, rubrics, slides, source images, and their own notes.
-2. Files upload through Convex storage.
-3. Polis extracts and chunks text.
-4. Polis classifies material into the Source Base.
-5. The student can review or correct classifications.
+1. The student imports readings, lecture notes, assignment briefs, rubrics, slides, and their own notes.
+2. Files enter an `importBatches` row and each raw upload is tracked in `importedFiles`.
+3. Polis classifies files, creates sources, extracts/chunks source text, extracts module/assessment context, and generates source summaries, concepts, claims, relevance signals, and gap signals.
+4. High-confidence safe results may be auto-applied to the Source Base.
+5. Every AI action is visible in Sources, source-traceable where applicable, and reversible where safe. Raw uploads are retained.
+6. The student can review or correct classifications and undo supported Polis actions.
 
 Internal flow:
 
 ```text
-generateUploadUrl -> client upload -> attachStorage -> extract text -> chunk text -> classify/analyse
+createBatch -> generateUploadUrl -> client upload -> registerFile -> processBatch
+  -> classify -> create source -> extract/chunk -> extract workspace context -> analyse source context
 ```
 
 ## Assessment Flow

@@ -4,22 +4,63 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
-  CalendarClock,
-  ClipboardList,
-  Upload,
-  AlertTriangle,
-  CircleAlert,
+  BookOpen,
   CheckCircle2,
+  Circle,
+  CircleAlert,
   CircleDashed,
-  Sparkles,
-  FileWarning,
+  ClipboardList,
+  FileCheck2,
+  FileText,
   Layers,
-  Scale,
+  PenLine,
+  SearchCheck,
+  Upload,
 } from "lucide-react";
-import { cn, daysUntil, getProductionStageLabel, getProductionStageColor, getDeadlineUrgency, getDeadlineUrgencyClasses, getDeadlineLabel, getSourceCoverageLabel, getSourceCoverageTone } from "@/lib/utils";
+import {
+  cn,
+  getDeadlineLabel,
+  getDeadlineUrgency,
+  getDeadlineUrgencyClasses,
+  getProductionStageColor,
+  getProductionStageLabel,
+} from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import type { ProductionStage } from "@/lib/types";
 import type { WorkspaceSectionProps } from "./workspace-sections";
+
+type SetupStatus = "done" | "active" | "attention" | "next" | "locked";
+
+interface SetupStep {
+  id: string;
+  label: string;
+  detail: string;
+  status: SetupStatus;
+  href?: string;
+  actionLabel?: string;
+  icon: React.ElementType;
+}
+
+const READING_SOURCE_TYPES = new Set([
+  "journal_article",
+  "book_chapter",
+  "book",
+  "lecture_slides",
+  "seminar_notes",
+  "report",
+  "news_article",
+]);
+
+const PLAN_STAGES = new Set<ProductionStage>([
+  "understand",
+  "map",
+  "judge",
+  "build",
+]);
+
+const WRITING_STAGES = new Set<ProductionStage>(["draft"]);
+const REVIEW_STAGES = new Set<ProductionStage>(["refine"]);
 
 export function WorkspaceHome({ data }: WorkspaceSectionProps) {
   const { module, assignments, sources } = data;
@@ -28,451 +69,546 @@ export function WorkspaceHome({ data }: WorkspaceSectionProps) {
   const processing = sources.filter((s) => s.isProcessing);
   const failed = sources.filter((s) => s.hasError);
   const processedSources = sources.filter((s) => s.status === "processed");
-
-  const sortedDeadlines = [...assignments]
-    .filter((a) => a.dueDate)
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-  const nextActions = buildNextActions(data, {
+  const assignmentWithMostProgress = getMostAdvancedAssignment(assignments);
+  const setupSteps = buildSetupSteps(data, {
     reviewCount: reviewQueue.length,
     processingCount: processing.length,
     failedCount: failed.length,
   });
-
-  const coverageToneByAssignment = assignments.map((a) => ({
-    assignment: a,
-    tone: getSourceCoverageTone(a.selectedSourceCount, processedSources.length),
-  }));
+  const completedSteps = setupSteps.filter((step) => step.status === "done").length;
+  const progress = Math.round((completedSteps / setupSteps.length) * 100);
+  const nextStep =
+    setupSteps.find((step) => step.status === "attention") ??
+    setupSteps.find((step) => step.status === "active") ??
+    setupSteps.find((step) => step.status === "next");
 
   return (
-    <div className="max-w-6xl mx-auto pb-12 space-y-10">
-      <header className="polis-focal-rule relative space-y-3 rounded-xl border border-border bg-card-elevated px-6 py-5 pl-8">
+    <div className="mx-auto max-w-6xl space-y-8 pb-12">
+      <header className="space-y-5 border-b border-border pb-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
+          <Link href="/dashboard" className="flex items-center gap-1 transition-colors hover:text-foreground">
             <ArrowLeft className="h-3 w-3" /> Workspaces
           </Link>
           <span>/</span>
-          <span>{module.code}</span>
-          <span>/</span>
-          <span className="text-foreground">Home</span>
+          <span className="text-foreground">Module Info</span>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-serif tracking-tight text-foreground">
+
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Module Info
+            </p>
+            <h1 className="mt-2 font-serif text-3xl tracking-tight text-foreground md:text-4xl">
               {module.title}
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground max-w-2xl leading-relaxed">
-              {module.description || "No description set. Add one in Workspace Settings."}
-            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2">
             <Badge tone="neutral">{sources.length} sources</Badge>
             <Badge tone="success">{processedSources.length} processed</Badge>
             {reviewQueue.length > 0 ? (
               <Badge tone="warning">{reviewQueue.length} need review</Badge>
+            ) : null}
+            {failed.length > 0 ? (
+              <Badge tone="danger">{failed.length} failed</Badge>
             ) : null}
             <Badge tone="neutral">{assignments.length} assessments</Badge>
           </div>
         </div>
       </header>
 
-      {nextActions.length > 0 && (
-        <Section title="Suggested next actions" icon={Sparkles}>
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {nextActions.map((action) => (
-              <li key={action.id}>
-                <Link
-                  href={action.href}
-                  className="group flex items-start gap-4 px-5 py-4 hover:bg-muted/40 transition-colors"
-                >
-                  <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border", action.toneClass)}>
-                    <action.icon className="h-3.5 w-3.5" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{action.label}</p>
-                    {action.detail && (
-                      <p className="mt-0.5 text-xs text-muted-foreground">{action.detail}</p>
-                    )}
-                  </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
-                </Link>
-              </li>
+      <section className="grid gap-4 lg:grid-cols-[0.72fr_0.28fr]">
+        <div className="rounded-xl border border-border bg-card">
+          <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Setup tracker
+              </h2>
+              <p className="mt-1 text-sm text-foreground">
+                {nextStep ? nextStep.label : "Workspace ready"}
+              </p>
+            </div>
+            <div className="w-full sm:w-56">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{completedSteps} of {setupSteps.length} complete</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-gold transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <ol className="divide-y divide-border">
+            {setupSteps.map((step, index) => (
+              <SetupStepRow key={step.id} step={step} index={index} />
             ))}
-          </ul>
-        </Section>
-      )}
-
-      {reviewQueue.length > 0 && (
-        <Section
-          title="Imports needing review"
-          icon={FileWarning}
-          action={
-            <Link
-              href={`/modules/${module.id}?tab=imports`}
-              className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
-            >
-              Open Imports <ArrowRight className="h-3 w-3" />
-            </Link>
-          }
-        >
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {reviewQueue.slice(0, 4).map((source) => (
-              <li key={source.id} className="flex items-center gap-3 px-5 py-3">
-                <CircleAlert className="h-4 w-4 text-warning shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">{source.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    Classified as {source.classificationLabel.replace(/_/g, " ")} · review the suggested type
-                  </p>
-                </div>
-                <Link
-                  href={`/modules/${module.id}?tab=imports`}
-                  className="inline-flex min-h-8 items-center rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-                >
-                  Review
-                </Link>
-              </li>
-            ))}
-            {reviewQueue.length > 4 && (
-              <li className="px-5 py-2 text-xs text-muted-foreground">
-                + {reviewQueue.length - 4} more awaiting review
-              </li>
-            )}
-          </ul>
-        </Section>
-      )}
-
-      <Section
-        title="Assessment deadlines & weights"
-        icon={CalendarClock}
-        action={
-          <Link
-            href={`/modules/${module.id}?tab=assessments`}
-            className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
-          >
-            <span className="hidden sm:inline">Open Assessments</span>
-            <span className="sm:hidden">Open</span>
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        }
-      >
-        {assignments.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="No assessments yet"
-            description="Add an assessment to start tracking deadlines, weights, and source coverage."
-          />
-        ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-            {assignments.map((a) => {
-              const urgency = getDeadlineUrgency(a.dueDate);
-              return (
-                <li key={a.id}>
-                  <Link
-                    href={`/modules/${module.id}/assignments/${a.id}`}
-                    className="grid grid-cols-1 gap-3 px-5 py-4 hover:bg-muted/40 transition-colors sm:grid-cols-[1.5fr_1fr_1fr_auto]"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{a.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {getSourceCoverageLabel(a.selectedSourceCount, processedSources.length)}
-                      </p>
-                    </div>
-                    <div className="text-xs">
-                      <p className="text-muted-foreground uppercase tracking-wider">Stage</p>
-                      <p className={cn("mt-1 inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getProductionStageColor(a.stage))}>
-                        {getProductionStageLabel(a.stage)}
-                      </p>
-                    </div>
-                    <div className="text-xs">
-                      <p className="text-muted-foreground uppercase tracking-wider">Deadline</p>
-                      <p className={cn("mt-1 inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getDeadlineUrgencyClasses(urgency))}>
-                        {getDeadlineLabel(urgency, a.dueDate)}
-                      </p>
-                    </div>
-                    <div className="text-xs sm:text-right">
-                      <p className="text-muted-foreground uppercase tracking-wider">Weight</p>
-                      <p className="mt-1 font-semibold text-foreground">
-                        {a.rubricWeightTotal > 0 ? `${a.rubricWeightTotal}% allocated` : "Not set"}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Section>
-
-      {sortedDeadlines.length > 0 && (
-        <Section title="Deadline timeline" icon={CalendarClock}>
-          <ol className="space-y-3">
-            {sortedDeadlines.slice(0, 4).map((a) => {
-              const urgency = getDeadlineUrgency(a.dueDate);
-              const remaining = daysUntil(a.dueDate);
-              return (
-                <li key={a.id} className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3">
-                  <div className={cn("flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md border text-center", getDeadlineUrgencyClasses(urgency))}>
-                    <span className="text-[10px] uppercase tracking-wider leading-none">
-                      {new Date(a.dueDate).toLocaleDateString("en-GB", { month: "short" })}
-                    </span>
-                    <span className="text-sm font-bold leading-none mt-0.5">
-                      {new Date(a.dueDate).getDate()}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">{a.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {remaining < 0
-                        ? `${Math.abs(remaining)}d overdue`
-                        : remaining === 0
-                          ? "Due today"
-                          : `${remaining}d remaining`}
-                    </p>
-                  </div>
-                  <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getProductionStageColor(a.stage))}>
-                    {getProductionStageLabel(a.stage)}
-                  </span>
-                </li>
-              );
-            })}
           </ol>
-        </Section>
-      )}
+        </div>
 
-      <Section title="Source coverage & missing context" icon={Layers}>
-        {assignments.length === 0 ? (
-          <EmptyState
-            icon={Layers}
-            title="No coverage to report"
-            description="Add an assessment to start tracking source coverage and context gaps."
+        <div className="space-y-4">
+          <StatusPanel
+            title="Source Base"
+            icon={BookOpen}
+            rows={[
+              [`${sources.length}`, "total"],
+              [`${processedSources.length}`, "processed"],
+              [`${reviewQueue.length}`, "to review"],
+            ]}
           />
-        ) : (
-          <div className="space-y-3">
-            {coverageToneByAssignment.map(({ assignment, tone }) => (
-              <CoverageRow key={assignment.id} data={assignment} tone={tone} totalSources={processedSources.length} />
-            ))}
-          </div>
-        )}
-      </Section>
+          <StatusPanel
+            title="Assessments"
+            icon={ClipboardList}
+            rows={[
+              [`${assignments.length}`, "total"],
+              [`${assignments.filter((a) => a.missingContext.length === 0).length}`, "complete context"],
+              [assignmentWithMostProgress ? getProductionStageLabel(assignmentWithMostProgress.stage) : "None", "furthest stage"],
+            ]}
+          />
+        </div>
+      </section>
 
-      {(processing.length > 0 || failed.length > 0) && (
-        <Section title="Processing status" icon={Upload}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatusTile
-              tone="accent"
-              icon={Upload}
-              count={processing.length}
-              label="Sources processing"
-              description={processing.length === 0 ? "Nothing in the queue." : "Text extraction and chunking in progress."}
-            />
-            <StatusTile
-              tone="danger"
-              icon={AlertTriangle}
-              count={failed.length}
-              label="Sources failed"
-              description={failed.length === 0 ? "No failed imports." : "Retry from Imports to re-run extraction."}
-            />
-          </div>
-        </Section>
-      )}
+      <section className="grid gap-5 lg:grid-cols-[0.58fr_0.42fr]">
+        <UpcomingAssessments data={data} />
+        <SourceOrganization
+          reviewCount={reviewQueue.length}
+          processingCount={processing.length}
+          failedCount={failed.length}
+          moduleId={module.id}
+        />
+      </section>
     </div>
   );
 }
 
-function Section({
+function SetupStepRow({ step, index }: { step: SetupStep; index: number }) {
+  const meta = getStatusMeta(step.status);
+  const StatusIcon = meta.icon;
+  return (
+    <li className="grid gap-3 px-5 py-4 sm:grid-cols-[2rem_1fr_auto] sm:items-center">
+      <div className="hidden h-8 w-8 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground sm:flex">
+        {index + 1}
+      </div>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <step.icon className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">{step.label}</p>
+          <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium", meta.className)}>
+            <StatusIcon className="h-3 w-3" />
+            {meta.label}
+          </span>
+        </div>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.detail}</p>
+      </div>
+      {step.href && step.actionLabel ? (
+        <Link
+          href={step.href}
+          className="inline-flex min-h-9 items-center justify-center gap-1 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          {step.actionLabel}
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      ) : null}
+    </li>
+  );
+}
+
+function StatusPanel({
   title,
   icon: Icon,
-  action,
-  children,
+  rows,
 }: {
   title: string;
   icon: React.ElementType;
-  action?: React.ReactNode;
-  children: React.ReactNode;
+  rows: Array<[string, string]>;
 }) {
   return (
-    <section className="space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="flex min-w-0 flex-1 items-start gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          <Icon className="h-4 w-4" />
-          <span className="leading-5">{title}</span>
-        </h2>
-        {action ? <div className="shrink-0 pt-0.5">{action}</div> : null}
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <Icon className="h-4 w-4" />
+        {title}
       </div>
-      {children}
+      <dl className="mt-4 space-y-3">
+        {rows.map(([value, label]) => (
+          <div key={label} className="flex items-center justify-between gap-3">
+            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dd className="text-sm font-semibold text-foreground">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }
 
-function StatusTile({
-  tone,
-  icon: Icon,
-  count,
-  label,
-  description,
-}: {
-  tone: "accent" | "danger";
-  icon: React.ElementType;
-  count: number;
-  label: string;
-  description: string;
-}) {
-  const toneClass =
-    tone === "danger"
-      ? "border-danger/30 bg-danger/5"
-      : "border-accent/25 bg-accent/5";
-  const iconClass = tone === "danger" ? "text-danger" : "text-accent";
-  return (
-    <div className={cn("rounded-xl border p-4", toneClass)}>
-      <div className="flex items-center gap-3">
-        <Icon className={cn("h-5 w-5", iconClass)} />
-        <p className="text-2xl font-semibold text-foreground tabular-nums">{count}</p>
-      </div>
-      <p className="mt-2 text-sm font-medium text-foreground">{label}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-    </div>
-  );
-}
+function UpcomingAssessments({ data }: WorkspaceSectionProps) {
+  const { module, assignments, sources } = data;
+  const processedSources = sources.filter((s) => s.status === "processed");
+  const upcoming = [...assignments]
+    .sort((a, b) => {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    })
+    .slice(0, 4);
 
-function CoverageRow({
-  data,
-  tone,
-  totalSources,
-}: {
-  data: WorkspaceSectionProps["data"]["assignments"][number];
-  tone: "low" | "medium" | "good" | "none";
-  totalSources: number;
-}) {
-  const missing = data.missingContext;
   return (
-    <div className="rounded-xl border border-border bg-card px-5 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/modules/${data.moduleId}/assignments/${data.id}`}
-            className="text-sm font-semibold text-foreground hover:text-accent transition-colors"
-          >
-            {data.title}
-          </Link>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {getSourceCoverageLabel(data.selectedSourceCount, totalSources)}
-          </p>
-        </div>
-        <CoverageBadge tone={tone} />
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <ClipboardList className="h-4 w-4" />
+          Assessments
+        </h2>
+        <Link
+          href={`/modules/${module.id}?tab=assignments`}
+          className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
+        >
+          Open Assignments <ArrowRight className="h-3 w-3" />
+        </Link>
       </div>
-      {missing.length > 0 && (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
-          {missing.map((item) => (
-            <li
-              key={item}
-              className="inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning"
-            >
-              <CircleAlert className="h-3 w-3" />
-              {item}
-            </li>
-          ))}
+
+      {upcoming.length === 0 ? (
+        <EmptyState
+          icon={ClipboardList}
+          title="No assessments yet"
+          description="Add one from Assignments, or upload a brief and confirm extracted info."
+        />
+      ) : (
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+          {upcoming.map((assignment) => {
+            const urgency = getDeadlineUrgency(assignment.dueDate);
+            return (
+              <li key={assignment.id}>
+                <Link
+                  href={`/modules/${module.id}/assignments/${assignment.id}`}
+                  className="grid gap-3 px-5 py-4 transition-colors hover:bg-muted/40 sm:grid-cols-[1.6fr_1fr_auto]"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {assignment.title}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {assignment.selectedSourceCount} of {processedSources.length} processed sources selected
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn("inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getProductionStageColor(assignment.stage))}>
+                      {getProductionStageLabel(assignment.stage)}
+                    </span>
+                    <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider", getDeadlineUrgencyClasses(urgency))}>
+                      {getDeadlineLabel(urgency, assignment.dueDate)}
+                    </span>
+                  </div>
+                  <ArrowRight className="hidden h-4 w-4 self-center text-muted-foreground sm:block" />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
-      {missing.length === 0 && (
-        <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-success">
-          <CheckCircle2 className="h-3 w-3" />
-          Context complete
-        </p>
-      )}
+    </section>
+  );
+}
+
+function SourceOrganization({
+  reviewCount,
+  processingCount,
+  failedCount,
+  moduleId,
+}: {
+  reviewCount: number;
+  processingCount: number;
+  failedCount: number;
+  moduleId: string;
+}) {
+  const hasWork = reviewCount > 0 || processingCount > 0 || failedCount > 0;
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <Layers className="h-4 w-4" />
+          Polis organization
+        </h2>
+        <Link
+          href={`/modules/${moduleId}?tab=sources`}
+          className="inline-flex min-h-8 items-center gap-1 text-xs font-medium text-accent hover:underline"
+        >
+          Open Sources <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-5">
+        {hasWork ? (
+          <div className="space-y-3">
+            <OrganizationRow label="Needs review" value={reviewCount} tone={reviewCount > 0 ? "warning" : "neutral"} />
+            <OrganizationRow label="Processing" value={processingCount} tone={processingCount > 0 ? "accent" : "neutral"} />
+            <OrganizationRow label="Failed" value={failedCount} tone={failedCount > 0 ? "danger" : "neutral"} />
+          </div>
+        ) : (
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Organization clear</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                Imported sources have no outstanding review or processing issues.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function OrganizationRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "neutral" | "warning" | "danger" | "accent";
+}) {
+  const className =
+    tone === "danger"
+      ? "text-danger"
+      : tone === "warning"
+        ? "text-warning"
+        : tone === "accent"
+          ? "text-accent"
+          : "text-muted-foreground";
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={cn("text-sm font-semibold tabular-nums", className)}>{value}</span>
     </div>
   );
 }
 
-function CoverageBadge({ tone }: { tone: "low" | "medium" | "good" | "none" }) {
-  const map = {
-    none: { label: "No sources", class: "border-danger/30 bg-danger/10 text-danger", icon: CircleDashed },
-    low: { label: "Thin coverage", class: "border-danger/30 bg-danger/10 text-danger", icon: CircleAlert },
-    medium: { label: "Partial coverage", class: "border-warning/30 bg-warning/10 text-warning", icon: CircleAlert },
-    good: { label: "Strong coverage", class: "border-success/30 bg-success/10 text-success", icon: CheckCircle2 },
-  } as const;
-  const config = map[tone];
-  const Icon = config.icon;
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium", config.class)}>
-      <Icon className="h-3 w-3" />
-      {config.label}
-    </span>
-  );
+function getStatusMeta(status: SetupStatus) {
+  switch (status) {
+    case "done":
+      return {
+        label: "Done",
+        icon: CheckCircle2,
+        className: "border-success/30 bg-success/10 text-success",
+      };
+    case "active":
+      return {
+        label: "Current",
+        icon: CircleDashed,
+        className: "border-accent/30 bg-accent/10 text-accent",
+      };
+    case "attention":
+      return {
+        label: "Needs attention",
+        icon: CircleAlert,
+        className: "border-warning/40 bg-warning/10 text-warning",
+      };
+    case "next":
+      return {
+        label: "Next",
+        icon: Circle,
+        className: "border-border bg-muted text-muted-foreground",
+      };
+    default:
+      return {
+        label: "Later",
+        icon: Circle,
+        className: "border-border bg-background text-muted-foreground",
+      };
+  }
 }
 
-interface NextAction {
-  id: string;
-  label: string;
-  detail?: string;
-  href: string;
-  icon: React.ElementType;
-  toneClass: string;
-}
-
-function buildNextActions(
+function buildSetupSteps(
   data: WorkspaceSectionProps["data"],
   status: { reviewCount: number; processingCount: number; failedCount: number },
-): NextAction[] {
-  const actions: NextAction[] = [];
+): SetupStep[] {
   const { module, assignments, sources } = data;
+  const sourceHref = `/modules/${module.id}?tab=sources`;
+  const assignmentHref = `/modules/${module.id}?tab=assignments`;
+  const firstAssignment = getMostAdvancedAssignment(assignments);
+  const firstAssignmentHref = firstAssignment
+    ? `/modules/${module.id}/assignments/${firstAssignment.id}`
+    : assignmentHref;
 
-  if (status.failedCount > 0) {
-    actions.push({
-      id: "failed-imports",
-      label: `${status.failedCount} import${status.failedCount === 1 ? "" : "s"} failed processing`,
-      detail: "Retry extraction from the Imports tab.",
-      href: `/modules/${module.id}?tab=imports`,
-      icon: AlertTriangle,
-      toneClass: "border-danger/40 bg-danger/10 text-danger",
-    });
-  }
+  const hasModuleInfo = sources.some(
+    (source) =>
+      source.classificationLabel === "module_handbook" ||
+      /handbook|syllabus|module info|module guide/i.test(source.title),
+  );
+  const hasReadingList = sources.some(
+    (source) =>
+      /reading list|reading schedule|bibliography/i.test(source.title) ||
+      source.classificationLabel === "module_handbook",
+  );
+  const hasBriefOrRubric =
+    sources.some(
+      (source) =>
+        source.classificationLabel === "assignment_brief" ||
+        source.classificationLabel === "marking_rubric",
+    ) ||
+    assignments.some((assignment) => assignment.hasQuestion || assignment.hasRubric);
+  const hasReadings = sources.some((source) =>
+    READING_SOURCE_TYPES.has(source.classificationLabel),
+  );
+  const hasSourceIssues =
+    status.reviewCount > 0 || status.processingCount > 0 || status.failedCount > 0;
+  const hasConfirmedInfo = assignments.some(
+    (assignment) =>
+      assignment.hasQuestion ||
+      assignment.hasRubric ||
+      assignment.hasDueDate ||
+      assignment.hasWordLimit,
+  );
+  const hasAssignments = assignments.length > 0;
+  const hasPlanStarted = assignments.some((assignment) => PLAN_STAGES.has(assignment.stage));
+  const hasPlanDone = assignments.some(
+    (assignment) => WRITING_STAGES.has(assignment.stage) || REVIEW_STAGES.has(assignment.stage),
+  );
+  const hasWritingStarted = assignments.some((assignment) => WRITING_STAGES.has(assignment.stage));
+  const hasWritingDone = assignments.some((assignment) => REVIEW_STAGES.has(assignment.stage));
+  const hasReviewStarted = assignments.some((assignment) => REVIEW_STAGES.has(assignment.stage));
 
-  if (status.reviewCount > 0) {
-    actions.push({
-      id: "review-imports",
-      label: `Review ${status.reviewCount} import${status.reviewCount === 1 ? "" : "s"} needing classification`,
-      detail: "Confirm or correct the suggested source types.",
-      href: `/modules/${module.id}?tab=imports`,
-      icon: FileWarning,
-      toneClass: "border-warning/40 bg-warning/10 text-warning",
-    });
-  }
-
-  if (sources.length === 0) {
-    actions.push({
-      id: "first-import",
-      label: "Import your first sources",
-      detail: "Upload readings, lecture material, or the module handbook.",
-      href: `/modules/${module.id}?tab=imports`,
+  return [
+    {
+      id: "workspace-created",
+      label: "Workspace created",
+      detail: "The workspace exists and is ready for module material.",
+      status: "done",
+      href: `/modules/${module.id}?tab=settings`,
+      actionLabel: "Rename",
+      icon: CheckCircle2,
+    },
+    {
+      id: "upload-module-info",
+      label: "Upload module info",
+      detail: hasModuleInfo
+        ? "Module handbook or syllabus material is in the Source Base."
+        : "Add a handbook, syllabus, or module guide.",
+      status: hasModuleInfo ? "done" : sources.length === 0 ? "active" : "next",
+      href: sourceHref,
+      actionLabel: hasModuleInfo ? "View" : "Upload",
       icon: Upload,
-      toneClass: "border-accent/30 bg-accent/10 text-accent",
-    });
-  }
-
-  if (assignments.length === 0 && sources.length > 0) {
-    actions.push({
-      id: "add-assessment",
-      label: "Add an assessment",
-      detail: "Capture the coursework question, deadline, and rubric.",
-      href: `/modules/${module.id}?tab=assessments`,
+    },
+    {
+      id: "upload-reading-list",
+      label: "Upload reading list",
+      detail: hasReadingList
+        ? "Reading-list material is available for organization."
+        : "Add the reading list or a schedule that names required readings.",
+      status: hasReadingList ? "done" : hasModuleInfo ? "active" : "next",
+      href: sourceHref,
+      actionLabel: hasReadingList ? "View" : "Upload",
+      icon: BookOpen,
+    },
+    {
+      id: "upload-assessment-brief",
+      label: "Upload assessment brief/rubric",
+      detail: hasBriefOrRubric
+        ? "Assessment brief or rubric context is present."
+        : "Add the brief, question sheet, or marking rubric.",
+      status: hasBriefOrRubric ? "done" : hasModuleInfo || hasReadingList ? "active" : "next",
+      href: sourceHref,
+      actionLabel: hasBriefOrRubric ? "View" : "Upload",
+      icon: FileText,
+    },
+    {
+      id: "upload-readings",
+      label: "Upload readings/lecture material",
+      detail: hasReadings
+        ? "Readings or lecture material are in the Source Base."
+        : "Add readings, lecture slides, seminar notes, or reports.",
+      status: hasReadings ? "done" : hasBriefOrRubric ? "active" : "next",
+      href: sourceHref,
+      actionLabel: hasReadings ? "View" : "Upload",
+      icon: Layers,
+    },
+    {
+      id: "review-organization",
+      label: "Review Polis organization",
+      detail: hasSourceIssues
+        ? "Check classifications, processing state, and failed uploads."
+        : "Source organization has no outstanding review issue.",
+      status: sources.length === 0 ? "locked" : hasSourceIssues ? "attention" : "done",
+      href: sourceHref,
+      actionLabel: hasSourceIssues ? "Review" : "View",
+      icon: SearchCheck,
+    },
+    {
+      id: "confirm-extracted-info",
+      label: "Confirm extracted info",
+      detail: hasConfirmedInfo
+        ? "Assessment details have been confirmed or entered."
+        : "Review extracted questions, deadlines, word limits, and rubric details.",
+      status: hasConfirmedInfo ? "done" : hasBriefOrRubric ? "active" : "locked",
+      href: assignmentHref,
+      actionLabel: hasConfirmedInfo ? "View" : "Confirm",
+      icon: FileCheck2,
+    },
+    {
+      id: "start-assessment",
+      label: "Start assessment",
+      detail: hasAssignments
+        ? "At least one assessment track is ready."
+        : "Create or confirm an assessment track.",
+      status: hasAssignments ? "done" : hasConfirmedInfo || hasBriefOrRubric ? "active" : "locked",
+      href: assignmentHref,
+      actionLabel: hasAssignments ? "Open" : "Start",
       icon: ClipboardList,
-      toneClass: "border-accent/30 bg-accent/10 text-accent",
-    });
-  }
+    },
+    {
+      id: "plan",
+      label: "Plan",
+      detail: hasPlanDone
+        ? "A workspace assessment has moved beyond planning."
+        : hasPlanStarted
+          ? "Build the argument, evidence map, and section plan."
+          : "Open an assessment and move into Plan.",
+      status: hasPlanDone ? "done" : hasPlanStarted ? "active" : hasAssignments ? "next" : "locked",
+      href: firstAssignment ? `${firstAssignmentHref}?tab=plan` : assignmentHref,
+      actionLabel: hasPlanDone || hasPlanStarted ? "Open" : "Plan",
+      icon: Layers,
+    },
+    {
+      id: "write",
+      label: "Write",
+      detail: hasWritingDone
+        ? "A workspace assessment has moved into Review."
+        : hasWritingStarted
+          ? "Continue drafting with source-aware writing help."
+          : "Move from Plan into Write when ready.",
+      status: hasWritingDone ? "done" : hasWritingStarted ? "active" : hasPlanDone ? "next" : "locked",
+      href: firstAssignment ? `${firstAssignmentHref}?tab=write` : assignmentHref,
+      actionLabel: hasWritingDone || hasWritingStarted ? "Open" : "Write",
+      icon: PenLine,
+    },
+    {
+      id: "review",
+      label: "Review",
+      detail: hasReviewStarted
+        ? "Review is available for citation safety, evidence gaps, and revision priorities."
+        : "Use Review after drafting.",
+      status: hasReviewStarted ? "active" : hasWritingDone ? "next" : "locked",
+      href: firstAssignment ? `${firstAssignmentHref}?tab=review` : assignmentHref,
+      actionLabel: "Review",
+      icon: CheckCircle2,
+    },
+  ];
+}
 
-  for (const assignment of assignments) {
-    if (assignment.missingContext.length > 0) {
-      actions.push({
-        id: `missing-${assignment.id}`,
-        label: `Complete context for ${assignment.title}`,
-        detail: assignment.missingContext[0],
-        href: `/modules/${module.id}/assignments/${assignment.id}`,
-        icon: Scale,
-        toneClass: "border-warning/40 bg-warning/10 text-warning",
-      });
-    }
-  }
-
-  return actions.slice(0, 6);
+function getMostAdvancedAssignment(
+  assignments: WorkspaceSectionProps["data"]["assignments"],
+) {
+  const order: Record<ProductionStage, number> = {
+    ingest: 0,
+    understand: 1,
+    map: 2,
+    judge: 3,
+    build: 4,
+    draft: 5,
+    refine: 6,
+  };
+  return [...assignments].sort((a, b) => order[b.stage] - order[a.stage])[0];
 }

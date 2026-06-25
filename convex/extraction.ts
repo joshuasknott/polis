@@ -964,3 +964,63 @@ export const rejectAllForFile = mutation({
     return args.importedFileId;
   },
 });
+
+export const _rejectAllForImportedFile = internalMutation({
+  args: { importedFileId: v.id("importedFiles") },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    const specs = await ctx.db
+      .query("assessmentSpecs")
+      .withIndex("by_importedFile", (q) =>
+        q.eq("importedFileId", args.importedFileId),
+      )
+      .take(50);
+    for (const spec of specs) {
+      if (spec.status === "extracted" || spec.status === "needs_review") {
+        await ctx.db.patch(spec._id, { status: "rejected", updatedAt: now });
+      }
+    }
+
+    const facts = await ctx.db
+      .query("moduleFacts")
+      .withIndex("by_importedFile", (q) =>
+        q.eq("importedFileId", args.importedFileId),
+      )
+      .take(100);
+    for (const fact of facts) {
+      if (fact.status === "extracted") {
+        await ctx.db.patch(fact._id, { status: "rejected", updatedAt: now });
+      }
+    }
+
+    const topics = await ctx.db
+      .query("weeklyTopics")
+      .withIndex("by_importedFile", (q) =>
+        q.eq("importedFileId", args.importedFileId),
+      )
+      .take(100);
+    for (const topic of topics) {
+      if (topic.status === "extracted" || topic.status === undefined) {
+        await ctx.db.patch(topic._id, { status: "rejected", updatedAt: now });
+      }
+    }
+
+    const readings = await ctx.db
+      .query("requiredReadings")
+      .withIndex("by_importedFile", (q) =>
+        q.eq("importedFileId", args.importedFileId),
+      )
+      .take(100);
+    for (const reading of readings) {
+      if (reading.status === "extracted" || reading.status === undefined) {
+        await ctx.db.patch(reading._id, {
+          status: "rejected",
+          updatedAt: now,
+        });
+      }
+    }
+
+    return args.importedFileId;
+  },
+});

@@ -353,6 +353,15 @@ export const processBatch = action({
         });
       }
 
+      let classificationStatus:
+        | "auto_accepted"
+        | "needs_review"
+        | "failed" = "needs_review";
+      let primaryLabel: ClassificationLabel | undefined;
+      let confidence: number | undefined;
+      let classificationSummary = "Classification needs review.";
+      let classificationModel = model;
+
       if (!apiKey) {
         await ctx.runMutation(
           internal.imports.internalUpdateFileClassification,
@@ -362,75 +371,239 @@ export const processBatch = action({
             classificationError: "No AI provider configured",
           },
         );
-        continue;
-      }
-
-      await ctx.runMutation(
-        internal.imports.internalUpdateFileClassification,
-        {
-          fileId: file._id,
-          classificationStatus: "classifying",
-        },
-      );
-
-      const prompt = buildClassificationPrompt(
-        file.fileName,
-        file.fileType,
-        textSnippet,
-      );
-
-      const result = await callClassification(apiKey, provider, model, prompt);
-
-      if (!result) {
+        await ctx.runMutation(internal.aiActions.record, {
+          tokenIdentifier: identity.tokenIdentifier,
+          moduleId: data.batch.moduleId,
+          batchId: args.batchId,
+          importedFileId: file._id,
+          operation: "classification",
+          status: "needs_review",
+          title: "Classification needs review",
+          summary: "No AI provider is configured, so Polis kept the file for manual review.",
+          reversible: true,
+          errorMessage: "No AI provider configured",
+        });
+      } else {
         await ctx.runMutation(
           internal.imports.internalUpdateFileClassification,
           {
             fileId: file._id,
-            classificationStatus: "failed",
-            classificationError: "AI provider call failed",
+            classificationStatus: "classifying",
+          },
+        );
+
+        const prompt = buildClassificationPrompt(
+          file.fileName,
+          file.fileType,
+          textSnippet,
+        );
+
+        const result = await callClassification(apiKey, provider, model, prompt);
+
+        if (!result) {
+          classificationStatus = "failed";
+          classificationSummary = "The AI provider call failed.";
+          await ctx.runMutation(
+            internal.imports.internalUpdateFileClassification,
+            {
+              fileId: file._id,
+              classificationStatus: "failed",
+              classificationError: "AI provider call failed",
+              modelUsed: model,
+              providerUsed: provider,
+            },
+          );
+          await ctx.runMutation(internal.aiActions.record, {
+            tokenIdentifier: identity.tokenIdentifier,
+            moduleId: data.batch.moduleId,
+            batchId: args.batchId,
+            importedFileId: file._id,
+            operation: "classification",
+            status: "failed",
+            title: "Classification failed",
+            summary: classificationSummary,
+            providerUsed: provider,
             modelUsed: model,
-            providerUsed: provider,
-          },
-        );
-        continue;
+            reversible: true,
+            errorMessage: "AI provider call failed",
+          });
+        } else {
+          classificationModel = result.model;
+          totalTokensIn += result.tokensIn ?? Math.ceil(prompt.length / 4);
+          totalTokensOut +=
+            result.tokensOut ?? Math.ceil(result.content.length / 4);
+
+          const parsed = parseClassificationResponse(result.content);
+
+          if (!parsed) {
+            classificationStatus = "failed";
+            classificationSummary = "The AI response could not be parsed.";
+            await ctx.runMutation(
+              internal.imports.internalUpdateFileClassification,
+              {
+                fileId: file._id,
+                classificationStatus: "failed",
+                classificationError: "Could not parse classification response",
+                modelUsed: result.model,
+                providerUsed: provider,
+              },
+            );
+            await ctx.runMutation(internal.aiActions.record, {
+              tokenIdentifier: identity.tokenIdentifier,
+              moduleId: data.batch.moduleId,
+              batchId: args.batchId,
+              importedFileId: file._id,
+              operation: "classification",
+              status: "failed",
+              title: "Classification failed",
+              summary: classificationSummary,
+              providerUsed: provider,
+              modelUsed: result.model,
+              reversible: true,
+              errorMessage: "Could not parse classification response",
+              output: { rawResponse: result.content.slice(0, 500) },
+            });
+          } else {
+            const autoAccepted = parsed.confidence >= AUTO_ACCEPT_THRESHOLD;
+            classificationStatus = autoAccepted
+              ? "auto_accepted"
+              : "needs_review";
+            primaryLabel = parsed.primaryLabel;
+            confidence = parsed.confidence;
+            classificationSummary = parsed.rationale;
+
+            await ctx.runMutation(
+              internal.imports.internalUpdateFileClassification,
+              {
+                fileId: file._id,
+                classificationStatus,
+                labels: parsed.labels,
+                primaryLabel: parsed.primaryLabel,
+                confidence: parsed.confidence,
+                rationale: parsed.rationale,
+                modelUsed: result.model,
+                providerUsed: provider,
+              },
+            );
+            await ctx.runMutation(internal.aiActions.record, {
+              tokenIdentifier: identity.tokenIdentifier,
+              moduleId: data.batch.moduleId,
+              batchId: args.batchId,
+              importedFileId: file._id,
+              operation: "classification",
+              status: autoAccepted ? "auto_applied" : "needs_review",
+              title: autoAccepted
+                ? "Auto-classified imported file"
+                : "Classified imported file for review",
+              summary: parsed.rationale,
+              providerUsed: provider,
+              modelUsed: result.model,
+              confidence: parsed.confidence,
+              autoApplied: autoAccepted,
+              reversible: true,
+              output: parsed,
+            });
+          }
+        }
       }
 
-      totalTokensIn += result.tokensIn ?? Math.ceil(prompt.length / 4);
-      totalTokensOut += result.tokensOut ?? Math.ceil(result.content.length / 4);
-
-      const parsed = parseClassificationResponse(result.content);
-
-      if (!parsed) {
-        await ctx.runMutation(
-          internal.imports.internalUpdateFileClassification,
+      try {
+        const sourceId: Id<"sources"> = await ctx.runMutation(
+          internal.imports.internalCreateSourceForFile,
           {
-            fileId: file._id,
-            classificationStatus: "failed",
-            classificationError: "Could not parse classification response",
-            modelUsed: result.model,
-            providerUsed: provider,
+            importedFileId: file._id,
+            tokenIdentifier: identity.tokenIdentifier,
+            status: "queued",
           },
         );
-        continue;
-      }
 
-      const autoAccepted = parsed.confidence >= AUTO_ACCEPT_THRESHOLD;
+        await ctx.runMutation(internal.aiActions.record, {
+          tokenIdentifier: identity.tokenIdentifier,
+          moduleId: data.batch.moduleId,
+          batchId: args.batchId,
+          importedFileId: file._id,
+          sourceId,
+          operation: "source_conversion",
+          status: "completed",
+          title: "Converted import to source",
+          summary: primaryLabel
+            ? `Created a source from the imported file as ${primaryLabel}.`
+            : "Created a source from the imported file for review.",
+          confidence,
+          autoApplied: classificationStatus === "auto_accepted",
+          reversible: false,
+          targetTable: "sources",
+          targetId: sourceId,
+        });
 
-      await ctx.runMutation(
-        internal.imports.internalUpdateFileClassification,
-        {
-          fileId: file._id,
-          classificationStatus: autoAccepted
-            ? "auto_accepted"
-            : "needs_review",
-          labels: parsed.labels,
-          primaryLabel: parsed.primaryLabel,
-          confidence: parsed.confidence,
-          rationale: parsed.rationale,
-          modelUsed: result.model,
+        const processingResult: {
+          success: boolean;
+          chunkCount: number;
+          errorMessage?: string;
+        } = await ctx.runAction(internal.ingestion.process.processSource, {
+          sourceId,
+        });
+
+        await ctx.runMutation(internal.aiActions.record, {
+          tokenIdentifier: identity.tokenIdentifier,
+          moduleId: data.batch.moduleId,
+          batchId: args.batchId,
+          importedFileId: file._id,
+          sourceId,
+          operation: "source_processing",
+          status: processingResult.success ? "completed" : "failed",
+          title: processingResult.success
+            ? "Extracted and chunked source"
+            : "Source processing failed",
+          summary: processingResult.success
+            ? `Created ${processingResult.chunkCount} source chunks.`
+            : "Polis could not extract text from this source.",
+          reversible: false,
+          errorMessage: processingResult.errorMessage,
+          output: processingResult,
+        });
+
+        if (!processingResult.success) continue;
+
+        await ctx.runMutation(internal.sources.internalPatchSource, {
+          sourceId,
+          status:
+            classificationStatus === "auto_accepted"
+              ? "processed"
+              : "needs_review",
+        });
+
+        await ctx.runAction(internal.extractionAI.extractImportedSource, {
+          sourceId,
+          tokenIdentifier: identity.tokenIdentifier,
+          importedFileId: file._id,
+          batchId: args.batchId,
+        });
+
+        await ctx.runAction(internal.sourceAnalysisAI.analyseImportedSource, {
+          sourceId,
+          tokenIdentifier: identity.tokenIdentifier,
+          importedFileId: file._id,
+          batchId: args.batchId,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Source pipeline failed";
+        await ctx.runMutation(internal.aiActions.record, {
+          tokenIdentifier: identity.tokenIdentifier,
+          moduleId: data.batch.moduleId,
+          batchId: args.batchId,
+          importedFileId: file._id,
+          operation: "source_processing",
+          status: "failed",
+          title: "Source pipeline failed",
+          summary: classificationSummary,
           providerUsed: provider,
-        },
-      );
+          modelUsed: classificationModel,
+          reversible: false,
+          errorMessage: message,
+        });
+      }
     }
 
     await ctx.runMutation(internal.imports._recomputeBatchProgress, {

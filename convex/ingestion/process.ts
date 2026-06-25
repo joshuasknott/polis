@@ -74,6 +74,8 @@ export const processSource = internalAction({
         sourceId: args.sourceId,
         chunks: chunksArg,
       });
+
+      return { success: true, chunkCount: chunksArg.length };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unknown processing error";
@@ -82,6 +84,7 @@ export const processSource = internalAction({
         status: "failed",
         errorMessage: message,
       });
+      return { success: false, errorMessage: message, chunkCount: 0 };
     }
   },
 });

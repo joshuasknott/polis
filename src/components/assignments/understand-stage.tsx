@@ -462,7 +462,7 @@ function ReadinessPanel({
           onClick={onAdvance}
           className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground hover:opacity-90"
         >
-          Advance to Map Stage
+          Continue to Evidence Map
           <ArrowRight className="h-4 w-4" />
         </button>
       )}
@@ -501,7 +501,7 @@ export function UnderstandStage({
               <BookOpen className="mb-4 h-10 w-10 text-muted-foreground opacity-50" />
               <h3 className="text-sm font-medium">No sources selected</h3>
               <p className="mt-1 max-w-sm text-xs text-muted-foreground">
-                Return to the Ingest stage to add sources to this assignment.
+                Select sources above so Polis can summarize and connect them for this assessment.
               </p>
             </div>
           ) : (
